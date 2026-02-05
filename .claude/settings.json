@@ -1,0 +1,111 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write && .py",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/file-size-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit && .py",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/file-size-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write && (.ts|.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/file-size-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit && (.ts|.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/file-size-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash && git commit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-commit-verify.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit && .py",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/tech-debt-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write && .py",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/tech-debt-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit && (.ts|.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/tech-debt-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write && (.ts|.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/tech-debt-guard.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Awaiting your input\" with title \"AgentGuard\"' && afplay /System/Library/Sounds/Glass.aiff"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Task completed\" with title \"AgentGuard\"' && afplay /System/Library/Sounds/Glass.aiff"
+          }
+        ]
+      }
+    ]
+  }
+}

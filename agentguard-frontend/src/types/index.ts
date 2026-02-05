@@ -1,0 +1,97 @@
+/**
+ * TypeScript type definitions for AgentGuard.
+ */
+
+// Common types
+export type UUID = string;
+
+// User and Organization
+export interface User {
+  id: UUID;
+  email: string;
+  name: string;
+  organizationId: UUID;
+  createdAt: string;
+}
+
+export interface Organization {
+  id: UUID;
+  name: string;
+  createdAt: string;
+}
+
+// Incidents
+export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type IncidentStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
+export type IncidentType = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
+
+export interface Incident {
+  id: UUID;
+  organizationId: UUID;
+  type: IncidentType;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  title: string;
+  description: string;
+  proxyRequestId?: UUID;
+  detectorId?: UUID;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+// Detectors
+export type DetectorType = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
+
+export interface Detector {
+  id: UUID;
+  organizationId: UUID;
+  name: string;
+  type: DetectorType;
+  enabled: boolean;
+  config: Record<string, unknown>;
+  createdAt: string;
+}
+
+// Alerts
+export type AlertDestinationType = 'slack' | 'pagerduty' | 'email' | 'webhook';
+
+export interface AlertDestination {
+  id: UUID;
+  organizationId: UUID;
+  name: string;
+  type: AlertDestinationType;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface Alert {
+  id: UUID;
+  incidentId: UUID;
+  destinationId: UUID;
+  status: 'pending' | 'sent' | 'failed';
+  sentAt?: string;
+  createdAt: string;
+}
+
+// Proxy
+export interface ProxyEndpoint {
+  id: UUID;
+  organizationId: UUID;
+  name: string;
+  provider: 'openai' | 'anthropic' | 'custom';
+  baseUrl: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface ProxyRequest {
+  id: UUID;
+  organizationId: UUID;
+  endpointId: UUID;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs: number;
+  createdAt: string;
+}
