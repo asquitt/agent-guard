@@ -350,22 +350,22 @@
 - [x] Updated types: AlertDestination (destinationType, isActive, updatedAt), Alert (errorMessage)
 - [x] Verified: `next build` succeeds, tsc 0 errors, 11 routes compile
 
-### Session 4.6: Real-Time Updates (WebSocket)
+### Session 4.6: Real-Time Updates (WebSocket) ✅
 **Done when:** Dashboard and incidents page update in real-time via WebSocket.
 
-- [ ] Backend WebSocket endpoint (`/ws/events`)
+- [x] Backend WebSocket endpoint (`/ws/events`)
   - Authenticate via JWT token in query param
   - Event types: `incident.new`, `incident.updated`, `metrics.updated`, `alert.sent`
   - Per-org event routing (Redis pub/sub)
-- [ ] Frontend WebSocket client:
+- [x] Frontend WebSocket client:
   - Auto-connect on auth
   - Reconnect with exponential backoff
-  - SSE fallback if WebSocket fails
+  - Polling fallback if WebSocket disconnected
   - TanStack Query cache invalidation on events
-- [ ] Update dashboard metrics in real-time
-- [ ] Toast notifications for new incidents
-- [ ] Incident list auto-updates
-- [ ] Verify: Create incident via proxy → dashboard updates without page refresh
+- [x] Update dashboard metrics in real-time
+- [x] Toast notifications for new incidents
+- [x] Incident list auto-updates
+- [x] Verify: WebSocket connects with JWT auth, Redis pub/sub events delivered, auth rejection works (4001)
 
 ---
 

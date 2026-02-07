@@ -110,6 +110,19 @@ async def update_incident_status(
 
     await db.commit()
     await db.refresh(incident)
+
+    # Publish real-time event (best-effort)
+    try:
+        from app.core.events import publish_event
+
+        await publish_event(str(org_id), "incident.updated", {
+            "id": str(incident_id),
+            "oldStatus": old_status,
+            "newStatus": new_status,
+        })
+    except Exception:
+        pass
+
     return incident
 
 
@@ -218,6 +231,19 @@ async def bulk_update_status(
     )
 
     await db.commit()
+
+    # Publish real-time event (best-effort)
+    try:
+        from app.core.events import publish_event
+
+        await publish_event(str(org_id), "incident.updated", {
+            "ids": [str(i) for i in incident_ids],
+            "newStatus": new_status,
+            "updatedCount": updated,
+        })
+    except Exception:
+        pass
+
     return updated
 
 

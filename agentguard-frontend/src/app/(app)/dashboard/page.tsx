@@ -2,8 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { getDashboardMetrics } from '@/lib/api';
+import { Toast } from '@/components/ui/Toast';
+import type { ToastItem } from '@/components/ui/Toast';
 import type { RecentIncidentSummary } from '@/types';
 import { clsx } from 'clsx';
 
@@ -24,14 +28,56 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { status: wsStatus, lastEvent } = useWebSocket();
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboard', 'metrics'],
     queryFn: getDashboardMetrics,
-    refetchInterval: 30_000,
+    refetchInterval: wsStatus === 'connected' ? undefined : 30_000,
   });
+
+  // Toast for new critical/high incidents
+  useEffect(() => {
+    if (lastEvent?.type !== 'incident.new') return;
+    const data = lastEvent.data as {
+      severity?: string;
+      title?: string;
+      id?: string;
+    };
+    const severity = data.severity ?? 'info';
+    if (severity === 'critical' || severity === 'high') {
+      setToasts((prev) => [
+        ...prev,
+        {
+          id: data.id ?? crypto.randomUUID(),
+          message: `New ${severity} incident: ${data.title ?? 'Detection triggered'}`,
+          severity,
+        },
+      ]);
+    }
+  }, [lastEvent]);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   return (
     <div>
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed right-4 top-4 z-50 flex w-96 flex-col gap-2">
+          {toasts.map((toast) => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              severity={toast.severity}
+              onDismiss={() => dismissToast(toast.id)}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500">

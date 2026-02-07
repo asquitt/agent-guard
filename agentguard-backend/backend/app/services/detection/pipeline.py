@@ -186,6 +186,20 @@ async def _create_incident_from_result(
     db.add(incident)
     await db.flush()
 
+    # Publish real-time event (best-effort)
+    try:
+        from app.core.events import publish_event
+
+        await publish_event(str(org_id), "incident.new", {
+            "id": str(incident.id),
+            "severity": str(incident.severity),
+            "category": str(incident.category),
+            "title": str(incident.title),
+            "status": "open",
+        })
+    except Exception:
+        logger.exception("Failed to publish incident.new event for %s", incident.id)
+
     # Queue alerts asynchronously (best-effort, never block detection)
     try:
         from app.services.alert_service import trigger_alerts

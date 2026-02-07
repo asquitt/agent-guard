@@ -1,8 +1,39 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { AuthProvider } from '@/hooks/useAuth';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import type { WebSocketEvent } from '@/hooks/useWebSocket';
+
+function WebSocketManager({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+  const { lastEvent } = useWebSocket();
+
+  useEffect(() => {
+    if (!lastEvent || lastEvent.type === 'connected') return;
+
+    switch (lastEvent.type) {
+      case 'incident.new':
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        break;
+      case 'incident.updated':
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        break;
+      case 'alert.sent':
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
+        break;
+    }
+  }, [lastEvent, queryClient]);
+
+  return <>{children}</>;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -19,7 +50,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <WebSocketManager>{children}</WebSocketManager>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

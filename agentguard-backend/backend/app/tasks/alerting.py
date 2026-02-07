@@ -135,6 +135,19 @@ def send_alerts_for_incident(
 
             db.commit()
 
+            # Publish real-time event (best-effort)
+            if sent > 0:
+                try:
+                    from app.core.events import publish_event_sync
+
+                    publish_event_sync(str(org_id), "alert.sent", {
+                        "incidentId": str(incident_id),
+                        "sent": sent,
+                        "failed": failed,
+                    })
+                except Exception:
+                    logger.exception("Failed to publish alert.sent event")
+
             return {
                 "status": "completed",
                 "sent": sent,

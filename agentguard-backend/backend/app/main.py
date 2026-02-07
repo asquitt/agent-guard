@@ -48,6 +48,7 @@ from app.api import (  # noqa: E402
     proxy,
     proxy_endpoints,
     webhooks,
+    websocket,
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -60,3 +61,4 @@ app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["Alerts"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
+app.include_router(websocket.router, tags=["WebSocket"])

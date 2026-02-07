@@ -132,6 +132,18 @@ def run_async_detection(
 
             db.commit()
 
+            # Publish real-time events for created incidents (best-effort)
+            if incidents_created > 0:
+                try:
+                    from app.core.events import publish_event_sync
+
+                    publish_event_sync(str(org_id), "incident.new", {
+                        "source": "async_detection",
+                        "count": incidents_created,
+                    })
+                except Exception:
+                    logger.exception("Failed to publish incident.new events")
+
             return {
                 "status": "completed",
                 "detectors_run": len(detectors),
