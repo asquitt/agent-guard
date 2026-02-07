@@ -49,6 +49,12 @@ class User(TimestampMixin, Base):
     sso_provider = Column(String(50), nullable=True)  # e.g. "saml", "oidc"
     sso_external_id = Column(String(255), nullable=True)  # IdP user ID
 
+    # Security hardening
+    failed_login_attempts = Column(Integer, nullable=False, server_default="0")
+    locked_until = Column(DateTime(timezone=True), nullable=True)
+    token_version = Column(Integer, nullable=False, server_default="0")
+    password_changed_at = Column(DateTime(timezone=True), nullable=True)
+
     # Relationships
     organization = relationship("Organization", back_populates="users")
     incident_actions = relationship("IncidentAction", back_populates="user")

@@ -3,6 +3,7 @@
 # pyright: reportCallIssue=false
 
 import re
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -71,6 +72,7 @@ async def register_user(
         role=UserRole.ADMIN.value,
         org_id=org.id,
         is_active=True,
+        password_changed_at=datetime.now(timezone.utc),
     )
     db.add(user)
 
@@ -99,6 +101,38 @@ async def register_user(
     return user, org
 
 
+def _is_account_locked(user: User) -> bool:
+    """Check if the user account is currently locked."""
+    locked_until = user.locked_until  # type: ignore[union-attr]
+    if locked_until is None:
+        return False
+    now = datetime.now(timezone.utc)
+    if locked_until.tzinfo is None:
+        # Treat naive datetimes as UTC
+        return now.replace(tzinfo=None) < locked_until
+    return now < locked_until
+
+
+async def _record_failed_login(db: AsyncSession, user: User) -> None:
+    """Increment failed attempts and lock account if threshold reached."""
+    attempts = (user.failed_login_attempts or 0) + 1  # type: ignore[operator]
+    user.failed_login_attempts = attempts  # type: ignore[assignment]
+
+    if attempts >= settings.MAX_FAILED_LOGIN_ATTEMPTS:
+        user.locked_until = datetime.now(timezone.utc) + timedelta(  # type: ignore[assignment]
+            minutes=settings.ACCOUNT_LOCKOUT_MINUTES,
+        )
+    await db.flush()
+
+
+async def _reset_failed_login(db: AsyncSession, user: User) -> None:
+    """Clear failed login counter on successful auth."""
+    if user.failed_login_attempts:  # type: ignore[truthy-bool]
+        user.failed_login_attempts = 0  # type: ignore[assignment]
+        user.locked_until = None  # type: ignore[assignment]
+        await db.flush()
+
+
 async def authenticate_user(
     db: AsyncSession,
     email: str,
@@ -108,30 +142,45 @@ async def authenticate_user(
 
     Returns generic error to prevent email enumeration.
     SSO-only users (no password hash) cannot use password login.
+    Enforces account lockout after MAX_FAILED_LOGIN_ATTEMPTS.
     """
     user = await get_user_by_email(db, email)
     if user is None:
         raise AuthenticationError("Invalid email or password")
+
+    # Check account lockout
+    if _is_account_locked(user):
+        raise AuthenticationError("Account is temporarily locked due to too many failed login attempts")
+
     if not user.hashed_password:  # type: ignore[truthy-bool]
-        # SSO-only user — no password set
         raise AuthenticationError("Invalid email or password")
+
     if not verify_password(password, user.hashed_password):  # type: ignore[arg-type]
+        await _record_failed_login(db, user)
         raise AuthenticationError("Invalid email or password")
+
     if not user.is_active:  # type: ignore[truthy-bool]
         raise AuthenticationError("Account is deactivated")
+
+    # Successful login — reset counter
+    await _reset_failed_login(db, user)
     return user
 
 
-def create_token_pair(user_id: UUID) -> tuple[str, str]:
-    """Create access + refresh token pair."""
-    access = create_access_token(subject=str(user_id))
-    refresh = create_refresh_token(subject=str(user_id))
+def create_token_pair(user_id: UUID, token_version: int = 0) -> tuple[str, str]:
+    """Create access + refresh token pair.
+
+    Embeds token_version so tokens can be invalidated on password change.
+    """
+    access = create_access_token(subject=str(user_id), token_version=token_version)
+    refresh = create_refresh_token(subject=str(user_id), token_version=token_version)
     return access, refresh
 
 
-def decode_refresh_token(token: str) -> str:
-    """Decode and validate a refresh token. Returns user_id.
+def decode_refresh_token(token: str) -> tuple[str, int]:
+    """Decode and validate a refresh token.
 
+    Returns (user_id, token_version).
     Validates type="refresh" to prevent token confusion attacks.
     """
     try:
@@ -147,4 +196,17 @@ def decode_refresh_token(token: str) -> str:
     if user_id is None:
         raise AuthenticationError("Invalid refresh token: missing subject")
 
-    return user_id
+    token_version: int = payload.get("ver", 0)
+    return user_id, token_version
+
+
+async def change_password(
+    db: AsyncSession,
+    user: User,
+    new_password: str,
+) -> None:
+    """Change a user's password and invalidate all existing tokens."""
+    user.hashed_password = get_password_hash(new_password)  # type: ignore[assignment]
+    user.token_version = (user.token_version or 0) + 1  # type: ignore[operator, assignment]
+    user.password_changed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+    await db.flush()

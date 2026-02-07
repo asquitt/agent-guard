@@ -63,6 +63,15 @@ async def get_current_user(
             detail="Account is deactivated",
         )
 
+    # Validate token_version — password change invalidates all tokens
+    token_ver: int = payload.get("ver", 0)
+    user_ver: int = user.token_version or 0  # type: ignore[assignment]
+    if token_ver < user_ver:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been invalidated (password changed)",
+        )
+
     return user
 
 

@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.auth import limiter
 from app.core.config import settings
+from app.core.security import RequestSizeLimitMiddleware, SecurityHeadersMiddleware
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -20,13 +21,19 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
-# CORS middleware
+# Security middleware (outermost = applied last, so order matters)
+# 1. Security headers on every response
+app.add_middleware(SecurityHeadersMiddleware)
+# 2. Request body size limit (10 MB)
+app.add_middleware(RequestSizeLimitMiddleware)
+
+# CORS middleware — explicit methods/headers instead of wildcards
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.ALLOWED_METHODS,
+    allow_headers=settings.ALLOWED_HEADERS,
 )
 
 

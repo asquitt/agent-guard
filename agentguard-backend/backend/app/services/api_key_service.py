@@ -3,6 +3,7 @@
 # pyright: reportCallIssue=false
 
 import hashlib
+import hmac as _hmac
 import secrets
 from datetime import datetime
 from uuid import UUID
@@ -10,6 +11,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundError
 from app.models.user import ApiKey
 from app.services.audit_service import write_audit
@@ -23,8 +25,16 @@ def generate_api_key() -> str:
 
 
 def hash_api_key(key: str) -> str:
-    """SHA-256 hash of the full API key."""
-    return hashlib.sha256(key.encode()).hexdigest()
+    """HMAC-SHA256 hash of the full API key.
+
+    Keyed hash prevents brute-force if DB is compromised
+    (attacker also needs SECRET_KEY).
+    """
+    return _hmac.new(
+        settings.SECRET_KEY.encode(),
+        key.encode(),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def extract_prefix(key: str) -> str:

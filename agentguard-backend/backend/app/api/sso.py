@@ -264,7 +264,8 @@ async def saml_acs(
     user = await sso_service.find_or_create_sso_user(
         db, UUID(str(org.id)), email, full_name, "saml", name_id
     )
-    access, refresh = auth_service.create_token_pair(UUID(str(user.id)))
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
 
     return RedirectResponse(
         url=f"{settings.FRONTEND_URL}/sso/callback?token={access}&refresh={refresh}",
@@ -324,7 +325,8 @@ async def oidc_callback(
     user = await sso_service.find_or_create_sso_user(
         db, UUID(str(org.id)), email, full_name, "oidc", external_id
     )
-    ag_access, ag_refresh = auth_service.create_token_pair(UUID(str(user.id)))
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    ag_access, ag_refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
 
     return RedirectResponse(
         url=f"{settings.FRONTEND_URL}/sso/callback?token={ag_access}&refresh={ag_refresh}",

@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org_from_api_key, get_db
+from app.core.deps import get_client_ip, get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
 from app.models.user import Organization
 from app.services import proxy_service
@@ -49,6 +49,17 @@ async def _parse_and_resolve(
 
     Returns: (body, path, endpoint, api_key, proxy_req)
     """
+    # IP allowlist check (if configured in org settings)
+    org_settings: dict[str, Any] = org.settings or {}  # type: ignore[assignment]
+    ip_allowlist: list[str] = org_settings.get("ip_allowlist", [])
+    if ip_allowlist:
+        client_ip = get_client_ip(request)
+        if client_ip not in ip_allowlist:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"IP {client_ip} is not in the organization's allowlist",
+            )
+
     # Parse body
     raw_body = await request.body()
     try:

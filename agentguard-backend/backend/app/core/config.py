@@ -25,9 +25,22 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ENCRYPTION_KEY: str = ""  # 64-char hex string (32 bytes) for AES-256-GCM field encryption
+
+    # Authentication hardening
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 10
+    ACCOUNT_LOCKOUT_MINUTES: int = 30
+    PASSWORD_MIN_LENGTH: int = 12
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ALLOWED_METHODS: List[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    ALLOWED_HEADERS: List[str] = [
+        "Authorization",
+        "Content-Type",
+        "X-AgentGuard-Endpoint-Id",
+        "X-Request-ID",
+    ]
 
     # LLM Providers (customer traffic proxy)
     OPENAI_API_KEY: str = ""

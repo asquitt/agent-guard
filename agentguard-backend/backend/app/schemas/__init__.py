@@ -16,6 +16,7 @@ from app.schemas.api_keys import (
     ApiKeyUpdateRequest,
 )
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     MeResponse,
     OrgResponse,
@@ -91,6 +92,7 @@ __all__ = [
     "IncidentListResponse",
     "IncidentResponse",
     "IncidentUpdateRequest",
+    "ChangePasswordRequest",
     "LoginRequest",
     "MeResponse",
     "MemberListResponse",

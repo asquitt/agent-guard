@@ -12,6 +12,7 @@ from app.core.deps import get_client_ip, get_current_user, get_db
 from app.core.exceptions import AuthenticationError, ValidationError
 from app.models.user import Organization, User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     MeResponse,
     OrgResponse,
@@ -56,7 +57,8 @@ async def register(
 
     await write_audit(db, UUID(str(_org.id)), UUID(str(user.id)), "auth.register", "user", UUID(str(user.id)), ip_address=client_ip)
     await db.commit()
-    access, refresh = auth_service.create_token_pair(UUID(str(user.id)))
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
     return TokenResponse(access_token=access, refresh_token=refresh)
 
 
@@ -70,19 +72,24 @@ async def login(
     """Authenticate user and return tokens.
 
     Returns 403 if the user's organization enforces SSO.
+    Returns 401 with lockout message if too many failed attempts.
     """
     client_ip = get_client_ip(request)
     try:
         user = await auth_service.authenticate_user(db=db, email=body.email, password=body.password)
-    except AuthenticationError:
+    except AuthenticationError as e:
         # Log failed login attempt if user exists
         existing = await auth_service.get_user_by_email(db, body.email)
         if existing is not None:
             await write_audit(db, UUID(str(existing.org_id)), UUID(str(existing.id)), "auth.login_failed", "user", UUID(str(existing.id)), ip_address=client_ip)
-            await db.commit()
+        await db.commit()
+
+        detail = "Invalid email or password"
+        if "locked" in str(e):
+            detail = str(e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail=detail,
         )
 
     # Check SSO enforcement on the user's org
@@ -99,7 +106,8 @@ async def login(
 
     await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip)
     await db.commit()
-    access, refresh = auth_service.create_token_pair(UUID(str(user.id)))
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
     return TokenResponse(access_token=access, refresh_token=refresh)
 
 
@@ -110,9 +118,13 @@ async def refresh_token(
     body: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    """Refresh access token using refresh token."""
+    """Refresh access token using refresh token.
+
+    Implements token rotation — returns a new refresh token each time.
+    Validates token_version to enforce session invalidation on password change.
+    """
     try:
-        user_id = auth_service.decode_refresh_token(body.refresh_token)
+        user_id, token_ver = auth_service.decode_refresh_token(body.refresh_token)
     except AuthenticationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -127,8 +139,50 @@ async def refresh_token(
             detail="User not found or deactivated",
         )
 
-    access, new_refresh = auth_service.create_token_pair(UUID(str(user.id)))
+    # Validate token_version — password change invalidates all tokens
+    current_ver: int = user.token_version or 0  # type: ignore[assignment]
+    if token_ver < current_ver:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been invalidated (password changed)",
+        )
+
+    # Token rotation — issue new pair with current version
+    access, new_refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=current_ver)
     return TokenResponse(access_token=access, refresh_token=new_refresh)
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK, response_model=TokenResponse)
+async def change_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Change password. Invalidates all existing sessions and returns new tokens."""
+    client_ip = get_client_ip(request)
+
+    # Verify current password
+    if not current_user.hashed_password:  # type: ignore[truthy-bool]
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SSO users cannot change password")
+
+    from app.core.auth import verify_password
+
+    if not verify_password(body.current_password, current_user.hashed_password):  # type: ignore[arg-type]
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+
+    await auth_service.change_password(db, current_user, body.new_password)
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "auth.password_changed", "user", UUID(str(current_user.id)),
+        ip_address=client_ip,
+    )
+    await db.commit()
+
+    # Return new tokens with updated version
+    token_ver: int = current_user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(current_user.id)), token_version=token_ver)
+    return TokenResponse(access_token=access, refresh_token=refresh)
 
 
 @router.get("/me", response_model=MeResponse)
