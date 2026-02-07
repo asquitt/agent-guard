@@ -48,6 +48,7 @@ export {
   createComplianceReport,
   listComplianceReports,
   getReportDownloadUrl,
+  getFrameworkScores,
 } from './compliance';
 export {
   getRetentionPolicy,

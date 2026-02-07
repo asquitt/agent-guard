@@ -279,6 +279,23 @@ export interface ComplianceReport {
   completedAt: string | null;
 }
 
+// Compliance Framework Scoring
+export interface RequirementScore {
+  name: string;
+  violationCount: number;
+}
+
+export interface FrameworkScore {
+  name: string;
+  totalViolations: number;
+  requirements: RequirementScore[];
+}
+
+export interface ComplianceScores {
+  frameworks: FrameworkScore[];
+  periodDays: number;
+}
+
 // Data Retention
 export interface RetentionPolicy {
   id: UUID;

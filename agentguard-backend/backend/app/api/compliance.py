@@ -17,10 +17,36 @@ from app.schemas.compliance import (
     ComplianceReportListResponse,
     ComplianceReportRequest,
     ComplianceReportResponse,
+    ComplianceScoreResponse,
+    FrameworkScore,
+    RequirementScore,
 )
 from app.services import audit_service
+from app.services.compliance_scoring_service import get_framework_scores
 
 router = APIRouter()
+
+
+@router.get("/frameworks/scores", response_model=ComplianceScoreResponse)
+async def get_scores(
+    days: int = Query(default=30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> ComplianceScoreResponse:
+    """Get compliance framework violation scores."""
+    raw = await get_framework_scores(db, UUID(str(org.id)), days)
+    frameworks = [
+        FrameworkScore(
+            name=fw["name"],
+            total_violations=fw["total_violations"],
+            requirements=[
+                RequirementScore(name=r["name"], violation_count=r["violation_count"])
+                for r in fw["requirements"]
+            ],
+        )
+        for fw in raw["frameworks"]
+    ]
+    return ComplianceScoreResponse(frameworks=frameworks, period_days=raw["period_days"])
 
 
 @router.get("/audit-logs", response_model=AuditLogListResponse)

@@ -57,3 +57,28 @@ class ComplianceReportResponse(BaseModel):
 class ComplianceReportListResponse(BaseModel):
     items: list[ComplianceReportResponse]
     total: int
+
+
+# --- Compliance Framework Scoring ---
+
+
+class RequirementScore(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    violation_count: int = Field(serialization_alias="violationCount")
+
+
+class FrameworkScore(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    total_violations: int = Field(serialization_alias="totalViolations")
+    requirements: list[RequirementScore]
+
+
+class ComplianceScoreResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    frameworks: list[FrameworkScore]
+    period_days: int = Field(serialization_alias="periodDays")

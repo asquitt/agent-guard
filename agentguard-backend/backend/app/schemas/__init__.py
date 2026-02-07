@@ -31,6 +31,11 @@ from app.schemas.billing import (
     CheckoutSessionResponse,
     CustomerPortalResponse,
 )
+from app.schemas.compliance import (
+    ComplianceScoreResponse,
+    FrameworkScore,
+    RequirementScore,
+)
 from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
 from app.schemas.dashboard import (
     DashboardMetricsResponse,
@@ -63,6 +68,9 @@ from app.schemas.proxy_endpoints import (
 )
 
 __all__ = [
+    "ComplianceScoreResponse",
+    "FrameworkScore",
+    "RequirementScore",
     "CostAnalyticsResponse",
     "CostByModel",
     "DailyCost",

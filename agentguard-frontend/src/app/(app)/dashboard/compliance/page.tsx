@@ -10,6 +10,7 @@ import {
   listComplianceReports,
   getReportDownloadUrl,
 } from '@/lib/api';
+import { ComplianceScoreboard } from '@/components/dashboard/ComplianceScoreboard';
 import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
 
 const PAGE_SIZE = 20;
@@ -28,8 +29,10 @@ export default function CompliancePage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Compliance</h1>
-        <p className="text-sm text-gray-500">Audit logs, chain verification, and compliance reports</p>
+        <p className="text-sm text-gray-500">Framework scoreboard, audit logs, and compliance reports</p>
       </div>
+
+      <ComplianceScoreboard />
 
       <div className="mb-6 flex gap-1 rounded-lg bg-gray-100 p-1">
         <button

@@ -7,6 +7,7 @@ import type {
   AuditLogFilters,
   ChainVerification,
   ComplianceReport,
+  ComplianceScores,
   PaginatedResponse,
 } from '@/types';
 import { apiFetch, buildQueryString } from './client';
@@ -35,6 +36,10 @@ export async function createComplianceReport(data: {
 
 export async function listComplianceReports(): Promise<PaginatedResponse<ComplianceReport>> {
   return apiFetch<PaginatedResponse<ComplianceReport>>('/compliance/reports');
+}
+
+export async function getFrameworkScores(days = 30): Promise<ComplianceScores> {
+  return apiFetch<ComplianceScores>(`/compliance/frameworks/scores?days=${days}`);
 }
 
 export function getReportDownloadUrl(reportId: string): string {
