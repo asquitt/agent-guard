@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentguard"
+version = "0.1.0"
+description = "AgentGuard Python SDK — AI agent incident response for financial services"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+dependencies = ["httpx>=0.24.0"]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.18.0"]
