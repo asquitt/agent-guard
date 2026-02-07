@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.models.enums import UserRole
+from typing import Any
+
+from app.models.enums import ROLE_PERMISSIONS, UserRole
 from app.models.user import Organization, User
 
 security = HTTPBearer()
@@ -95,13 +97,35 @@ async def get_current_org(
 async def require_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Require that the current user has admin role."""
-    if current_user.role != UserRole.ADMIN.value:  # type: ignore[arg-type]
+    """Require that the current user has admin or owner role."""
+    role = str(current_user.role)
+    if role not in (UserRole.ADMIN.value, UserRole.OWNER.value):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
     return current_user
+
+
+def require_permission(permission: str) -> Any:
+    """Create a dependency that checks for a specific permission.
+
+    Usage: `user: User = Depends(require_permission("incidents:write"))`
+    """
+
+    async def _check(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        role = str(current_user.role)
+        perms = ROLE_PERMISSIONS.get(role, frozenset())
+        if permission not in perms:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing permission: {permission}",
+            )
+        return current_user
+
+    return _check
 
 
 def get_client_ip(request: Request) -> str:

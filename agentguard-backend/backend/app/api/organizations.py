@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db, require_admin
+from app.models.enums import ROLE_PERMISSIONS, UserRole
 from app.models.user import Organization, User
 from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
 
@@ -124,3 +125,65 @@ async def update_ip_allowlist(
     await db.commit()
     await db.refresh(org)
     return IpAllowlistResponse(ips=unique, enabled=len(unique) > 0)
+
+
+class RoleInfo(BaseModel):
+    role: str
+    permissions: list[str]
+
+
+class RolesResponse(BaseModel):
+    roles: list[RoleInfo]
+
+
+@router.get("/roles", response_model=RolesResponse)
+async def list_roles() -> RolesResponse:
+    """List all available roles and their permissions."""
+    return RolesResponse(
+        roles=[
+            RoleInfo(role=role.value, permissions=sorted(ROLE_PERMISSIONS.get(role.value, frozenset())))
+            for role in UserRole
+        ]
+    )
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role: str
+
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        valid = [r.value for r in UserRole]
+        if v not in valid:
+            raise ValueError(f"role must be one of: {', '.join(valid)}")
+        return v
+
+
+@router.patch("/current/members/{user_id}", response_model=MemberResponse)
+async def update_member_role(
+    user_id: str,
+    body: UpdateMemberRoleRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+    org: Organization = Depends(get_current_org),
+) -> MemberResponse:
+    """Update a member's role. Admin/owner only."""
+    from uuid import UUID as PyUUID
+
+    result = await db.execute(
+        select(User).where(User.id == PyUUID(user_id), User.org_id == org.id)
+    )
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+    valid_roles = [r.value for r in UserRole]
+    if body.role not in valid_roles:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}",
+        )
+
+    member.role = body.role  # type: ignore[assignment]
+    await db.commit()
+    await db.refresh(member)
+    return MemberResponse.model_validate(member)

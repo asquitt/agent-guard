@@ -4,9 +4,86 @@ import enum
 
 
 class UserRole(str, enum.Enum):
+    OWNER = "owner"
     ADMIN = "admin"
+    SECURITY_ANALYST = "security_analyst"
+    COMPLIANCE_OFFICER = "compliance_officer"
+    DEVELOPER = "developer"
     MEMBER = "member"
     VIEWER = "viewer"
+
+
+class Permission(str, enum.Enum):
+    # Incidents
+    INCIDENTS_READ = "incidents:read"
+    INCIDENTS_WRITE = "incidents:write"
+    # Detectors
+    DETECTORS_READ = "detectors:read"
+    DETECTORS_WRITE = "detectors:write"
+    # Agents
+    AGENTS_READ = "agents:read"
+    AGENTS_WRITE = "agents:write"
+    # Compliance
+    COMPLIANCE_READ = "compliance:read"
+    COMPLIANCE_WRITE = "compliance:write"
+    # Alerts
+    ALERTS_READ = "alerts:read"
+    ALERTS_WRITE = "alerts:write"
+    # API Keys
+    API_KEYS_READ = "api_keys:read"
+    API_KEYS_WRITE = "api_keys:write"
+    # Settings / Org
+    SETTINGS_READ = "settings:read"
+    SETTINGS_WRITE = "settings:write"
+    # Billing
+    BILLING_READ = "billing:read"
+    BILLING_WRITE = "billing:write"
+    # Proxy endpoints
+    PROXY_WRITE = "proxy:write"
+
+
+# Role → permissions mapping
+ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+    UserRole.OWNER.value: frozenset(p.value for p in Permission),
+    UserRole.ADMIN.value: frozenset(p.value for p in Permission),
+    UserRole.SECURITY_ANALYST.value: frozenset([
+        Permission.INCIDENTS_READ.value, Permission.INCIDENTS_WRITE.value,
+        Permission.DETECTORS_READ.value, Permission.DETECTORS_WRITE.value,
+        Permission.AGENTS_READ.value,
+        Permission.COMPLIANCE_READ.value,
+        Permission.ALERTS_READ.value, Permission.ALERTS_WRITE.value,
+    ]),
+    UserRole.COMPLIANCE_OFFICER.value: frozenset([
+        Permission.INCIDENTS_READ.value,
+        Permission.DETECTORS_READ.value,
+        Permission.AGENTS_READ.value,
+        Permission.COMPLIANCE_READ.value, Permission.COMPLIANCE_WRITE.value,
+        Permission.ALERTS_READ.value,
+        Permission.SETTINGS_READ.value,
+    ]),
+    UserRole.DEVELOPER.value: frozenset([
+        Permission.INCIDENTS_READ.value,
+        Permission.DETECTORS_READ.value, Permission.DETECTORS_WRITE.value,
+        Permission.AGENTS_READ.value, Permission.AGENTS_WRITE.value,
+        Permission.API_KEYS_READ.value, Permission.API_KEYS_WRITE.value,
+        Permission.PROXY_WRITE.value,
+    ]),
+    UserRole.MEMBER.value: frozenset([
+        Permission.INCIDENTS_READ.value, Permission.INCIDENTS_WRITE.value,
+        Permission.DETECTORS_READ.value,
+        Permission.AGENTS_READ.value,
+        Permission.COMPLIANCE_READ.value,
+        Permission.ALERTS_READ.value,
+        Permission.API_KEYS_READ.value,
+    ]),
+    UserRole.VIEWER.value: frozenset([
+        Permission.INCIDENTS_READ.value,
+        Permission.DETECTORS_READ.value,
+        Permission.AGENTS_READ.value,
+        Permission.COMPLIANCE_READ.value,
+        Permission.ALERTS_READ.value,
+    ]),
+}
 
 
 class PlanTier(str, enum.Enum):
