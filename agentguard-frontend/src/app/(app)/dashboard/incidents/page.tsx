@@ -143,6 +143,7 @@ export default function IncidentsPage() {
           <option value="loop">Loop</option>
           <option value="prompt_injection">Prompt Injection</option>
           <option value="prompt_extraction">Prompt Extraction</option>
+          <option value="toxicity">Toxicity & Bias</option>
         </select>
       </div>
 

@@ -11,6 +11,7 @@ from app.services.detection.loop import LoopDetector
 from app.services.detection.pii import PIIDetector
 from app.services.detection.prompt_extraction import PromptExtractionDetector
 from app.services.detection.prompt_injection import PromptInjectionDetector
+from app.services.detection.toxicity import ToxicityDetector
 from app.services.detection.types import DetectionAction, DetectionResult
 
 # Categories that run synchronously (can block/redact)
@@ -29,6 +30,7 @@ ASYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.HALLUCINATION.value,
         DetectorCategory.COST_ANOMALY.value,
         DetectorCategory.LOOP.value,
+        DetectorCategory.TOXICITY.value,
     }
 )
 
@@ -92,6 +94,7 @@ _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
     DetectorCategory.HALLUCINATION.value: HallucinationDetector(),
     DetectorCategory.COST_ANOMALY.value: CostAnomalyDetector(),
     DetectorCategory.LOOP.value: LoopDetector(),
+    DetectorCategory.TOXICITY.value: ToxicityDetector(),
 }
 
 

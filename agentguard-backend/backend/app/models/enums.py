@@ -47,6 +47,7 @@ class DetectorCategory(str, enum.Enum):
     LOOP = "loop"
     PROMPT_INJECTION = "prompt_injection"
     PROMPT_EXTRACTION = "prompt_extraction"
+    TOXICITY = "toxicity"
 
 
 class ActionMode(str, enum.Enum):
