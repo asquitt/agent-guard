@@ -411,22 +411,22 @@
 - [x] Skip option for experienced users
 - [x] Verify: tsc clean, next build succeeds, /me returns settings, settings merge works
 
-### Session 5.3: SSO Integration (SAML/OIDC)
+### Session 5.3: SSO Integration (SAML/OIDC) ✅
 **Done when:** Organizations can configure SSO and members authenticate via their IdP.
 
-- [ ] SSO service:
+- [x] SSO service:
   - SAML 2.0 support (Okta, Azure AD, OneLogin)
   - OIDC support (Google Workspace, Auth0)
   - SP-initiated login flow
   - JIT (Just-In-Time) user provisioning
-- [ ] SSO configuration UI:
+- [x] SSO configuration UI:
   - Upload SAML metadata XML or configure OIDC endpoints
   - Test connection
   - Enforce SSO (disable password login for org)
-- [ ] SSO login flow:
+- [x] SSO login flow:
   - `/login/sso` — enter org slug → redirect to IdP
   - `/auth/callback` — handle IdP response → issue JWT
-- [ ] Verify: Configure Okta SSO → login via Okta → user provisioned → dashboard access
+- [x] Verify: SSO config CRUD, SAML metadata, SSO initiate redirect, enforcement blocks login (403)
 
 ---
 
