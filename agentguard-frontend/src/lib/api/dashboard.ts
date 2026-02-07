@@ -39,3 +39,29 @@ export interface ProviderComparisonData {
 export async function getProviderComparison(days: number = 30): Promise<ProviderComparisonData> {
   return apiFetch<ProviderComparisonData>(`/dashboard/provider-comparison?days=${days}`);
 }
+
+export interface TimeSeriesBucket {
+  bucket: string;
+  incidents: number;
+  requests: number;
+  avgLatencyMs: number | null;
+  totalCostUsd: number;
+  totalTokens: number;
+  detections: number;
+  errorCount: number;
+}
+
+export interface TimeSeriesData {
+  buckets: TimeSeriesBucket[];
+  granularity: string;
+  periodDays: number;
+}
+
+export async function getTimeSeries(
+  days: number = 7,
+  granularity: string = 'auto',
+): Promise<TimeSeriesData> {
+  return apiFetch<TimeSeriesData>(
+    `/dashboard/time-series?days=${days}&granularity=${granularity}`,
+  );
+}

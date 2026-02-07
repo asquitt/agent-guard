@@ -16,8 +16,8 @@ export {
   createCustomerPortal,
 } from './billing';
 export { getCostAnalytics } from './cost-analytics';
-export { getDashboardMetrics, getSlaMetrics, getDetectionEfficacy, getProviderComparison } from './dashboard';
-export type { ProviderPerformance, ProviderComparisonData } from './dashboard';
+export { getDashboardMetrics, getSlaMetrics, getDetectionEfficacy, getProviderComparison, getTimeSeries } from './dashboard';
+export type { ProviderPerformance, ProviderComparisonData, TimeSeriesBucket, TimeSeriesData } from './dashboard';
 export {
   listIncidents,
   getIncident,

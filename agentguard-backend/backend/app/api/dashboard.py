@@ -208,3 +208,123 @@ async def get_provider_comparison(
         )
 
     return ProviderComparisonResponse(providers=providers, period_days=days)
+
+
+# ---------------------------------------------------------------------------
+# Time-Series Analytics
+# ---------------------------------------------------------------------------
+
+
+class TimeSeriesBucket(BaseModel):
+    """A single time bucket with aggregated metrics."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    bucket: str  # ISO datetime string
+    incidents: int = 0
+    requests: int = 0
+    avg_latency_ms: float | None = Field(default=None, serialization_alias="avgLatencyMs")
+    total_cost_usd: float = Field(default=0.0, serialization_alias="totalCostUsd")
+    total_tokens: int = Field(default=0, serialization_alias="totalTokens")
+    detections: int = 0
+    error_count: int = Field(default=0, serialization_alias="errorCount")
+
+
+class TimeSeriesResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    buckets: list[TimeSeriesBucket]
+    granularity: str
+    period_days: int = Field(serialization_alias="periodDays")
+
+
+@router.get("/time-series", response_model=TimeSeriesResponse)
+async def get_time_series(
+    days: int = Query(default=7, ge=1, le=365),
+    granularity: str = Query(default="auto", regex="^(hourly|daily|auto)$"),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> TimeSeriesResponse:
+    """Get time-series analytics data bucketed by hour or day."""
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    org_id = UUID(str(org.id))
+
+    # Auto-select granularity: hourly for <=3 days, daily otherwise
+    if granularity == "auto":
+        granularity = "hourly" if days <= 3 else "daily"
+
+    trunc_fn = func.date_trunc("hour" if granularity == "hourly" else "day", ProxyRequest.created_at)
+    incident_trunc = func.date_trunc("hour" if granularity == "hourly" else "day", Incident.created_at)
+
+    # Request metrics by bucket
+    req_result = await db.execute(
+        select(
+            trunc_fn.label("bucket"),
+            func.count(ProxyRequest.id).label("requests"),
+            func.avg(cast(ProxyRequest.latency_ms, Float)).label("avg_latency"),
+            func.coalesce(func.sum(ProxyRequest.cost_usd), 0).label("total_cost"),
+            func.coalesce(
+                func.sum(ProxyRequest.input_tokens) + func.sum(ProxyRequest.output_tokens), 0
+            ).label("total_tokens"),
+            func.count(case((ProxyRequest.status_code >= 400, 1))).label("errors"),
+        )
+        .where(ProxyRequest.org_id == org_id, ProxyRequest.created_at >= cutoff)
+        .group_by(trunc_fn)
+        .order_by(trunc_fn)
+    )
+    req_rows = {str(r.bucket): r for r in req_result.all()}
+
+    # Incident counts by bucket
+    inc_result = await db.execute(
+        select(
+            incident_trunc.label("bucket"),
+            func.count(Incident.id).label("incidents"),
+        )
+        .where(Incident.org_id == org_id, Incident.created_at >= cutoff)
+        .group_by(incident_trunc)
+        .order_by(incident_trunc)
+    )
+    inc_map: dict[str, int] = {str(r.bucket): r.incidents for r in inc_result.all()}
+
+    # Detection counts (incidents are detections)
+    det_result = await db.execute(
+        select(
+            incident_trunc.label("bucket"),
+            func.count(Incident.id).label("detections"),
+        )
+        .where(
+            Incident.org_id == org_id,
+            Incident.created_at >= cutoff,
+            Incident.detector_id.is_not(None),
+        )
+        .group_by(incident_trunc)
+        .order_by(incident_trunc)
+    )
+    det_map: dict[str, int] = {str(r.bucket): r.detections for r in det_result.all()}
+
+    # Merge all buckets
+    all_keys = sorted(set(list(req_rows.keys()) + list(inc_map.keys()) + list(det_map.keys())))
+
+    buckets = []
+    for key in all_keys:
+        req = req_rows.get(key)
+        buckets.append(
+            TimeSeriesBucket(
+                bucket=key,
+                incidents=inc_map.get(key, 0),
+                requests=req.requests if req else 0,
+                avg_latency_ms=round(req.avg_latency, 1) if req and req.avg_latency else None,
+                total_cost_usd=round(float(req.total_cost or 0), 4) if req else 0.0,
+                total_tokens=int(req.total_tokens or 0) if req else 0,
+                detections=det_map.get(key, 0),
+                error_count=int(req.errors or 0) if req else 0,
+            )
+        )
+
+    return TimeSeriesResponse(
+        buckets=buckets,
+        granularity=granularity,
+        period_days=days,
+    )
