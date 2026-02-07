@@ -1,9 +1,34 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { getDashboardMetrics } from '@/lib/api';
+import type { RecentIncidentSummary } from '@/types';
+import { clsx } from 'clsx';
+
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: 'bg-danger-50 text-danger-600',
+  high: 'bg-red-50 text-red-600',
+  medium: 'bg-warning-50 text-warning-600',
+  low: 'bg-blue-50 text-blue-600',
+  info: 'bg-gray-100 text-gray-600',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  open: 'bg-danger-50 text-danger-600',
+  acknowledged: 'bg-warning-50 text-warning-600',
+  resolved: 'bg-success-50 text-success-600',
+  dismissed: 'bg-gray-100 text-gray-500',
+};
 
 export default function DashboardPage() {
-  const { user, organization } = useAuth();
+  const { user } = useAuth();
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['dashboard', 'metrics'],
+    queryFn: getDashboardMetrics,
+    refetchInterval: 30_000,
+  });
 
   return (
     <div>
@@ -14,52 +39,212 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Metric cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Total Requests" value="—" />
-        <MetricCard label="Active Incidents" value="—" />
-        <MetricCard label="Detection Rate" value="—" />
-        <MetricCard label="Avg Latency" value="—" />
+        <MetricCard
+          label="Total Incidents"
+          value={isLoading ? '—' : String(metrics?.totalIncidents ?? 0)}
+        />
+        <MetricCard
+          label="Open Incidents"
+          value={isLoading ? '—' : String(metrics?.openIncidents ?? 0)}
+          highlight={!!metrics?.openIncidents}
+        />
+        <SeverityBreakdownCard
+          items={metrics?.incidentsBySeverity ?? []}
+          isLoading={isLoading}
+        />
+        <StatusBreakdownCard
+          items={metrics?.incidentsByStatus ?? []}
+          isLoading={isLoading}
+        />
       </div>
 
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          Getting Started
-        </h2>
-        <div className="space-y-3 text-sm text-gray-600">
-          <p>
-            <span className="font-medium text-gray-900">1.</span> Create a proxy
-            endpoint to route your LLM traffic through AgentGuard
-          </p>
-          <p>
-            <span className="font-medium text-gray-900">2.</span> Configure
-            detectors for hallucination, PII, compliance, cost, and loop detection
-          </p>
-          <p>
-            <span className="font-medium text-gray-900">3.</span> Set up alert
-            destinations (Slack, PagerDuty, email) for real-time notifications
-          </p>
-          <p>
-            <span className="font-medium text-gray-900">4.</span> Generate an API
-            key and point your LLM SDK to{' '}
-            <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
-              {typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/proxy
-            </code>
-          </p>
+      {/* Recent incidents */}
+      <div className="mt-8 rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Recent Incidents
+          </h2>
+          <Link
+            href="/dashboard/incidents"
+            className="text-sm font-medium text-primary-600 hover:text-primary-700"
+          >
+            View all
+          </Link>
         </div>
-      </div>
 
-      <div className="mt-4 text-xs text-gray-400">
-        Organization: {organization?.name} ({organization?.planTier} plan)
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          </div>
+        ) : metrics?.recentIncidents.length ? (
+          <IncidentTable incidents={metrics.recentIncidents} />
+        ) : (
+          <EmptyState />
+        )}
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+      <p
+        className={clsx(
+          'mt-1 text-2xl font-semibold',
+          highlight ? 'text-danger-600' : 'text-gray-900',
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SeverityBreakdownCard({
+  items,
+  isLoading,
+}: {
+  items: { severity: string; count: number }[];
+  isLoading: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <p className="mb-2 text-sm text-gray-500">By Severity</p>
+      {isLoading ? (
+        <p className="text-lg text-gray-400">—</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-400">No data</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span
+              key={item.severity}
+              className={clsx(
+                'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                SEVERITY_COLORS[item.severity] ?? 'bg-gray-100 text-gray-600',
+              )}
+            >
+              {item.severity} {item.count}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBreakdownCard({
+  items,
+  isLoading,
+}: {
+  items: { status: string; count: number }[];
+  isLoading: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <p className="mb-2 text-sm text-gray-500">By Status</p>
+      {isLoading ? (
+        <p className="text-lg text-gray-400">—</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-400">No data</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span
+              key={item.status}
+              className={clsx(
+                'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                STATUS_COLORS[item.status] ?? 'bg-gray-100 text-gray-600',
+              )}
+            >
+              {item.status} {item.count}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IncidentTable({
+  incidents,
+}: {
+  incidents: RecentIncidentSummary[];
+}) {
+  return (
+    <table className="w-full">
+      <thead>
+        <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+          <th className="px-6 py-3">Title</th>
+          <th className="px-6 py-3">Category</th>
+          <th className="px-6 py-3">Severity</th>
+          <th className="px-6 py-3">Status</th>
+          <th className="px-6 py-3">Created</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100">
+        {incidents.map((inc) => (
+          <tr key={inc.id} className="hover:bg-gray-50">
+            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+              <Link
+                href={`/dashboard/incidents/${inc.id}`}
+                className="hover:text-primary-600"
+              >
+                {inc.title}
+              </Link>
+            </td>
+            <td className="px-6 py-3 text-sm text-gray-600">
+              {inc.category.replace('_', ' ')}
+            </td>
+            <td className="px-6 py-3">
+              <span
+                className={clsx(
+                  'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                  SEVERITY_COLORS[inc.severity] ?? 'bg-gray-100 text-gray-600',
+                )}
+              >
+                {inc.severity}
+              </span>
+            </td>
+            <td className="px-6 py-3">
+              <span
+                className={clsx(
+                  'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                  STATUS_COLORS[inc.status] ?? 'bg-gray-100 text-gray-600',
+                )}
+              >
+                {inc.status}
+              </span>
+            </td>
+            <td className="px-6 py-3 text-sm text-gray-500">
+              {new Date(inc.createdAt).toLocaleString()}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="px-6 py-12 text-center">
+      <p className="text-sm text-gray-500">No incidents yet</p>
+      <p className="mt-1 text-xs text-gray-400">
+        Incidents will appear here as your LLM traffic is analyzed
+      </p>
     </div>
   );
 }

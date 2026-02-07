@@ -10,3 +10,4 @@ export {
   getMeApi,
   logoutApi,
 } from './auth';
+export { getDashboardMetrics } from './dashboard';

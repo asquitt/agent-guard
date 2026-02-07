@@ -111,6 +111,34 @@ export interface ProxyRequest {
   createdAt: string;
 }
 
+// Dashboard
+export interface IncidentCountByStatus {
+  status: string;
+  count: number;
+}
+
+export interface IncidentCountBySeverity {
+  severity: string;
+  count: number;
+}
+
+export interface RecentIncidentSummary {
+  id: UUID;
+  title: string;
+  severity: string;
+  status: string;
+  category: string;
+  createdAt: string;
+}
+
+export interface DashboardMetrics {
+  totalIncidents: number;
+  openIncidents: number;
+  incidentsByStatus: IncidentCountByStatus[];
+  incidentsBySeverity: IncidentCountBySeverity[];
+  recentIncidents: RecentIncidentSummary[];
+}
+
 // Paginated response wrapper
 export interface PaginatedResponse<T> {
   items: T[];
