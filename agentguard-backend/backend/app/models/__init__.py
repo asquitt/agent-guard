@@ -7,25 +7,24 @@ Missing imports will cause tables to be marked for DROP.
 Run `python scripts/check_model_imports.py` after any model changes.
 """
 
-# from app.models.user import User, Organization, ApiKey
-# from app.models.proxy import ProxyEndpoint, ProxyRequest
-# from app.models.incident import Incident, IncidentAction
-# from app.models.detector import Detector, DetectorRule
-# from app.models.alert import Alert, AlertDestination
-# from app.models.audit import AuditLog
+from app.models.alert import Alert, AlertDestination
+from app.models.audit import AuditLog
+from app.models.detector import Detector, DetectorRule
+from app.models.incident import Incident, IncidentAction
+from app.models.proxy import ProxyEndpoint, ProxyRequest
+from app.models.user import ApiKey, Organization, User
 
 __all__ = [
-    # Uncomment as models are implemented:
-    # "User",
-    # "Organization",
-    # "ApiKey",
-    # "ProxyEndpoint",
-    # "ProxyRequest",
-    # "Incident",
-    # "IncidentAction",
-    # "Detector",
-    # "DetectorRule",
-    # "Alert",
-    # "AlertDestination",
-    # "AuditLog",
+    "Alert",
+    "AlertDestination",
+    "ApiKey",
+    "AuditLog",
+    "Detector",
+    "DetectorRule",
+    "Incident",
+    "IncidentAction",
+    "Organization",
+    "ProxyEndpoint",
+    "ProxyRequest",
+    "User",
 ]
