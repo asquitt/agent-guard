@@ -120,6 +120,7 @@ from app.api import (  # noqa: E402
     reviews,
     shadow_ai,
     sso,
+    threat_intel,
     traces,
     webhooks,
     websocket,
@@ -145,5 +146,6 @@ app.include_router(playground.router, prefix="/api/v1/playground", tags=["Playgr
 app.include_router(reviews.router, prefix="/api/v1/reviews", tags=["Reviews"])
 app.include_router(shadow_ai.router, prefix="/api/v1/shadow-ai", tags=["Shadow AI"])
 app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["Conversations"])
+app.include_router(threat_intel.router, prefix="/api/v1/threat-intel", tags=["Threat Intelligence"])
 app.include_router(traces.router, prefix="/api/v1/traces", tags=["Traces"])
 app.include_router(websocket.router, tags=["WebSocket"])

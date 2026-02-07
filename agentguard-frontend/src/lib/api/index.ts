@@ -83,5 +83,7 @@ export { listDiscoveries, getShadowAISummary, updateDiscoveryStatus } from './sh
 export type { ShadowAIDiscovery, ShadowAIFilters, ShadowAISummary } from './shadow-ai';
 export { listConversations, getConversation, getConversationStats, updateConversationStatus } from './conversations';
 export type { Conversation, ConversationDetail, ConversationTurn, ConversationFilters, ConversationStats } from './conversations';
+export { listIndicators, getThreatSummary, createIndicator, updateIndicator, seedPlatformIndicators } from './threat-intel';
+export type { ThreatIndicator, ThreatIndicatorFilters, ThreatSummary, IndicatorCreateData } from './threat-intel';
 export { listTraces, getTrace } from './traces';
 export type { TraceListItem, TraceDetail, TraceFilters } from './traces';

@@ -21,6 +21,7 @@ from app.models.retention_policy import RetentionPolicy
 from app.models.review_queue import ReviewItem
 from app.models.shadow_ai import ShadowAIDiscovery
 from app.models.sso_config import SSOConfig
+from app.models.threat_intel import ThreatIndicator
 from app.models.stripe_event import StripeEvent
 from app.models.user import ApiKey, Organization, User
 
@@ -47,5 +48,6 @@ __all__ = [
     "ShadowAIDiscovery",
     "SSOConfig",
     "StripeEvent",
+    "ThreatIndicator",
     "User",
 ]
