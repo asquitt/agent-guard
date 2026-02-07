@@ -14,7 +14,8 @@ from app.schemas.dashboard import (
     IncidentCountByStatus,
     RecentIncidentSummary,
 )
-from app.services import cost_analytics_service, dashboard_service
+from app.schemas.health import ProviderSlaMetrics, SlaMetricsResponse
+from app.services import cost_analytics_service, dashboard_service, sla_service
 
 router = APIRouter()
 
@@ -50,5 +51,26 @@ async def get_cost_analytics(
         total_output_tokens=data["total_output_tokens"],
         cost_by_model=[CostByModel(**m) for m in data["cost_by_model"]],
         daily_costs=[DailyCost(**d) for d in data["daily_costs"]],
+        period_days=data["period_days"],
+    )
+
+
+@router.get("/sla-metrics", response_model=SlaMetricsResponse)
+async def get_sla_metrics(
+    days: int = Query(default=30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SlaMetricsResponse:
+    """Get SLA metrics (latency percentiles, error rates, throughput)."""
+    data = await sla_service.get_sla_metrics(db, UUID(str(org.id)), days)
+    return SlaMetricsResponse(
+        total_requests=data["total_requests"],
+        error_rate=data["error_rate"],
+        p50_latency_ms=data["p50_latency_ms"],
+        p95_latency_ms=data["p95_latency_ms"],
+        p99_latency_ms=data["p99_latency_ms"],
+        avg_throughput_per_hour=data["avg_throughput_per_hour"],
+        uptime_pct=data["uptime_pct"],
+        by_provider=[ProviderSlaMetrics(**p) for p in data["by_provider"]],
         period_days=data["period_days"],
     )

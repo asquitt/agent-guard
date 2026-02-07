@@ -87,6 +87,18 @@ async def readiness_check():
     )
 
 
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check with per-component status and response times."""
+    from fastapi.responses import JSONResponse
+
+    from app.services import health_service
+
+    result = await health_service.check_components()
+    status_code = 200 if result["status"] == "healthy" else 503
+    return JSONResponse(status_code=status_code, content=result)
+
+
 # Router registration
 from app.api import (  # noqa: E402
     alerts,

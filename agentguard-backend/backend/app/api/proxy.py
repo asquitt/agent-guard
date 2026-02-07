@@ -2,7 +2,9 @@
 
 # pyright: reportGeneralTypeIssues=false
 
+import asyncio
 import json
+import logging
 import time
 from typing import Any
 from uuid import UUID
@@ -12,6 +14,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_client_ip, get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
 from app.models.user import Organization
@@ -21,6 +24,8 @@ from app.services.detection import pipeline as detection_pipeline
 from app.services.detection.types import DetectionAction
 from app.services.providers import get_adapter
 from app.services.providers.base import ProviderAdapter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -183,19 +188,38 @@ async def _handle_non_streaming(
 
     # Run detection pipeline on successful responses
     if response.status_code == 200:
-        decision = await detection_pipeline.run_sync_detectors(
-            db, org_id, json.dumps(body), response_text, response_model, UUID(str(proxy_req.id)),
-        )
-        await db.commit()
+        timeout_s = settings.SYNC_DETECTION_TIMEOUT_MS / 1000.0
 
-        if decision.action == DetectionAction.BLOCK:
-            return JSONResponse(
-                status_code=403,
-                content={"error": {"message": "Request blocked by security policy", "type": "detection_blocked"}},
+        if settings.DEGRADED_MODE_ENABLED and timeout_s > 0:
+            try:
+                decision = await asyncio.wait_for(
+                    detection_pipeline.run_sync_detectors(
+                        db, org_id, json.dumps(body), response_text, response_model, UUID(str(proxy_req.id)),
+                    ),
+                    timeout=timeout_s,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Sync detection timed out after %dms for org %s — degraded mode, queuing all async",
+                    settings.SYNC_DETECTION_TIMEOUT_MS, org_id,
+                )
+                decision = None
+        else:
+            decision = await detection_pipeline.run_sync_detectors(
+                db, org_id, json.dumps(body), response_text, response_model, UUID(str(proxy_req.id)),
             )
-        if decision.action == DetectionAction.REDACT and decision.modified_response:
-            response_data = json.loads(decision.modified_response)
 
+        if decision is not None:
+            await db.commit()
+            if decision.action == DetectionAction.BLOCK:
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": {"message": "Request blocked by security policy", "type": "detection_blocked"}},
+                )
+            if decision.action == DetectionAction.REDACT and decision.modified_response:
+                response_data = json.loads(decision.modified_response)
+
+        # Always queue async detectors (handles both normal + degraded mode)
         await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return JSONResponse(

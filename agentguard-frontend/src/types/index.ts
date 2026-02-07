@@ -221,6 +221,41 @@ export interface CostAnalytics {
   periodDays: number;
 }
 
+// SLA Metrics
+export interface ProviderSlaMetrics {
+  provider: string;
+  totalRequests: number;
+  errorRate: number;
+  p50LatencyMs: number | null;
+  p95LatencyMs: number | null;
+  p99LatencyMs: number | null;
+}
+
+export interface SlaMetrics {
+  totalRequests: number;
+  errorRate: number;
+  p50LatencyMs: number | null;
+  p95LatencyMs: number | null;
+  p99LatencyMs: number | null;
+  avgThroughputPerHour: number;
+  uptimePct: number;
+  byProvider: ProviderSlaMetrics[];
+  periodDays: number;
+}
+
+// Component Health
+export interface ComponentHealth {
+  name: string;
+  status: string;
+  responseTimeMs: number | null;
+  message: string | null;
+}
+
+export interface DetailedHealth {
+  status: string;
+  components: ComponentHealth[];
+}
+
 // Billing
 export interface BillingStatus {
   planTier: string;

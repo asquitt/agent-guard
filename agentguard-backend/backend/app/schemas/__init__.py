@@ -37,6 +37,12 @@ from app.schemas.compliance import (
     RequirementScore,
 )
 from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
+from app.schemas.health import (
+    ComponentHealth,
+    DetailedHealthResponse,
+    ProviderSlaMetrics,
+    SlaMetricsResponse,
+)
 from app.schemas.dashboard import (
     DashboardMetricsResponse,
     IncidentCountBySeverity,
@@ -121,4 +127,8 @@ __all__ = [
     "RegisterRequest",
     "TokenResponse",
     "UserResponse",
+    "ComponentHealth",
+    "DetailedHealthResponse",
+    "ProviderSlaMetrics",
+    "SlaMetricsResponse",
 ]

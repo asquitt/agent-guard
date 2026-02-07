@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     RETENTION_BATCH_SIZE: int = 500
     RETENTION_DRY_RUN: bool = False
 
+    # Proxy HA / Degraded Mode
+    SYNC_DETECTION_TIMEOUT_MS: int = 500  # max time for sync detectors before fallback to async
+    DEGRADED_MODE_ENABLED: bool = True  # enable automatic degraded mode on detection timeout
+
     # Sentry
     SENTRY_DSN: str = ""
 
