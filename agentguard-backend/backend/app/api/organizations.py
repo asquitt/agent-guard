@@ -218,3 +218,139 @@ async def list_environments(
         ],
         current=current,
     )
+
+
+# ---------------------------------------------------------------------------
+# Data Residency & Sovereignty Controls
+# ---------------------------------------------------------------------------
+
+AVAILABLE_REGIONS = [
+    {"id": "us-east-1", "name": "US East", "country": "US"},
+    {"id": "us-west-2", "name": "US West", "country": "US"},
+    {"id": "eu-west-1", "name": "EU (Ireland)", "country": "IE"},
+    {"id": "eu-central-1", "name": "EU (Frankfurt)", "country": "DE"},
+    {"id": "ap-southeast-1", "name": "APAC (Singapore)", "country": "SG"},
+    {"id": "ap-northeast-1", "name": "APAC (Tokyo)", "country": "JP"},
+]
+
+
+class RegionInfo(BaseModel):
+    id: str
+    name: str
+    country: str
+
+
+class ProviderRegionRule(BaseModel):
+    """Which providers are allowed in a given region."""
+
+    region: str
+    allowed_providers: list[str] = Field(serialization_alias="allowedProviders")
+
+
+class DataResidencyConfig(BaseModel):
+    """Data residency settings for the organization."""
+
+    primary_region: str = Field(serialization_alias="primaryRegion")
+    allowed_regions: list[str] = Field(serialization_alias="allowedRegions")
+    provider_rules: list[ProviderRegionRule] = Field(serialization_alias="providerRules")
+    enforce_residency: bool = Field(serialization_alias="enforceResidency")
+    encryption_key_id: str | None = Field(default=None, serialization_alias="encryptionKeyId")
+
+
+class DataResidencyResponse(BaseModel):
+    config: DataResidencyConfig
+    available_regions: list[RegionInfo] = Field(serialization_alias="availableRegions")
+
+
+class DataResidencyUpdateRequest(BaseModel):
+    """Update data residency settings."""
+
+    primary_region: str | None = Field(default=None, alias="primaryRegion")
+    allowed_regions: list[str] | None = Field(default=None, alias="allowedRegions")
+    provider_rules: list[ProviderRegionRule] | None = Field(default=None, alias="providerRules")
+    enforce_residency: bool | None = Field(default=None, alias="enforceResidency")
+    encryption_key_id: str | None = Field(default=None, alias="encryptionKeyId")
+
+
+@router.get("/current/data-residency", response_model=DataResidencyResponse)
+async def get_data_residency(
+    org: Organization = Depends(get_current_org),
+) -> DataResidencyResponse:
+    """Get the organization's data residency configuration."""
+    settings_dict: dict = org.settings or {}  # type: ignore[assignment]
+    residency = settings_dict.get("data_residency", {})
+
+    config = DataResidencyConfig(
+        primary_region=residency.get("primary_region", "us-east-1"),
+        allowed_regions=residency.get("allowed_regions", ["us-east-1"]),
+        provider_rules=[
+            ProviderRegionRule(**r) for r in residency.get("provider_rules", [])
+        ],
+        enforce_residency=residency.get("enforce_residency", False),
+        encryption_key_id=residency.get("encryption_key_id"),
+    )
+    return DataResidencyResponse(
+        config=config,
+        available_regions=[RegionInfo(**r) for r in AVAILABLE_REGIONS],
+    )
+
+
+@router.put("/current/data-residency", response_model=DataResidencyResponse)
+async def update_data_residency(
+    body: DataResidencyUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+    org: Organization = Depends(get_current_org),
+) -> DataResidencyResponse:
+    """Update data residency settings. Admin only."""
+    settings_dict: dict = org.settings or {}  # type: ignore[assignment]
+    current = settings_dict.get("data_residency", {})
+
+    valid_region_ids = {r["id"] for r in AVAILABLE_REGIONS}
+
+    update = body.model_dump(exclude_unset=True, by_alias=False)
+    if "primary_region" in update:
+        if update["primary_region"] not in valid_region_ids:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid region: {update['primary_region']}",
+            )
+        current["primary_region"] = update["primary_region"]
+
+    if "allowed_regions" in update:
+        invalid = set(update["allowed_regions"]) - valid_region_ids
+        if invalid:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid regions: {', '.join(invalid)}",
+            )
+        current["allowed_regions"] = update["allowed_regions"]
+
+    if "provider_rules" in update and update["provider_rules"] is not None:
+        current["provider_rules"] = [
+            r.model_dump(by_alias=False) for r in body.provider_rules  # type: ignore[union-attr]
+        ]
+
+    if "enforce_residency" in update:
+        current["enforce_residency"] = update["enforce_residency"]
+
+    if "encryption_key_id" in update:
+        current["encryption_key_id"] = update["encryption_key_id"]
+
+    org.settings = {**settings_dict, "data_residency": current}  # type: ignore[assignment]
+    await db.commit()
+    await db.refresh(org)
+
+    config = DataResidencyConfig(
+        primary_region=current.get("primary_region", "us-east-1"),
+        allowed_regions=current.get("allowed_regions", ["us-east-1"]),
+        provider_rules=[
+            ProviderRegionRule(**r) for r in current.get("provider_rules", [])
+        ],
+        enforce_residency=current.get("enforce_residency", False),
+        encryption_key_id=current.get("encryption_key_id"),
+    )
+    return DataResidencyResponse(
+        config=config,
+        available_regions=[RegionInfo(**r) for r in AVAILABLE_REGIONS],
+    )

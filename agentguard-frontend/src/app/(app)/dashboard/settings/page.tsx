@@ -84,6 +84,18 @@ export default function SettingsPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/settings/data-residency"
+          className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
+        >
+          <h3 className="text-sm font-semibold text-gray-700">Data Residency & Sovereignty</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Configure data regions, provider restrictions, and encryption for regulatory compliance
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600">
+            Configure Residency &rarr;
+          </p>
+        </Link>
+        <Link
           href="/dashboard/settings/retention"
           className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
         >

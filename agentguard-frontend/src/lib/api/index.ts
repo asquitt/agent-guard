@@ -42,7 +42,8 @@ export {
   listAlerts,
 } from './alerts';
 export { createProxyEndpoint } from './proxy-endpoints';
-export { updateOrgSettings } from './organizations';
+export { updateOrgSettings, getDataResidency, updateDataResidency } from './organizations';
+export type { DataResidencyConfig, DataResidencyResponse, RegionInfo } from './organizations';
 export {
   listAuditLogs,
   verifyAuditChain,
