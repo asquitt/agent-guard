@@ -1,59 +1,162 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
-import { apiFetch } from '@/lib/api';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import type { AuthUser, AuthOrganization } from '@/types';
+import {
+  loginApi,
+  registerApi,
+  refreshTokenApi,
+  getMeApi,
+  logoutApi,
+} from '@/lib/api';
+import { ApiError } from '@/lib/api/client';
 
-interface User {
-  id: string;
-  email: string;
-  organizationId: string;
+interface AuthState {
+  user: AuthUser | null;
+  organization: AuthOrganization | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
-interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
+interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  register: (
+    email: string,
+    password: string,
+    fullName: string,
+    orgName: string,
+  ) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const TOKEN_KEY = 'accessToken';
+const REFRESH_KEY = 'refreshToken';
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      // TODO: Validate token and fetch user
-      setIsLoading(false);
-    } else {
-      setIsLoading(false);
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function storeTokens(access: string, refresh: string) {
+  localStorage.setItem(TOKEN_KEY, access);
+  localStorage.setItem(REFRESH_KEY, refresh);
+}
+
+function clearTokens() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    organization: null,
+    isLoading: true,
+    isAuthenticated: false,
+  });
+
+  const fetchMe = useCallback(async () => {
+    try {
+      const me = await getMeApi();
+      setState({
+        user: me.user,
+        organization: me.organization,
+        isLoading: false,
+        isAuthenticated: true,
+      });
+    } catch (err) {
+      // Try refresh if access token expired
+      if (err instanceof ApiError && err.status === 401) {
+        const refresh = localStorage.getItem(REFRESH_KEY);
+        if (refresh) {
+          try {
+            const tokens = await refreshTokenApi(refresh);
+            storeTokens(tokens.access_token, tokens.refresh_token);
+            const me = await getMeApi();
+            setState({
+              user: me.user,
+              organization: me.organization,
+              isLoading: false,
+              isAuthenticated: true,
+            });
+            return;
+          } catch {
+            // Refresh also failed — clear everything
+          }
+        }
+      }
+      clearTokens();
+      setState({
+        user: null,
+        organization: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await apiFetch<{ access_token: string; user: User }>(
-      '/auth/login',
-      {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }
-    );
-    localStorage.setItem('accessToken', response.access_token);
-    setUser(response.user);
-  };
+  useEffect(() => {
+    const token = getStoredToken();
+    if (token) {
+      fetchMe();
+    } else {
+      setState((s) => ({ ...s, isLoading: false }));
+    }
+  }, [fetchMe]);
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const tokens = await loginApi(email, password);
+      storeTokens(tokens.access_token, tokens.refresh_token);
+      await fetchMe();
+    },
+    [fetchMe],
   );
+
+  const register = useCallback(
+    async (
+      email: string,
+      password: string,
+      fullName: string,
+      orgName: string,
+    ) => {
+      const tokens = await registerApi(email, password, fullName, orgName);
+      storeTokens(tokens.access_token, tokens.refresh_token);
+      await fetchMe();
+    },
+    [fetchMe],
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // Ignore — clear tokens regardless
+    }
+    clearTokens();
+    setState({
+      user: null,
+      organization: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
+  }, []);
+
+  const value = useMemo(
+    () => ({ ...state, login, register, logout }),
+    [state, login, register, logout],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

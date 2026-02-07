@@ -5,19 +5,34 @@
 // Common types
 export type UUID = string;
 
-// User and Organization
-export interface User {
+// Auth
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface AuthUser {
   id: UUID;
   email: string;
   name: string;
+  role: string;
   organizationId: UUID;
+  isActive: boolean;
   createdAt: string;
 }
 
-export interface Organization {
+export interface AuthOrganization {
   id: UUID;
   name: string;
+  slug: string;
+  planTier: string;
   createdAt: string;
+}
+
+export interface MeResponse {
+  user: AuthUser;
+  organization: AuthOrganization;
 }
 
 // Incidents
@@ -94,4 +109,10 @@ export interface ProxyRequest {
   outputTokens: number;
   latencyMs: number;
   createdAt: string;
+}
+
+// Paginated response wrapper
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
 }
