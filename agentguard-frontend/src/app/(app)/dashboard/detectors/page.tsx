@@ -13,6 +13,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   compliance: 'Compliance',
   cost_anomaly: 'Cost Anomaly',
   loop: 'Loop Detection',
+  prompt_injection: 'Prompt Injection',
+  prompt_extraction: 'Prompt Extraction',
 };
 
 const MODE_COLORS: Record<string, string> = {

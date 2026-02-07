@@ -141,6 +141,8 @@ export default function IncidentsPage() {
           <option value="compliance">Compliance</option>
           <option value="cost_anomaly">Cost Anomaly</option>
           <option value="loop">Loop</option>
+          <option value="prompt_injection">Prompt Injection</option>
+          <option value="prompt_extraction">Prompt Extraction</option>
         </select>
       </div>
 

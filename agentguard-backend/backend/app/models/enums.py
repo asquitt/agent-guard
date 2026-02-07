@@ -46,6 +46,7 @@ class DetectorCategory(str, enum.Enum):
     COST_ANOMALY = "cost_anomaly"
     LOOP = "loop"
     PROMPT_INJECTION = "prompt_injection"
+    PROMPT_EXTRACTION = "prompt_extraction"
 
 
 class ActionMode(str, enum.Enum):
