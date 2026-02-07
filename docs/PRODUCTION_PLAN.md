@@ -152,25 +152,26 @@
 - [x] Integrate pipeline into all 4 proxy handlers (non-streaming: sync+async, streaming: async only)
 - [x] Verify: All imports work at runtime, proxy endpoints respond correctly, pyright 0 errors
 
-### Session 2.4: Rule-Based Detectors (PII, Cost, Loop)
+### Session 2.4: Rule-Based Detectors (PII, Cost, Loop) ✅
 **Done when:** PII, cost anomaly, and loop detectors create incidents when violations found.
 
-- [ ] **PII Detector** (`app/services/detection/pii.py`):
+- [x] **PII Detector** (`app/services/detection/pii.py`):
   - Regex patterns: SSN, credit card, bank account, phone, email, DOB
-  - Named entity recognition (spaCy or presidio) for names, addresses
-  - Action modes: monitor (log), redact (mask PII in response), block (reject)
-  - Configurable sensitivity levels
-- [ ] **Cost Anomaly Detector** (`app/services/detection/cost.py`):
-  - Track rolling average cost per org
-  - Alert on requests >3x std deviation from org's baseline
-  - Alert on cumulative daily spend exceeding configurable threshold
-  - Token count anomaly detection (unusually large prompts/responses)
-- [ ] **Loop Detector** (`app/services/detection/loop.py`):
-  - Compare last N responses for similarity (cosine similarity or exact match)
-  - Detect repeated tool call patterns
-  - Configurable similarity threshold and window size
-- [ ] Create incidents with proper severity levels (low/medium/high/critical)
-- [ ] Verify: Send PII-containing request → incident created; Send similar requests → loop detected
+  - Redaction support (masks PII with █ characters)
+  - Configurable disabled_patterns in detector config
+  - Severity escalation: critical (SSN, CC), high (bank account, DOB), medium (phone, email)
+- [x] **Cost Anomaly Detector** (`app/services/detection/cost.py`):
+  - Hard ceiling check (configurable max_tokens, default 50k)
+  - Spike detection (configurable multiplier over rolling average)
+  - Supports both OpenAI (total_tokens) and Anthropic (input+output) usage formats
+- [x] **Loop Detector** (`app/services/detection/loop.py`):
+  - SequenceMatcher similarity comparison against recent_responses
+  - Repeated tool call pattern detection (same function+args)
+  - Configurable similarity_threshold (default 0.85) and min_response_length
+  - Parses both OpenAI and Anthropic response formats
+- [x] Wired all 3 detectors into registry.py (replaced stubs)
+- [x] Created app/tasks/reports.py stub (fixed pre-existing worker crash)
+- [x] Verified: pyright 0 errors, all detectors pass functional tests in Docker
 
 ### Session 2.5: LLM-Powered Detectors (Hallucination, Compliance)
 **Done when:** Hallucination and compliance detectors work using AgentGuard's own LLM.

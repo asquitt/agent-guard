@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from app.models.enums import DetectorCategory
 from app.services.detection.base import AsyncDetector, SyncDetector
+from app.services.detection.cost import CostAnomalyDetector
+from app.services.detection.loop import LoopDetector
+from app.services.detection.pii import PIIDetector
 from app.services.detection.types import DetectionAction, DetectionResult
 
 # Categories that run synchronously (can block/redact)
@@ -68,13 +71,21 @@ class _StubAsyncDetector:
         )
 
 
+_SYNC_REGISTRY: dict[str, SyncDetector] = {
+    DetectorCategory.PII_LEAK.value: PIIDetector(),
+}
+
+_ASYNC_REGISTRY: dict[str, AsyncDetector] = {
+    DetectorCategory.COST_ANOMALY.value: CostAnomalyDetector(),
+    DetectorCategory.LOOP.value: LoopDetector(),
+}
+
+
 def get_sync_detector(category: str) -> SyncDetector:
     """Get sync detector implementation for a category."""
-    # Sessions 2.4/2.5 will register real implementations here
-    return _StubSyncDetector(category)
+    return _SYNC_REGISTRY.get(category, _StubSyncDetector(category))
 
 
 def get_async_detector(category: str) -> AsyncDetector:
     """Get async detector implementation for a category."""
-    # Sessions 2.4/2.5 will register real implementations here
-    return _StubAsyncDetector(category)
+    return _ASYNC_REGISTRY.get(category, _StubAsyncDetector(category))
