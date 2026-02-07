@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     RETENTION_BATCH_SIZE: int = 500
     RETENTION_DRY_RUN: bool = False
 
+    # Rate Limiting (per-org sliding window, 0 = disabled)
+    RATE_LIMIT_RPM: int = 0  # requests per minute (0 = no limit)
+    RATE_LIMIT_RPH: int = 0  # requests per hour (0 = no limit)
+    RATE_LIMIT_RPD: int = 0  # requests per day (0 = no limit)
+
     # Proxy HA / Degraded Mode
     SYNC_DETECTION_TIMEOUT_MS: int = 500  # max time for sync detectors before fallback to async
     DEGRADED_MODE_ENABLED: bool = True  # enable automatic degraded mode on detection timeout

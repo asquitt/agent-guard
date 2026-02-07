@@ -21,6 +21,7 @@ from app.models.user import Organization
 from app.services import proxy_service
 from app.services.billing_service import get_request_limit
 from app.services.detection import pipeline as detection_pipeline
+from app.services.rate_limiter import RateLimitExceeded, check_rate_limit, record_request
 from app.services.detection.types import DetectionAction
 from app.services.providers import get_adapter
 from app.services.providers.base import ProviderAdapter
@@ -111,7 +112,30 @@ async def _parse_and_resolve(
             detail=e.message,
         )
 
-    # Usage limit enforcement
+    # Sliding-window rate limit (Redis)
+    org_id_str = str(org.id)
+    org_rate_settings: dict[str, Any] = org_settings.get("rate_limits", {})
+    try:
+        await check_rate_limit(
+            org_id_str,
+            requests_per_minute=org_rate_settings.get("rpm") or settings.RATE_LIMIT_RPM or None,
+            requests_per_hour=org_rate_settings.get("rph") or settings.RATE_LIMIT_RPH or None,
+            requests_per_day=org_rate_settings.get("rpd") or settings.RATE_LIMIT_RPD or None,
+        )
+    except RateLimitExceeded as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": f"Rate limit exceeded: {exc.current}/{exc.limit} per {exc.window}",
+                "limit": exc.limit,
+                "window": exc.window,
+                "current": exc.current,
+                "retry_after": exc.retry_after,
+            },
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
+    # Usage limit enforcement (monthly billing cap)
     limit = get_request_limit(org.plan_tier)  # type: ignore[arg-type]
     current_count = org.monthly_request_count or 0
     if limit is not None and current_count >= limit:
@@ -125,9 +149,10 @@ async def _parse_and_resolve(
             },
         )
 
-    # Increment usage counter
+    # Increment usage counter + record for rate limiting
     org.monthly_request_count = current_count + 1  # type: ignore[assignment]
     await db.flush()
+    await record_request(org_id_str)
 
     return body, path, endpoint, api_key, proxy_req
 
