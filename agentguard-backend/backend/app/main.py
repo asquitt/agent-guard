@@ -110,6 +110,7 @@ from app.api import (  # noqa: E402
     detectors,
     incidents,
     organizations,
+    playground,
     proxy,
     proxy_endpoints,
     retention,
@@ -132,4 +133,5 @@ app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["Compliance"])
 app.include_router(retention.router, prefix="/api/v1/retention", tags=["Retention"])
+app.include_router(playground.router, prefix="/api/v1/playground", tags=["Playground"])
 app.include_router(websocket.router, tags=["WebSocket"])

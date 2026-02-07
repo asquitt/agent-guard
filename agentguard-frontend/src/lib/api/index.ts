@@ -56,3 +56,4 @@ export {
   listArchives,
   retrieveArchive,
 } from './retention';
+export { testDetectors, getPlaygroundCategories } from './playground';

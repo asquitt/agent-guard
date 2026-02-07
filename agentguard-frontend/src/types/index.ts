@@ -367,3 +367,32 @@ export interface PaginatedResponse<T> {
   items: T[];
   total: number;
 }
+
+// Playground
+export interface PlaygroundTestRequest {
+  request_text: string;
+  response_text: string;
+  categories: string[];
+  model?: string;
+}
+
+export interface PlaygroundDetectionHit {
+  detected: boolean;
+  severity: string;
+  category: string;
+  action: string;
+  title: string;
+  description: string;
+  details: Record<string, unknown>;
+}
+
+export interface PlaygroundTestResponse {
+  results: PlaygroundDetectionHit[];
+  totalDetections: number;
+  categoriesTested: string[];
+}
+
+export interface PlaygroundCategories {
+  sync: string[];
+  async: string[];
+}

@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Incidents', href: '/dashboard/incidents', icon: '🚨' },
   { label: 'Detectors', href: '/dashboard/detectors', icon: '🔍' },
   { label: 'Alerts', href: '/dashboard/alerts', icon: '🔔' },
+  { label: 'Playground', href: '/dashboard/playground', icon: '🧪' },
   { label: 'API Keys', href: '/dashboard/api-keys', icon: '🔑' },
   { label: 'Billing', href: '/dashboard/billing', icon: '💳' },
   { label: 'Compliance', href: '/dashboard/compliance', icon: '📋' },
