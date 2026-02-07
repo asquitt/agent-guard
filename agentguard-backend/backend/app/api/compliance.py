@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_client_ip, get_current_org, get_current_user, get_db
@@ -177,4 +177,54 @@ async def download_report(
         path=str(report.file_path),
         filename=f"{report.report_type}_{report_id}.csv",
         media_type="text/csv",
+    )
+
+
+@router.get("/audit-logs/export/cef")
+async def export_audit_logs_cef(
+    date_from: datetime | None = Query(None, alias="dateFrom"),
+    date_to: datetime | None = Query(None, alias="dateTo"),
+    limit: int = Query(default=10000, le=50000),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> Response:
+    """Export audit logs in Common Event Format (CEF) for SIEM integration.
+
+    CEF format: CEF:0|AgentGuard|AuditLog|1.0|<action>|<action>|<severity>|<ext>
+    """
+    items, _ = await audit_service.list_audit_logs(
+        db, UUID(str(org.id)), 0, limit, date_from=date_from, date_to=date_to,
+    )
+
+    lines: list[str] = []
+    for entry in items:
+        # CEF severity: 0-3 low, 4-6 medium, 7-8 high, 9-10 critical
+        action = str(entry.action)
+        sev = "3"
+        if "delete" in action or "revoke" in action:
+            sev = "7"
+        elif "failed" in action:
+            sev = "5"
+
+        ext_parts = [
+            f"rt={entry.created_at.isoformat() if entry.created_at is not None else ''}",
+            f"suser={entry.user_id or ''}",
+            f"cs1={entry.resource_type}",
+            f"cs1Label=resourceType",
+            f"cs2={entry.resource_id or ''}",
+            f"cs2Label=resourceId",
+            f"src={entry.ip_address or ''}",
+        ]
+        ext = " ".join(ext_parts)
+
+        line = f"CEF:0|AgentGuard|AuditLog|1.0|{action}|{action}|{sev}|{ext}"
+        lines.append(line)
+
+    content = "\n".join(lines)
+    return Response(
+        content=content,
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": "attachment; filename=audit_logs.cef",
+        },
     )

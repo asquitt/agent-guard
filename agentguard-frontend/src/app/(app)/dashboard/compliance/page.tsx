@@ -9,6 +9,7 @@ import {
   createComplianceReport,
   listComplianceReports,
   getReportDownloadUrl,
+  getCefExportUrl,
 } from '@/lib/api';
 import { ComplianceScoreboard } from '@/components/dashboard/ComplianceScoreboard';
 import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
@@ -129,6 +130,12 @@ function AuditLogTab() {
         >
           {verifyMutation.isPending ? 'Verifying...' : 'Verify Integrity'}
         </button>
+        <a
+          href={getCefExportUrl()}
+          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Export CEF
+        </a>
         {verifyMutation.data && (
           <span
             className={clsx(

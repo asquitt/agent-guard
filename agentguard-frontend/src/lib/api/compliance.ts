@@ -47,3 +47,9 @@ export function getReportDownloadUrl(reportId: string): string {
   const base = process.env.NEXT_PUBLIC_API_URL || '';
   return `${base}/api/v1/compliance/reports/${reportId}/download${token ? `?token=${token}` : ''}`;
 }
+
+export function getCefExportUrl(): string {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const base = process.env.NEXT_PUBLIC_API_URL || '';
+  return `${base}/api/v1/compliance/audit-logs/export/cef${token ? `?token=${token}` : ''}`;
+}

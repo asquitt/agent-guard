@@ -49,6 +49,7 @@ export {
   listComplianceReports,
   getReportDownloadUrl,
   getFrameworkScores,
+  getCefExportUrl,
 } from './compliance';
 export {
   getRetentionPolicy,
