@@ -56,9 +56,7 @@ def send_alerts_for_incident(
     with SessionLocal() as db:
         try:
             # Load incident
-            incident = db.execute(
-                select(Incident).where(Incident.id == incident_id)
-            ).scalar_one_or_none()
+            incident = db.execute(select(Incident).where(Incident.id == incident_id)).scalar_one_or_none()
 
             if incident is None:
                 logger.warning("Incident %s not found, skipping alerts", incident_id)
@@ -83,7 +81,11 @@ def send_alerts_for_incident(
             incident_severity = str(incident.severity)
 
             severity_rank = {
-                "info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4,
+                "info": 0,
+                "low": 1,
+                "medium": 2,
+                "high": 3,
+                "critical": 4,
             }
             inc_rank = severity_rank.get(incident_severity, 0)
 
@@ -129,9 +131,7 @@ def send_alerts_for_incident(
                     sent += 1
                 else:
                     failed += 1
-                    logger.warning(
-                        "Alert delivery failed for dest %s: %s", dest.id, error
-                    )
+                    logger.warning("Alert delivery failed for dest %s: %s", dest.id, error)
 
             db.commit()
 
@@ -140,11 +140,15 @@ def send_alerts_for_incident(
                 try:
                     from app.core.events import publish_event_sync
 
-                    publish_event_sync(str(org_id), "alert.sent", {
-                        "incidentId": str(incident_id),
-                        "sent": sent,
-                        "failed": failed,
-                    })
+                    publish_event_sync(
+                        str(org_id),
+                        "alert.sent",
+                        {
+                            "incidentId": str(incident_id),
+                            "sent": sent,
+                            "failed": failed,
+                        },
+                    )
                 except Exception:
                     logger.exception("Failed to publish alert.sent event")
 
@@ -156,8 +160,6 @@ def send_alerts_for_incident(
             }
 
         except Exception:
-            logger.exception(
-                "Alert task failed for incident %s", incident_id
-            )
+            logger.exception("Alert task failed for incident %s", incident_id)
             db.rollback()
             raise self.retry()

@@ -41,9 +41,7 @@ class Incident(TimestampMixin, Base):
     category = Column(String(50), nullable=False)
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(
-        String(50), nullable=False, default=IncidentStatus.OPEN.value
-    )
+    status = Column(String(50), nullable=False, default=IncidentStatus.OPEN.value)
     action_taken = Column(String(50), nullable=True)
     metadata_ = Column("metadata", JSONB, nullable=False, server_default="{}")
     resolved_at = Column(DateTime(timezone=True), nullable=True)

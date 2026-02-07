@@ -47,14 +47,9 @@ async def list_webhooks(
     org: Organization = Depends(get_current_org),
 ) -> WebhookListResponse:
     """List webhooks for the current org."""
-    items, total = await webhook_service.list_webhooks(
-        db, UUID(str(org.id)), skip, limit
-    )
+    items, total = await webhook_service.list_webhooks(db, UUID(str(org.id)), skip, limit)
     return WebhookListResponse(
-        items=[
-            WebhookResponse(**webhook_service.to_webhook_response(d))
-            for d in items
-        ],
+        items=[WebhookResponse(**webhook_service.to_webhook_response(d)) for d in items],
         total=total,
     )
 

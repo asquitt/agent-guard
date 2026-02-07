@@ -68,37 +68,25 @@ async def list_api_keys(
     limit: int = 50,
 ) -> tuple[list[ApiKey], int]:
     """List API keys for an org with pagination."""
-    count_result = await db.execute(
-        select(func.count(ApiKey.id)).where(ApiKey.org_id == org_id)
-    )
+    count_result = await db.execute(select(func.count(ApiKey.id)).where(ApiKey.org_id == org_id))
     total = count_result.scalar_one()
 
     result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.org_id == org_id)
-        .order_by(ApiKey.created_at.desc())
-        .offset(skip)
-        .limit(limit)
+        select(ApiKey).where(ApiKey.org_id == org_id).order_by(ApiKey.created_at.desc()).offset(skip).limit(limit)
     )
     return list(result.scalars().all()), total
 
 
-async def get_api_key(
-    db: AsyncSession, org_id: UUID, key_id: UUID
-) -> ApiKey:
+async def get_api_key(db: AsyncSession, org_id: UUID, key_id: UUID) -> ApiKey:
     """Get a single API key, scoped to org."""
-    result = await db.execute(
-        select(ApiKey).where(ApiKey.id == key_id, ApiKey.org_id == org_id)
-    )
+    result = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.org_id == org_id))
     api_key = result.scalar_one_or_none()
     if api_key is None:
         raise NotFoundError(f"API key {key_id} not found")
     return api_key
 
 
-async def revoke_api_key(
-    db: AsyncSession, org_id: UUID, key_id: UUID
-) -> ApiKey:
+async def revoke_api_key(db: AsyncSession, org_id: UUID, key_id: UUID) -> ApiKey:
     """Soft-delete (deactivate) an API key."""
     api_key = await get_api_key(db, org_id, key_id)
     api_key.is_active = False  # type: ignore[assignment]
@@ -125,9 +113,7 @@ async def update_api_key(
     return api_key
 
 
-async def get_api_key_by_hash(
-    db: AsyncSession, key_hash: str
-) -> ApiKey | None:
+async def get_api_key_by_hash(db: AsyncSession, key_hash: str) -> ApiKey | None:
     """Look up an API key by its hash. Used for API key auth."""
     result = await db.execute(
         select(ApiKey).where(

@@ -42,11 +42,7 @@ async def list_proxy_endpoints(
     limit: int = 50,
 ) -> tuple[list[ProxyEndpoint], int]:
     """List proxy endpoints for org with pagination."""
-    count_result = await db.execute(
-        select(func.count(ProxyEndpoint.id)).where(
-            ProxyEndpoint.org_id == org_id
-        )
-    )
+    count_result = await db.execute(select(func.count(ProxyEndpoint.id)).where(ProxyEndpoint.org_id == org_id))
     total = count_result.scalar_one()
 
     result = await db.execute(
@@ -59,9 +55,7 @@ async def list_proxy_endpoints(
     return list(result.scalars().all()), total
 
 
-async def get_proxy_endpoint(
-    db: AsyncSession, org_id: UUID, endpoint_id: UUID
-) -> ProxyEndpoint:
+async def get_proxy_endpoint(db: AsyncSession, org_id: UUID, endpoint_id: UUID) -> ProxyEndpoint:
     """Get single proxy endpoint scoped to org."""
     result = await db.execute(
         select(ProxyEndpoint).where(
@@ -99,9 +93,7 @@ async def update_proxy_endpoint(
     return endpoint
 
 
-async def delete_proxy_endpoint(
-    db: AsyncSession, org_id: UUID, endpoint_id: UUID
-) -> None:
+async def delete_proxy_endpoint(db: AsyncSession, org_id: UUID, endpoint_id: UUID) -> None:
     """Hard-delete a proxy endpoint."""
     endpoint = await get_proxy_endpoint(db, org_id, endpoint_id)
     await db.delete(endpoint)

@@ -34,11 +34,13 @@ def _get_sync_redis() -> sync_redis.Redis:
 
 
 def _build_message(event_type: str, data: dict[str, Any]) -> str:
-    return json.dumps({
-        "type": event_type,
-        "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    return json.dumps(
+        {
+            "type": event_type,
+            "data": data,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
 
 async def publish_event(

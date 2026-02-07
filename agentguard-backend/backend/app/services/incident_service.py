@@ -46,12 +46,8 @@ async def list_incidents(
         count_base = count_base.where(Incident.detector_id == UUID(detector_id))
     if search:
         pattern = f"%{search}%"
-        base = base.where(
-            Incident.title.ilike(pattern) | Incident.description.ilike(pattern)
-        )
-        count_base = count_base.where(
-            Incident.title.ilike(pattern) | Incident.description.ilike(pattern)
-        )
+        base = base.where(Incident.title.ilike(pattern) | Incident.description.ilike(pattern))
+        count_base = count_base.where(Incident.title.ilike(pattern) | Incident.description.ilike(pattern))
     if date_from:
         base = base.where(Incident.created_at >= date_from)
         count_base = count_base.where(Incident.created_at >= date_from)
@@ -62,15 +58,11 @@ async def list_incidents(
     count_result = await db.execute(count_base)
     total = count_result.scalar_one()
 
-    result = await db.execute(
-        base.order_by(Incident.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(base.order_by(Incident.created_at.desc()).offset(skip).limit(limit))
     return list(result.scalars().all()), total
 
 
-async def get_incident(
-    db: AsyncSession, org_id: UUID, incident_id: UUID
-) -> Incident:
+async def get_incident(db: AsyncSession, org_id: UUID, incident_id: UUID) -> Incident:
     """Get single incident with actions, scoped to org."""
     result = await db.execute(
         select(Incident)
@@ -115,11 +107,15 @@ async def update_incident_status(
     try:
         from app.core.events import publish_event
 
-        await publish_event(str(org_id), "incident.updated", {
-            "id": str(incident_id),
-            "oldStatus": old_status,
-            "newStatus": new_status,
-        })
+        await publish_event(
+            str(org_id),
+            "incident.updated",
+            {
+                "id": str(incident_id),
+                "oldStatus": old_status,
+                "newStatus": new_status,
+            },
+        )
     except Exception:
         pass
 
@@ -166,20 +162,12 @@ async def get_stats(
 ) -> dict[str, Any]:
     """Get aggregate incident counts by severity, category, and status."""
     sev_q = (
-        select(Incident.severity, func.count(Incident.id))
-        .where(Incident.org_id == org_id)
-        .group_by(Incident.severity)
+        select(Incident.severity, func.count(Incident.id)).where(Incident.org_id == org_id).group_by(Incident.severity)
     )
     cat_q = (
-        select(Incident.category, func.count(Incident.id))
-        .where(Incident.org_id == org_id)
-        .group_by(Incident.category)
+        select(Incident.category, func.count(Incident.id)).where(Incident.org_id == org_id).group_by(Incident.category)
     )
-    stat_q = (
-        select(Incident.status, func.count(Incident.id))
-        .where(Incident.org_id == org_id)
-        .group_by(Incident.status)
-    )
+    stat_q = select(Incident.status, func.count(Incident.id)).where(Incident.org_id == org_id).group_by(Incident.status)
     total_q = select(func.count(Incident.id)).where(Incident.org_id == org_id)
 
     sev_result = await db.execute(sev_q)
@@ -207,11 +195,7 @@ async def bulk_update_status(
     if new_status == "resolved":
         values["resolved_at"] = func.now()
 
-    stmt = (
-        update(Incident)
-        .where(Incident.org_id == org_id, Incident.id.in_(incident_ids))
-        .values(**values)
-    )
+    stmt = update(Incident).where(Incident.org_id == org_id, Incident.id.in_(incident_ids)).values(**values)
 
     result = await db.execute(stmt)
     updated: int = result.rowcount  # type: ignore[assignment]
@@ -236,11 +220,15 @@ async def bulk_update_status(
     try:
         from app.core.events import publish_event
 
-        await publish_event(str(org_id), "incident.updated", {
-            "ids": [str(i) for i in incident_ids],
-            "newStatus": new_status,
-            "updatedCount": updated,
-        })
+        await publish_event(
+            str(org_id),
+            "incident.updated",
+            {
+                "ids": [str(i) for i in incident_ids],
+                "newStatus": new_status,
+                "updatedCount": updated,
+            },
+        )
     except Exception:
         pass
 

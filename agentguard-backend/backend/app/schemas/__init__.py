@@ -1,11 +1,5 @@
 """Pydantic schemas for request/response validation."""
 
-from app.schemas.billing import (
-    BillingStatusResponse,
-    CheckoutSessionRequest,
-    CheckoutSessionResponse,
-    CustomerPortalResponse,
-)
 from app.schemas.alerts import (
     AlertDestinationCreateRequest,
     AlertDestinationListResponse,
@@ -29,6 +23,12 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
     UserResponse,
+)
+from app.schemas.billing import (
+    BillingStatusResponse,
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    CustomerPortalResponse,
 )
 from app.schemas.dashboard import (
     DashboardMetricsResponse,

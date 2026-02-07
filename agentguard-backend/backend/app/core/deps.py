@@ -40,9 +40,7 @@ async def get_current_user(
     )
 
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
@@ -73,9 +71,7 @@ async def get_current_org(
     db: AsyncSession = Depends(get_db),
 ) -> Organization:
     """Get current user's organization for tenant isolation."""
-    result = await db.execute(
-        select(Organization).where(Organization.id == current_user.org_id)
-    )
+    result = await db.execute(select(Organization).where(Organization.id == current_user.org_id))
     org = result.scalar_one_or_none()
 
     if org is None:
@@ -136,9 +132,7 @@ async def get_current_org_from_api_key(
             )
 
     # Resolve org
-    result = await db.execute(
-        select(Organization).where(Organization.id == api_key.org_id)
-    )
+    result = await db.execute(select(Organization).where(Organization.id == api_key.org_id))
     org = result.scalar_one_or_none()
     if org is None:
         raise HTTPException(

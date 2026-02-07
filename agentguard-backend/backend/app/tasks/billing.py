@@ -1,5 +1,7 @@
 """Celery tasks for billing: usage reset and subscription sync."""
 
+# pyright: reportAttributeAccessIssue=false, reportArgumentType=false
+
 import logging
 
 from app.core.config import settings
@@ -47,11 +49,7 @@ def sync_subscription_status() -> dict:
 
     db = SessionLocal()
     try:
-        orgs = (
-            db.query(Organization)
-            .filter(Organization.stripe_subscription_id.isnot(None))
-            .all()
-        )
+        orgs = db.query(Organization).filter(Organization.stripe_subscription_id.isnot(None)).all()
         synced = 0
         for org in orgs:
             try:
@@ -60,9 +58,7 @@ def sync_subscription_status() -> dict:
 
                 from datetime import datetime, timezone
 
-                org.subscription_current_period_end = datetime.fromtimestamp(
-                    sub.current_period_end, tz=timezone.utc
-                )
+                org.subscription_current_period_end = datetime.fromtimestamp(sub.current_period_end, tz=timezone.utc)
 
                 # Update plan tier from current price
                 if sub.items.data:
@@ -73,9 +69,7 @@ def sync_subscription_status() -> dict:
 
                 synced += 1
             except stripe.StripeError as e:
-                logger.warning(
-                    "Failed to sync subscription for org %s: %s", org.id, e
-                )
+                logger.warning("Failed to sync subscription for org %s: %s", org.id, e)
 
         db.commit()
 

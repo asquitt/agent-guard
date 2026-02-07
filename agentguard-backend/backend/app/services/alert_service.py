@@ -44,11 +44,7 @@ async def list_destinations(
     limit: int = 50,
 ) -> tuple[list[AlertDestination], int]:
     """List alert destinations for org."""
-    count_result = await db.execute(
-        select(func.count(AlertDestination.id)).where(
-            AlertDestination.org_id == org_id
-        )
-    )
+    count_result = await db.execute(select(func.count(AlertDestination.id)).where(AlertDestination.org_id == org_id))
     total = count_result.scalar_one()
 
     result = await db.execute(
@@ -61,9 +57,7 @@ async def list_destinations(
     return list(result.scalars().all()), total
 
 
-async def get_destination(
-    db: AsyncSession, org_id: UUID, dest_id: UUID
-) -> AlertDestination:
+async def get_destination(db: AsyncSession, org_id: UUID, dest_id: UUID) -> AlertDestination:
     """Get single alert destination, scoped to org."""
     result = await db.execute(
         select(AlertDestination).where(
@@ -98,9 +92,7 @@ async def update_destination(
     return dest
 
 
-async def delete_destination(
-    db: AsyncSession, org_id: UUID, dest_id: UUID
-) -> None:
+async def delete_destination(db: AsyncSession, org_id: UUID, dest_id: UUID) -> None:
     """Hard-delete an alert destination."""
     dest = await get_destination(db, org_id, dest_id)
     await db.delete(dest)
@@ -129,9 +121,7 @@ async def list_alerts(
     count_result = await db.execute(count_base)
     total = count_result.scalar_one()
 
-    result = await db.execute(
-        base.order_by(Alert.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(base.order_by(Alert.created_at.desc()).offset(skip).limit(limit))
     return list(result.scalars().all()), total
 
 

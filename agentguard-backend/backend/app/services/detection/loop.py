@@ -35,15 +35,9 @@ class LoopDetector:
         proxy_request_id: str,
     ) -> DetectionResult:
         raw_thresh = detector_config.get("similarity_threshold")
-        similarity_threshold = (
-            float(str(raw_thresh)) if raw_thresh is not None
-            else _DEFAULT_SIMILARITY_THRESHOLD
-        )
+        similarity_threshold = float(str(raw_thresh)) if raw_thresh is not None else _DEFAULT_SIMILARITY_THRESHOLD
         raw_min = detector_config.get("min_response_length")
-        min_length = (
-            int(str(raw_min)) if raw_min is not None
-            else _DEFAULT_MIN_RESPONSE_LENGTH
-        )
+        min_length = int(str(raw_min)) if raw_min is not None else _DEFAULT_MIN_RESPONSE_LENGTH
 
         response_text = self._extract_text(response_body)
 
@@ -94,9 +88,7 @@ class LoopDetector:
                 },
             )
 
-        return self._pass(
-            f"Max similarity {max_similarity:.0%} below threshold {similarity_threshold:.0%}"
-        )
+        return self._pass(f"Max similarity {max_similarity:.0%} below threshold {similarity_threshold:.0%}")
 
     # ------------------------------------------------------------------
     # Helpers

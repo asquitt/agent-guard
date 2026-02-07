@@ -19,9 +19,7 @@ def deliver_slack(config: dict[str, Any], payload: dict[str, Any]) -> str | None
         return "Missing webhook_url in config"
 
     severity = payload.get("severity", "info")
-    color = {"critical": "#FF0000", "high": "#FF6600", "medium": "#FFD700"}.get(
-        severity, "#36A64F"
-    )
+    color = {"critical": "#FF0000", "high": "#FF6600", "medium": "#FFD700"}.get(severity, "#36A64F")
 
     body = {
         "attachments": [

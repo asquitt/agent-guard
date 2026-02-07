@@ -50,17 +50,11 @@ async def list_members(
     org: Organization = Depends(get_current_org),
 ) -> MemberListResponse:
     """List organization members with pagination."""
-    count_result = await db.execute(
-        select(func.count(User.id)).where(User.org_id == org.id)
-    )
+    count_result = await db.execute(select(func.count(User.id)).where(User.org_id == org.id))
     total = count_result.scalar_one()
 
     result = await db.execute(
-        select(User)
-        .where(User.org_id == org.id)
-        .order_by(User.created_at.desc())
-        .offset(skip)
-        .limit(limit)
+        select(User).where(User.org_id == org.id).order_by(User.created_at.desc()).offset(skip).limit(limit)
     )
     members = result.scalars().all()
     return MemberListResponse(

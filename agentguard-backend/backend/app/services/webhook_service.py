@@ -26,9 +26,7 @@ _TIMEOUT = 10.0
 def sign_payload(payload: dict[str, Any], secret: str) -> str:
     """Generate HMAC-SHA256 signature for webhook payload."""
     body = json.dumps(payload, sort_keys=True, default=str)
-    return hmac.new(
-        secret.encode(), body.encode(), hashlib.sha256
-    ).hexdigest()
+    return hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
 
 
 async def create_webhook(
@@ -76,15 +74,11 @@ async def list_webhooks(
     )
 
     total = (await db.execute(count_q)).scalar_one()
-    result = await db.execute(
-        base.order_by(AlertDestination.created_at.desc()).offset(skip).limit(limit)
-    )
+    result = await db.execute(base.order_by(AlertDestination.created_at.desc()).offset(skip).limit(limit))
     return list(result.scalars().all()), total
 
 
-async def get_webhook(
-    db: AsyncSession, org_id: UUID, webhook_id: UUID
-) -> AlertDestination:
+async def get_webhook(db: AsyncSession, org_id: UUID, webhook_id: UUID) -> AlertDestination:
     """Get single webhook, scoped to org."""
     result = await db.execute(
         select(AlertDestination).where(
@@ -133,9 +127,7 @@ async def update_webhook(
     return dest
 
 
-async def delete_webhook(
-    db: AsyncSession, org_id: UUID, webhook_id: UUID
-) -> None:
+async def delete_webhook(db: AsyncSession, org_id: UUID, webhook_id: UUID) -> None:
     """Delete a webhook."""
     dest = await get_webhook(db, org_id, webhook_id)
     await db.delete(dest)

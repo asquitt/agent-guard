@@ -55,9 +55,7 @@ async def list_proxy_endpoints(
     org: Organization = Depends(get_current_org),
 ) -> ProxyEndpointListResponse:
     """List proxy endpoints for the current org."""
-    items, total = await proxy_endpoint_service.list_proxy_endpoints(
-        db, UUID(str(org.id)), skip, limit
-    )
+    items, total = await proxy_endpoint_service.list_proxy_endpoints(db, UUID(str(org.id)), skip, limit)
     return ProxyEndpointListResponse(
         items=[ProxyEndpointResponse.model_validate(e) for e in items],
         total=total,
@@ -72,13 +70,9 @@ async def get_proxy_endpoint(
 ) -> ProxyEndpointResponse:
     """Get a single proxy endpoint."""
     try:
-        endpoint = await proxy_endpoint_service.get_proxy_endpoint(
-            db, UUID(str(org.id)), endpoint_id
-        )
+        endpoint = await proxy_endpoint_service.get_proxy_endpoint(db, UUID(str(org.id)), endpoint_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return ProxyEndpointResponse.model_validate(endpoint)
 
 
@@ -102,9 +96,7 @@ async def update_proxy_endpoint(
             config=body.config,
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return ProxyEndpointResponse.model_validate(endpoint)
 
 
@@ -117,10 +109,6 @@ async def delete_proxy_endpoint(
 ) -> None:
     """Delete a proxy endpoint. Admin only."""
     try:
-        await proxy_endpoint_service.delete_proxy_endpoint(
-            db, UUID(str(org.id)), endpoint_id
-        )
+        await proxy_endpoint_service.delete_proxy_endpoint(db, UUID(str(org.id)), endpoint_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)

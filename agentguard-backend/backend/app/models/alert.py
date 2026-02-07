@@ -35,9 +35,7 @@ class AlertDestination(TimestampMixin, Base):
     organization = relationship("Organization", back_populates="alert_destinations")
     alerts = relationship("Alert", back_populates="destination")
 
-    __table_args__ = (
-        Index("ix_alert_destinations_org_id_is_active", "org_id", "is_active"),
-    )
+    __table_args__ = (Index("ix_alert_destinations_org_id_is_active", "org_id", "is_active"),)
 
 
 class Alert(TimestampMixin, Base):
@@ -61,9 +59,7 @@ class Alert(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    status = Column(
-        String(50), nullable=False, default=AlertStatus.PENDING.value
-    )
+    status = Column(String(50), nullable=False, default=AlertStatus.PENDING.value)
     sent_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(Text, nullable=True)
 

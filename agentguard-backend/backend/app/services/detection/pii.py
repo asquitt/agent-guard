@@ -41,9 +41,7 @@ _PII_PATTERNS: list[tuple[str, re.Pattern[str], str, str]] = [
     ),
     (
         "DOB",
-        re.compile(
-            r"\b(?:(?:0[1-9]|1[0-2])[/\-](?:0[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2})\b"
-        ),
+        re.compile(r"\b(?:(?:0[1-9]|1[0-2])[/\-](?:0[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2})\b"),
         IncidentSeverity.HIGH.value,
         "Date of birth detected",
     ),
@@ -99,16 +97,16 @@ class PIIDetector:
             if not matches:
                 continue
 
-            findings.append({
-                "pattern": name,
-                "count": str(len(matches)),
-                "severity": severity,
-                "description": description,
-            })
+            findings.append(
+                {
+                    "pattern": name,
+                    "count": str(len(matches)),
+                    "severity": severity,
+                    "description": description,
+                }
+            )
 
-            if severity_rank.get(severity, 0) > severity_rank.get(
-                highest_severity, 0
-            ):
+            if severity_rank.get(severity, 0) > severity_rank.get(highest_severity, 0):
                 highest_severity = severity
 
             redacted = pattern.sub(_mask_match, redacted)

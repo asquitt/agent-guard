@@ -27,16 +27,12 @@ class Detector(TimestampMixin, Base):
     name = Column(String(255), nullable=False)
     category = Column(String(50), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
-    action_mode = Column(
-        String(50), nullable=False, default=ActionMode.MONITOR.value
-    )
+    action_mode = Column(String(50), nullable=False, default=ActionMode.MONITOR.value)
     config = Column(JSONB, nullable=False, server_default="{}")
 
     # Relationships
     organization = relationship("Organization", back_populates="detectors")
-    rules = relationship(
-        "DetectorRule", back_populates="detector", cascade="all, delete-orphan"
-    )
+    rules = relationship("DetectorRule", back_populates="detector", cascade="all, delete-orphan")
     incidents = relationship("Incident", back_populates="detector")
 
     __table_args__ = (

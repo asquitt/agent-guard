@@ -48,11 +48,7 @@ async def create_detector(
     await db.commit()
 
     # Reload with rules
-    result = await db.execute(
-        select(Detector)
-        .options(selectinload(Detector.rules))
-        .where(Detector.id == detector.id)
-    )
+    result = await db.execute(select(Detector).options(selectinload(Detector.rules)).where(Detector.id == detector.id))
     return result.scalar_one()
 
 
@@ -63,9 +59,7 @@ async def list_detectors(
     limit: int = 50,
 ) -> tuple[list[Detector], int]:
     """List detectors for org with pagination."""
-    count_result = await db.execute(
-        select(func.count(Detector.id)).where(Detector.org_id == org_id)
-    )
+    count_result = await db.execute(select(func.count(Detector.id)).where(Detector.org_id == org_id))
     total = count_result.scalar_one()
 
     result = await db.execute(
@@ -79,9 +73,7 @@ async def list_detectors(
     return list(result.scalars().all()), total
 
 
-async def get_detector(
-    db: AsyncSession, org_id: UUID, detector_id: UUID
-) -> Detector:
+async def get_detector(db: AsyncSession, org_id: UUID, detector_id: UUID) -> Detector:
     """Get single detector with rules, scoped to org."""
     result = await db.execute(
         select(Detector)
@@ -118,9 +110,7 @@ async def update_detector(
     return detector
 
 
-async def delete_detector(
-    db: AsyncSession, org_id: UUID, detector_id: UUID
-) -> None:
+async def delete_detector(db: AsyncSession, org_id: UUID, detector_id: UUID) -> None:
     """Hard-delete a detector (cascades to rules)."""
     detector = await get_detector(db, org_id, detector_id)
     await db.delete(detector)
@@ -153,9 +143,7 @@ async def add_rule(
     return rule
 
 
-async def delete_rule(
-    db: AsyncSession, org_id: UUID, detector_id: UUID, rule_id: UUID
-) -> None:
+async def delete_rule(db: AsyncSession, org_id: UUID, detector_id: UUID, rule_id: UUID) -> None:
     """Delete a rule from a detector."""
     # Verify detector belongs to org
     await get_detector(db, org_id, detector_id)

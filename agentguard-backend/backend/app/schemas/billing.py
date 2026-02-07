@@ -11,12 +11,8 @@ class BillingStatusResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     plan_tier: str = Field(serialization_alias="planTier")
-    subscription_status: str | None = Field(
-        default=None, serialization_alias="subscriptionStatus"
-    )
-    current_period_end: datetime | None = Field(
-        default=None, serialization_alias="currentPeriodEnd"
-    )
+    subscription_status: str | None = Field(default=None, serialization_alias="subscriptionStatus")
+    current_period_end: datetime | None = Field(default=None, serialization_alias="currentPeriodEnd")
     monthly_request_count: int = Field(serialization_alias="monthlyRequestCount")
     request_limit: int | None = Field(serialization_alias="requestLimit")
 

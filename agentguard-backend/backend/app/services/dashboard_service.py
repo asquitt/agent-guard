@@ -15,9 +15,7 @@ async def get_metrics(
 ) -> dict:
     """Aggregate dashboard metrics for an org."""
     # Total incidents
-    total_result = await db.execute(
-        select(func.count(Incident.id)).where(Incident.org_id == org_id)
-    )
+    total_result = await db.execute(select(func.count(Incident.id)).where(Incident.org_id == org_id))
     total_incidents: int = total_result.scalar_one()
 
     # Open incidents
@@ -31,30 +29,19 @@ async def get_metrics(
 
     # Incidents by status
     status_result = await db.execute(
-        select(Incident.status, func.count(Incident.id))
-        .where(Incident.org_id == org_id)
-        .group_by(Incident.status)
+        select(Incident.status, func.count(Incident.id)).where(Incident.org_id == org_id).group_by(Incident.status)
     )
-    incidents_by_status = [
-        {"status": row[0], "count": row[1]} for row in status_result.all()
-    ]
+    incidents_by_status = [{"status": row[0], "count": row[1]} for row in status_result.all()]
 
     # Incidents by severity
     severity_result = await db.execute(
-        select(Incident.severity, func.count(Incident.id))
-        .where(Incident.org_id == org_id)
-        .group_by(Incident.severity)
+        select(Incident.severity, func.count(Incident.id)).where(Incident.org_id == org_id).group_by(Incident.severity)
     )
-    incidents_by_severity = [
-        {"severity": row[0], "count": row[1]} for row in severity_result.all()
-    ]
+    incidents_by_severity = [{"severity": row[0], "count": row[1]} for row in severity_result.all()]
 
     # Recent incidents
     recent_result = await db.execute(
-        select(Incident)
-        .where(Incident.org_id == org_id)
-        .order_by(Incident.created_at.desc())
-        .limit(recent_limit)
+        select(Incident).where(Incident.org_id == org_id).order_by(Incident.created_at.desc()).limit(recent_limit)
     )
     recent_incidents = list(recent_result.scalars().all())
 

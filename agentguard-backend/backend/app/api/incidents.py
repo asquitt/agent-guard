@@ -77,13 +77,9 @@ async def get_incident(
 ) -> IncidentDetailResponse:
     """Get a single incident with its actions."""
     try:
-        incident = await incident_service.get_incident(
-            db, UUID(str(org.id)), incident_id
-        )
+        incident = await incident_service.get_incident(db, UUID(str(org.id)), incident_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return IncidentDetailResponse.model_validate(incident)
 
 
@@ -105,9 +101,7 @@ async def update_incident(
             user_id=UUID(str(current_user.id)),
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return IncidentResponse.model_validate(incident)
 
 
@@ -134,9 +128,7 @@ async def add_action(
             details=body.details,
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return IncidentActionResponse.model_validate(action)
 
 

@@ -65,9 +65,7 @@ async def login(
 ) -> TokenResponse:
     """Authenticate user and return tokens."""
     try:
-        user = await auth_service.authenticate_user(
-            db=db, email=body.email, password=body.password
-        )
+        user = await auth_service.authenticate_user(db=db, email=body.email, password=body.password)
     except AuthenticationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -94,9 +92,7 @@ async def refresh_token(
             detail="Invalid or expired refresh token",
         )
 
-    result = await db.execute(
-        select(User).where(User.id == user_id, User.is_active.is_(True))
-    )
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
@@ -114,9 +110,7 @@ async def get_me(
     db: AsyncSession = Depends(get_db),
 ) -> MeResponse:
     """Get current user profile and organization."""
-    result = await db.execute(
-        select(Organization).where(Organization.id == current_user.org_id)
-    )
+    result = await db.execute(select(Organization).where(Organization.id == current_user.org_id))
     org = result.scalar_one_or_none()
     if org is None:
         raise HTTPException(

@@ -12,17 +12,21 @@ from app.services.detection.pii import PIIDetector
 from app.services.detection.types import DetectionAction, DetectionResult
 
 # Categories that run synchronously (can block/redact)
-SYNC_CATEGORIES: frozenset[str] = frozenset({
-    DetectorCategory.PII_LEAK.value,
-    DetectorCategory.COMPLIANCE.value,
-})
+SYNC_CATEGORIES: frozenset[str] = frozenset(
+    {
+        DetectorCategory.PII_LEAK.value,
+        DetectorCategory.COMPLIANCE.value,
+    }
+)
 
 # Categories that run asynchronously via Celery
-ASYNC_CATEGORIES: frozenset[str] = frozenset({
-    DetectorCategory.HALLUCINATION.value,
-    DetectorCategory.COST_ANOMALY.value,
-    DetectorCategory.LOOP.value,
-})
+ASYNC_CATEGORIES: frozenset[str] = frozenset(
+    {
+        DetectorCategory.HALLUCINATION.value,
+        DetectorCategory.COST_ANOMALY.value,
+        DetectorCategory.LOOP.value,
+    }
+)
 
 
 class _StubSyncDetector:

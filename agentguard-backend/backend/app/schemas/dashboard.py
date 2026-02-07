@@ -40,12 +40,6 @@ class DashboardMetricsResponse(BaseModel):
 
     total_incidents: int = Field(serialization_alias="totalIncidents")
     open_incidents: int = Field(serialization_alias="openIncidents")
-    incidents_by_status: list[IncidentCountByStatus] = Field(
-        serialization_alias="incidentsByStatus"
-    )
-    incidents_by_severity: list[IncidentCountBySeverity] = Field(
-        serialization_alias="incidentsBySeverity"
-    )
-    recent_incidents: list[RecentIncidentSummary] = Field(
-        serialization_alias="recentIncidents"
-    )
+    incidents_by_status: list[IncidentCountByStatus] = Field(serialization_alias="incidentsByStatus")
+    incidents_by_severity: list[IncidentCountBySeverity] = Field(serialization_alias="incidentsBySeverity")
+    recent_incidents: list[RecentIncidentSummary] = Field(serialization_alias="recentIncidents")

@@ -47,16 +47,10 @@ def run_async_detection(
 
     with SessionLocal() as db:
         try:
-            proxy_req = db.execute(
-                select(ProxyRequest).where(
-                    ProxyRequest.id == proxy_request_id
-                )
-            ).scalar_one_or_none()
+            proxy_req = db.execute(select(ProxyRequest).where(ProxyRequest.id == proxy_request_id)).scalar_one_or_none()
 
             if proxy_req is None:
-                logger.warning(
-                    "ProxyRequest %s not found, skipping", proxy_request_id
-                )
+                logger.warning("ProxyRequest %s not found, skipping", proxy_request_id)
                 return {"status": "skipped", "reason": "request_not_found"}
 
             detectors = list(
@@ -86,11 +80,7 @@ def run_async_detection(
             for detector in detectors:
                 category = str(detector.category)
                 action_mode = str(detector.action_mode)
-                config = (
-                    detector.config
-                    if isinstance(detector.config, dict)
-                    else {}
-                )
+                config = detector.config if isinstance(detector.config, dict) else {}
 
                 try:
                     impl = get_async_detector(category)
@@ -104,9 +94,7 @@ def run_async_detection(
                     )
 
                     if result.detected:
-                        effective_action = _ACTION_MODE_MAP.get(
-                            action_mode, DetectionAction.MONITOR
-                        )
+                        effective_action = _ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
                         incident = Incident(
                             org_id=org_id,
                             proxy_request_id=proxy_request_id,
@@ -137,10 +125,14 @@ def run_async_detection(
                 try:
                     from app.core.events import publish_event_sync
 
-                    publish_event_sync(str(org_id), "incident.new", {
-                        "source": "async_detection",
-                        "count": incidents_created,
-                    })
+                    publish_event_sync(
+                        str(org_id),
+                        "incident.new",
+                        {
+                            "source": "async_detection",
+                            "count": incidents_created,
+                        },
+                    )
                 except Exception:
                     logger.exception("Failed to publish incident.new events")
 

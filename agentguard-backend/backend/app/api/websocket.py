@@ -1,12 +1,14 @@
 """WebSocket endpoint for real-time event streaming."""
 
+# pyright: reportAttributeAccessIssue=false, reportUnusedVariable=false
+
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+from typing import Any
 
-import redis.asyncio as aioredis
+import redis.asyncio as aioredis  # type: ignore[import-untyped]
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -22,9 +24,7 @@ router = APIRouter()
 async def _authenticate_ws(token: str) -> tuple[str, str] | None:
     """Validate JWT and return (user_id, org_id) or None on failure."""
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         user_id: str | None = payload.get("sub")
         token_type: str | None = payload.get("type")
         if user_id is None or token_type != "access":
@@ -39,9 +39,7 @@ async def _authenticate_ws(token: str) -> tuple[str, str] | None:
             return None
 
         org_id = str(user.org_id)
-        result = await db.execute(
-            select(Organization.id).where(Organization.id == org_id)
-        )
+        result = await db.execute(select(Organization.id).where(Organization.id == org_id))
         if result.scalar_one_or_none() is None:
             return None
 
@@ -50,7 +48,7 @@ async def _authenticate_ws(token: str) -> tuple[str, str] | None:
 
 async def _redis_listener(
     ws: WebSocket,
-    pubsub: aioredis.client.PubSub,
+    pubsub: Any,
 ) -> None:
     """Forward Redis pub/sub messages to WebSocket client."""
     while True:
@@ -92,10 +90,12 @@ async def websocket_events(ws: WebSocket) -> None:
     await ws.accept()
     logger.info("WebSocket connected: user=%s org=%s", user_id, org_id)
 
-    await ws.send_json({
-        "type": "connected",
-        "data": {"orgId": org_id},
-    })
+    await ws.send_json(
+        {
+            "type": "connected",
+            "data": {"orgId": org_id},
+        }
+    )
 
     redis_client = aioredis.from_url(settings.REDIS_URL)
     pubsub = redis_client.pubsub()
@@ -107,7 +107,7 @@ async def websocket_events(ws: WebSocket) -> None:
         listener = asyncio.create_task(_redis_listener(ws, pubsub))
         receiver = asyncio.create_task(_ws_receiver(ws))
 
-        done, pending = await asyncio.wait(
+        _done, pending = await asyncio.wait(
             [listener, receiver],
             return_when=asyncio.FIRST_COMPLETED,
         )

@@ -58,9 +58,7 @@ async def list_api_keys(
     org: Organization = Depends(get_current_org),
 ) -> ApiKeyListResponse:
     """List API keys for the current org. Never returns full keys."""
-    items, total = await api_key_service.list_api_keys(
-        db, UUID(str(org.id)), skip, limit
-    )
+    items, total = await api_key_service.list_api_keys(db, UUID(str(org.id)), skip, limit)
     return ApiKeyListResponse(
         items=[ApiKeyResponse.model_validate(k) for k in items],
         total=total,
@@ -76,13 +74,9 @@ async def revoke_api_key(
 ) -> ApiKeyResponse:
     """Revoke (soft-delete) an API key."""
     try:
-        api_key = await api_key_service.revoke_api_key(
-            db, UUID(str(org.id)), key_id
-        )
+        api_key = await api_key_service.revoke_api_key(db, UUID(str(org.id)), key_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return ApiKeyResponse.model_validate(api_key)
 
 
@@ -100,7 +94,5 @@ async def update_api_key(
             db, UUID(str(org.id)), key_id, name=body.name, scopes=body.scopes
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return ApiKeyResponse.model_validate(api_key)

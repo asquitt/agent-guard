@@ -77,10 +77,7 @@ class HallucinationDetector:
         proxy_request_id: str,
     ) -> DetectionResult:
         raw_thresh = detector_config.get("threshold")
-        threshold = (
-            float(str(raw_thresh)) if raw_thresh is not None
-            else _DEFAULT_THRESHOLD
-        )
+        threshold = float(str(raw_thresh)) if raw_thresh is not None else _DEFAULT_THRESHOLD
 
         response_text = _extract_text(response_body)
         if len(response_text) < 50:
@@ -110,15 +107,15 @@ class HallucinationDetector:
         if isinstance(issues_raw, list):
             for item in issues_raw:
                 if isinstance(item, dict):
-                    issues.append({
-                        "claim": str(item.get("claim", "")),
-                        "assessment": str(item.get("assessment", "")),
-                    })
+                    issues.append(
+                        {
+                            "claim": str(item.get("claim", "")),
+                            "assessment": str(item.get("assessment", "")),
+                        }
+                    )
 
         if confidence < threshold:
-            return self._pass(
-                f"Hallucination confidence {confidence:.2f} below threshold {threshold}"
-            )
+            return self._pass(f"Hallucination confidence {confidence:.2f} below threshold {threshold}")
 
         severity = IncidentSeverity.HIGH.value
         if confidence >= 0.9:

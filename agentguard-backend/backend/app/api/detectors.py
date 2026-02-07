@@ -57,9 +57,7 @@ async def list_detectors(
     org: Organization = Depends(get_current_org),
 ) -> DetectorListResponse:
     """List detectors for the current org."""
-    items, total = await detector_service.list_detectors(
-        db, UUID(str(org.id)), skip, limit
-    )
+    items, total = await detector_service.list_detectors(db, UUID(str(org.id)), skip, limit)
     return DetectorListResponse(
         items=[DetectorResponse.model_validate(d) for d in items],
         total=total,
@@ -74,13 +72,9 @@ async def get_detector(
 ) -> DetectorResponse:
     """Get a single detector with its rules."""
     try:
-        detector = await detector_service.get_detector(
-            db, UUID(str(org.id)), detector_id
-        )
+        detector = await detector_service.get_detector(db, UUID(str(org.id)), detector_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return DetectorResponse.model_validate(detector)
 
 
@@ -104,9 +98,7 @@ async def update_detector(
             config=body.config,
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return DetectorResponse.model_validate(detector)
 
 
@@ -119,13 +111,9 @@ async def delete_detector(
 ) -> None:
     """Delete a detector and its rules."""
     try:
-        await detector_service.delete_detector(
-            db, UUID(str(org.id)), detector_id
-        )
+        await detector_service.delete_detector(db, UUID(str(org.id)), detector_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
 
 @router.post(
@@ -152,9 +140,7 @@ async def add_rule(
             is_active=body.is_active,
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return DetectorRuleResponse.model_validate(rule)
 
 
@@ -171,10 +157,6 @@ async def delete_rule(
 ) -> None:
     """Delete a rule from a detector."""
     try:
-        await detector_service.delete_rule(
-            db, UUID(str(org.id)), detector_id, rule_id
-        )
+        await detector_service.delete_rule(db, UUID(str(org.id)), detector_id, rule_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)

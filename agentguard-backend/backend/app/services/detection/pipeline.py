@@ -95,9 +95,7 @@ async def run_sync_detectors(
             result = impl.run(request_body, response_body, model, config)
 
             if result.detected:
-                effective_action = _ACTION_MODE_MAP.get(
-                    action_mode, DetectionAction.MONITOR
-                )
+                effective_action = _ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
                 result = DetectionResult(
                     detected=True,
                     severity=result.severity,
@@ -109,27 +107,18 @@ async def run_sync_detectors(
                     details=result.details,
                 )
 
-                if _ACTION_PRIORITY.get(
-                    effective_action.value, 0
-                ) > _ACTION_PRIORITY.get(highest_action.value, 0):
+                if _ACTION_PRIORITY.get(effective_action.value, 0) > _ACTION_PRIORITY.get(highest_action.value, 0):
                     highest_action = effective_action
 
-                if (
-                    effective_action == DetectionAction.REDACT
-                    and "redacted_response" in result.details
-                ):
+                if effective_action == DetectionAction.REDACT and "redacted_response" in result.details:
                     modified_body = str(result.details["redacted_response"])
 
-                await _create_incident_from_result(
-                    db, org_id, proxy_request_id, result
-                )
+                await _create_incident_from_result(db, org_id, proxy_request_id, result)
 
             results.append(result)
 
         except Exception:
-            logger.exception(
-                "Sync detector %s failed for org %s", category, org_id
-            )
+            logger.exception("Sync detector %s failed for org %s", category, org_id)
             continue
 
     return PipelineDecision(
@@ -190,13 +179,17 @@ async def _create_incident_from_result(
     try:
         from app.core.events import publish_event
 
-        await publish_event(str(org_id), "incident.new", {
-            "id": str(incident.id),
-            "severity": str(incident.severity),
-            "category": str(incident.category),
-            "title": str(incident.title),
-            "status": "open",
-        })
+        await publish_event(
+            str(org_id),
+            "incident.new",
+            {
+                "id": str(incident.id),
+                "severity": str(incident.severity),
+                "category": str(incident.category),
+                "title": str(incident.title),
+                "status": "open",
+            },
+        )
     except Exception:
         logger.exception("Failed to publish incident.new event for %s", incident.id)
 

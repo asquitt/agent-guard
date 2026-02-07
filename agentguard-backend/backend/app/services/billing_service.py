@@ -1,5 +1,7 @@
 """Billing service for Stripe integration."""
 
+# pyright: reportCallIssue=false, reportArgumentType=false, reportGeneralTypeIssues=false, reportAttributeAccessIssue=false, reportReturnType=false
+
 import logging
 from datetime import datetime, timezone
 
@@ -54,9 +56,7 @@ async def get_billing_status(org: Organization) -> dict:
     }
 
 
-async def get_or_create_stripe_customer(
-    db: AsyncSession, org: Organization
-) -> str | None:
+async def get_or_create_stripe_customer(db: AsyncSession, org: Organization) -> str | None:
     """Create a Stripe customer for the org if one doesn't exist."""
     if org.stripe_customer_id:
         return org.stripe_customer_id
@@ -84,9 +84,7 @@ async def get_or_create_stripe_customer(
         return None
 
 
-async def create_checkout_session(
-    db: AsyncSession, org: Organization, price_id: str
-) -> str | None:
+async def create_checkout_session(db: AsyncSession, org: Organization, price_id: str) -> str | None:
     """Create a Stripe Checkout Session and return the URL."""
     if not _stripe_available():
         return None
@@ -114,9 +112,7 @@ async def create_checkout_session(
         return None
 
 
-async def create_customer_portal_session(
-    db: AsyncSession, org: Organization
-) -> str | None:
+async def create_customer_portal_session(db: AsyncSession, org: Organization) -> str | None:
     """Create a Stripe Customer Portal session and return the URL."""
     if not _stripe_available():
         return None
@@ -142,17 +138,11 @@ async def create_customer_portal_session(
 
 async def _is_event_processed(db: AsyncSession, stripe_event_id: str) -> bool:
     """Check if a Stripe event has already been processed (idempotency)."""
-    result = await db.execute(
-        select(StripeEvent.id).where(
-            StripeEvent.stripe_event_id == stripe_event_id
-        )
-    )
+    result = await db.execute(select(StripeEvent.id).where(StripeEvent.stripe_event_id == stripe_event_id))
     return result.scalar_one_or_none() is not None
 
 
-async def _record_event(
-    db: AsyncSession, stripe_event_id: str, event_type: str, org_id: str | None
-) -> None:
+async def _record_event(db: AsyncSession, stripe_event_id: str, event_type: str, org_id: str | None) -> None:
     """Record a processed Stripe event for idempotency."""
     import uuid
 
@@ -166,9 +156,7 @@ async def _record_event(
     db.add(event)
 
 
-async def handle_webhook_event(
-    db: AsyncSession, payload: bytes, sig_header: str
-) -> bool:
+async def handle_webhook_event(db: AsyncSession, payload: bytes, sig_header: str) -> bool:
     """Verify and process a Stripe webhook event. Returns True on success."""
     if not _stripe_available() or not settings.STRIPE_WEBHOOK_SECRET:
         logger.warning("Stripe webhook secret not configured")
@@ -179,9 +167,7 @@ async def handle_webhook_event(
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.SignatureVerificationError) as e:
         logger.warning("Invalid Stripe webhook: %s", e)
         return False
@@ -212,19 +198,13 @@ async def handle_webhook_event(
     return True
 
 
-async def _get_org_by_customer_id(
-    db: AsyncSession, customer_id: str
-) -> Organization | None:
+async def _get_org_by_customer_id(db: AsyncSession, customer_id: str) -> Organization | None:
     """Look up org by Stripe customer ID."""
-    result = await db.execute(
-        select(Organization).where(Organization.stripe_customer_id == customer_id)
-    )
+    result = await db.execute(select(Organization).where(Organization.stripe_customer_id == customer_id))
     return result.scalar_one_or_none()
 
 
-async def _get_org_id_from_customer(
-    db: AsyncSession, customer_id: str | None
-) -> str | None:
+async def _get_org_id_from_customer(db: AsyncSession, customer_id: str | None) -> str | None:
     """Get org ID from Stripe customer ID."""
     if not customer_id:
         return None
@@ -257,9 +237,7 @@ async def _handle_checkout_completed(db: AsyncSession, session_data: dict) -> No
     org.stripe_subscription_id = subscription_id
     org.subscription_status = SubscriptionStatus.ACTIVE.value
     if hasattr(sub, "current_period_end"):
-        org.subscription_current_period_end = datetime.fromtimestamp(
-            sub.current_period_end, tz=timezone.utc
-        )
+        org.subscription_current_period_end = datetime.fromtimestamp(sub.current_period_end, tz=timezone.utc)
     logger.info("Org %s upgraded to %s", org.id, plan_tier)
 
 
@@ -273,9 +251,7 @@ async def _handle_subscription_updated(db: AsyncSession, sub_data: dict) -> None
     org.subscription_status = sub_data.get("status", org.subscription_status)
     period_end = sub_data.get("current_period_end")
     if period_end:
-        org.subscription_current_period_end = datetime.fromtimestamp(
-            period_end, tz=timezone.utc
-        )
+        org.subscription_current_period_end = datetime.fromtimestamp(period_end, tz=timezone.utc)
 
     # Update plan tier from price
     items = sub_data.get("items", {}).get("data", [])

@@ -1,5 +1,7 @@
 """LLM proxy router — forwards requests to upstream providers."""
 
+# pyright: reportGeneralTypeIssues=false
+
 import json
 import time
 from typing import Any
@@ -12,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
-from app.models.enums import PlanTier
 from app.models.user import Organization
 from app.services import proxy_service
 from app.services.billing_service import get_request_limit
@@ -31,9 +32,7 @@ async def get_http_client() -> httpx.AsyncClient:
     if _http_client is None:
         _http_client = httpx.AsyncClient(
             timeout=httpx.Timeout(120.0, connect=10.0),
-            limits=httpx.Limits(
-                max_connections=100, max_keepalive_connections=20
-            ),
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
             follow_redirects=True,
         )
     return _http_client
@@ -63,9 +62,7 @@ async def _parse_and_resolve(
     # Resolve endpoint
     endpoint_id = UUID(endpoint_header) if endpoint_header else None
     try:
-        endpoint = await proxy_service.resolve_endpoint(
-            db, UUID(str(org.id)), endpoint_id, provider=provider
-        )
+        endpoint = await proxy_service.resolve_endpoint(db, UUID(str(org.id)), endpoint_id, provider=provider)
     except (NotFoundError, ProxyError) as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -129,14 +126,18 @@ async def _handle_non_streaming(
 ) -> JSONResponse:
     """Forward a non-streaming request and log the response."""
     try:
-        response = await proxy_service.forward_request(
-            client, target_url, body, api_key
-        )
+        response = await proxy_service.forward_request(client, target_url, body, api_key)
     except httpx.TimeoutException:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 504, '{"error":"upstream timeout"}',
-            latency_ms, None, None, None,
+            db,
+            proxy_req,
+            504,
+            '{"error":"upstream timeout"}',
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=504,
@@ -145,8 +146,14 @@ async def _handle_non_streaming(
     except httpx.HTTPError as e:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 502, json.dumps({"error": str(e)}),
-            latency_ms, None, None, None,
+            db,
+            proxy_req,
+            502,
+            json.dumps({"error": str(e)}),
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=502,
@@ -164,21 +171,28 @@ async def _handle_non_streaming(
         except (json.JSONDecodeError, ValueError):
             pass
 
-    input_tokens, output_tokens = proxy_service.extract_tokens_from_response(
-        response_data
-    )
+    input_tokens, output_tokens = proxy_service.extract_tokens_from_response(response_data)
     response_model = response_data.get("model") or proxy_service.extract_model_from_body(body)
 
     await proxy_service.update_request_log(
-        db, proxy_req, response.status_code,
+        db,
+        proxy_req,
+        response.status_code,
         proxy_service.truncate_body(response_text),
-        latency_ms, input_tokens, output_tokens, response_model,
+        latency_ms,
+        input_tokens,
+        output_tokens,
+        response_model,
     )
 
     # Run detection pipeline on successful responses
     if response.status_code == 200:
         decision = await detection_pipeline.run_sync_detectors(
-            db, org_id, json.dumps(body), response_text, response_model,
+            db,
+            org_id,
+            json.dumps(body),
+            response_text,
+            response_model,
             UUID(str(proxy_req.id)),
         )
         await db.commit()
@@ -191,9 +205,7 @@ async def _handle_non_streaming(
         if decision.action == DetectionAction.REDACT and decision.modified_response:
             response_data = json.loads(decision.modified_response)
 
-        await detection_pipeline.queue_async_detectors(
-            db, org_id, UUID(str(proxy_req.id))
-        )
+        await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return JSONResponse(
         status_code=response.status_code,
@@ -243,9 +255,14 @@ async def _handle_streaming(
                         yield chunk
                     latency_ms = int((time.time() - start_time) * 1000)
                     await proxy_service.update_request_log(
-                        db, proxy_req, resp_status,
+                        db,
+                        proxy_req,
+                        resp_status,
                         error_body.decode("utf-8", errors="replace"),
-                        latency_ms, None, None, None,
+                        latency_ms,
+                        None,
+                        None,
+                        None,
                     )
                     return
 
@@ -282,22 +299,27 @@ async def _handle_streaming(
 
         # Log after stream completes
         latency_ms = int((time.time() - start_time) * 1000)
-        response_summary = json.dumps({
-            "streamed": True,
-            "content_preview": accumulated_content[:500],
-            "model": model_name,
-        })
+        response_summary = json.dumps(
+            {
+                "streamed": True,
+                "content_preview": accumulated_content[:500],
+                "model": model_name,
+            }
+        )
         await proxy_service.update_request_log(
-            db, proxy_req, resp_status,
+            db,
+            proxy_req,
+            resp_status,
             proxy_service.truncate_body(response_summary),
-            latency_ms, input_tokens, output_tokens, model_name,
+            latency_ms,
+            input_tokens,
+            output_tokens,
+            model_name,
         )
 
         # Queue async detection for streaming responses
         if resp_status == 200:
-            await detection_pipeline.queue_async_detectors(
-                db, org_id, UUID(str(proxy_req.id))
-            )
+            await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return StreamingResponse(
         stream_generator(),
@@ -323,20 +345,14 @@ async def proxy_chat_completions(
     """Proxy OpenAI chat completions (streaming + non-streaming)."""
     start_time = time.time()
     org_id = UUID(str(org.id))
-    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
-        request, db, org, x_agentguard_endpoint_id
-    )
+    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(request, db, org, x_agentguard_endpoint_id)
 
     client = await get_http_client()
     target_url = proxy_service.build_target_url(endpoint, path)
 
     if body.get("stream"):
-        return await _handle_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time, org_id
-        )
-    return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time, org_id
-    )
+        return await _handle_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
+    return await _handle_non_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
 
 
 @router.post("/v1/completions", response_model=None)
@@ -349,20 +365,14 @@ async def proxy_completions(
     """Proxy OpenAI legacy completions (streaming + non-streaming)."""
     start_time = time.time()
     org_id = UUID(str(org.id))
-    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
-        request, db, org, x_agentguard_endpoint_id
-    )
+    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(request, db, org, x_agentguard_endpoint_id)
 
     client = await get_http_client()
     target_url = proxy_service.build_target_url(endpoint, path)
 
     if body.get("stream"):
-        return await _handle_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time, org_id
-        )
-    return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time, org_id
-    )
+        return await _handle_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
+    return await _handle_non_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
 
 
 @router.post("/v1/embeddings", response_model=None)
@@ -375,16 +385,12 @@ async def proxy_embeddings(
     """Proxy OpenAI embeddings (never streaming)."""
     start_time = time.time()
     org_id = UUID(str(org.id))
-    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
-        request, db, org, x_agentguard_endpoint_id
-    )
+    body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(request, db, org, x_agentguard_endpoint_id)
 
     client = await get_http_client()
     target_url = proxy_service.build_target_url(endpoint, path)
 
-    return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time, org_id
-    )
+    return await _handle_non_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
 
 
 # --- Anthropic ---
@@ -402,14 +408,18 @@ async def _handle_anthropic_non_streaming(
 ) -> JSONResponse:
     """Forward a non-streaming Anthropic request and log the response."""
     try:
-        response = await proxy_service.forward_anthropic_request(
-            client, target_url, body, api_key
-        )
+        response = await proxy_service.forward_anthropic_request(client, target_url, body, api_key)
     except httpx.TimeoutException:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 504, '{"error":"upstream timeout"}',
-            latency_ms, None, None, None,
+            db,
+            proxy_req,
+            504,
+            '{"error":"upstream timeout"}',
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=504,
@@ -418,8 +428,14 @@ async def _handle_anthropic_non_streaming(
     except httpx.HTTPError as e:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 502, json.dumps({"error": str(e)}),
-            latency_ms, None, None, None,
+            db,
+            proxy_req,
+            502,
+            json.dumps({"error": str(e)}),
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=502,
@@ -436,21 +452,28 @@ async def _handle_anthropic_non_streaming(
         except (json.JSONDecodeError, ValueError):
             pass
 
-    input_tokens, output_tokens = proxy_service.extract_anthropic_tokens(
-        response_data
-    )
+    input_tokens, output_tokens = proxy_service.extract_anthropic_tokens(response_data)
     response_model = response_data.get("model") or proxy_service.extract_model_from_body(body)
 
     await proxy_service.update_request_log(
-        db, proxy_req, response.status_code,
+        db,
+        proxy_req,
+        response.status_code,
         proxy_service.truncate_body(response_text),
-        latency_ms, input_tokens, output_tokens, response_model,
+        latency_ms,
+        input_tokens,
+        output_tokens,
+        response_model,
     )
 
     # Run detection pipeline on successful responses
     if response.status_code == 200:
         decision = await detection_pipeline.run_sync_detectors(
-            db, org_id, json.dumps(body), response_text, response_model,
+            db,
+            org_id,
+            json.dumps(body),
+            response_text,
+            response_model,
             UUID(str(proxy_req.id)),
         )
         await db.commit()
@@ -458,14 +481,15 @@ async def _handle_anthropic_non_streaming(
         if decision.action == DetectionAction.BLOCK:
             return JSONResponse(
                 status_code=403,
-                content={"type": "error", "error": {"type": "detection_blocked", "message": "Request blocked by security policy"}},
+                content={
+                    "type": "error",
+                    "error": {"type": "detection_blocked", "message": "Request blocked by security policy"},
+                },
             )
         if decision.action == DetectionAction.REDACT and decision.modified_response:
             response_data = json.loads(decision.modified_response)
 
-        await detection_pipeline.queue_async_detectors(
-            db, org_id, UUID(str(proxy_req.id))
-        )
+        await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return JSONResponse(
         status_code=response.status_code,
@@ -513,9 +537,14 @@ async def _handle_anthropic_streaming(
                         yield chunk
                     latency_ms = int((time.time() - start_time) * 1000)
                     await proxy_service.update_request_log(
-                        db, proxy_req, resp_status,
+                        db,
+                        proxy_req,
+                        resp_status,
                         error_body.decode("utf-8", errors="replace"),
-                        latency_ms, None, None, None,
+                        latency_ms,
+                        None,
+                        None,
+                        None,
                     )
                     return
 
@@ -563,22 +592,27 @@ async def _handle_anthropic_streaming(
             resp_status = 502
 
         latency_ms = int((time.time() - start_time) * 1000)
-        response_summary = json.dumps({
-            "streamed": True,
-            "content_preview": accumulated_content[:500],
-            "model": model_name,
-        })
+        response_summary = json.dumps(
+            {
+                "streamed": True,
+                "content_preview": accumulated_content[:500],
+                "model": model_name,
+            }
+        )
         await proxy_service.update_request_log(
-            db, proxy_req, resp_status,
+            db,
+            proxy_req,
+            resp_status,
             proxy_service.truncate_body(response_summary),
-            latency_ms, input_tokens, output_tokens, model_name,
+            latency_ms,
+            input_tokens,
+            output_tokens,
+            model_name,
         )
 
         # Queue async detection for streaming responses
         if resp_status == 200:
-            await detection_pipeline.queue_async_detectors(
-                db, org_id, UUID(str(proxy_req.id))
-            )
+            await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return StreamingResponse(
         stream_generator(),
@@ -609,9 +643,5 @@ async def proxy_anthropic_messages(
     target_url = proxy_service.build_target_url(endpoint, "/v1/messages")
 
     if body.get("stream"):
-        return await _handle_anthropic_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time, org_id
-        )
-    return await _handle_anthropic_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time, org_id
-    )
+        return await _handle_anthropic_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)
+    return await _handle_anthropic_non_streaming(client, target_url, body, api_key, proxy_req, db, start_time, org_id)

@@ -60,9 +60,7 @@ async def resolve_endpoint(
         )
         endpoint = result.scalar_one_or_none()
         if endpoint is None:
-            raise NotFoundError(
-                f"Proxy endpoint {endpoint_id} not found or inactive"
-            )
+            raise NotFoundError(f"Proxy endpoint {endpoint_id} not found or inactive")
         return endpoint
 
     # Default: first active endpoint for the given provider
@@ -78,9 +76,7 @@ async def resolve_endpoint(
     )
     endpoint = result.scalar_one_or_none()
     if endpoint is None:
-        raise ProxyError(
-            f"No active {provider} proxy endpoint configured for this organization"
-        )
+        raise ProxyError(f"No active {provider} proxy endpoint configured for this organization")
     return endpoint
 
 
@@ -129,16 +125,12 @@ async def update_request_log(
 
     # Calculate cost if we have tokens
     if input_tokens is not None and output_tokens is not None and model:
-        proxy_request.cost_usd = calculate_cost(  # type: ignore[assignment]
-            model, input_tokens, output_tokens
-        )
+        proxy_request.cost_usd = calculate_cost(model, input_tokens, output_tokens)  # type: ignore[assignment]
 
     await db.commit()
 
 
-def _lookup_pricing(
-    model: str, table: dict[str, tuple[float, float]]
-) -> tuple[float, float] | None:
+def _lookup_pricing(model: str, table: dict[str, tuple[float, float]]) -> tuple[float, float] | None:
     """Find pricing by exact match, then longest prefix match."""
     if model in table:
         return table[model]
@@ -148,20 +140,14 @@ def _lookup_pricing(
     return None
 
 
-def calculate_cost(
-    model: str, input_tokens: int, output_tokens: int
-) -> float:
+def calculate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """Calculate cost in USD. Returns 0.0 for unknown models."""
-    pricing = _lookup_pricing(model, OPENAI_PRICING) or _lookup_pricing(
-        model, ANTHROPIC_PRICING
-    )
+    pricing = _lookup_pricing(model, OPENAI_PRICING) or _lookup_pricing(model, ANTHROPIC_PRICING)
     if pricing is None:
         return 0.0
 
     input_price, output_price = pricing
-    cost = (input_tokens * input_price / 1_000_000) + (
-        output_tokens * output_price / 1_000_000
-    )
+    cost = (input_tokens * input_price / 1_000_000) + (output_tokens * output_price / 1_000_000)
     return round(cost, 6)
 
 

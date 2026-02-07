@@ -28,14 +28,7 @@ async def get_dashboard_metrics(
     return DashboardMetricsResponse(
         total_incidents=metrics["total_incidents"],
         open_incidents=metrics["open_incidents"],
-        incidents_by_status=[
-            IncidentCountByStatus(**s) for s in metrics["incidents_by_status"]
-        ],
-        incidents_by_severity=[
-            IncidentCountBySeverity(**s) for s in metrics["incidents_by_severity"]
-        ],
-        recent_incidents=[
-            RecentIncidentSummary.model_validate(i)
-            for i in metrics["recent_incidents"]
-        ],
+        incidents_by_status=[IncidentCountByStatus(**s) for s in metrics["incidents_by_status"]],
+        incidents_by_severity=[IncidentCountBySeverity(**s) for s in metrics["incidents_by_severity"]],
+        recent_incidents=[RecentIncidentSummary.model_validate(i) for i in metrics["recent_incidents"]],
     )

@@ -36,9 +36,7 @@ class ProxyEndpoint(TimestampMixin, Base):
     organization = relationship("Organization", back_populates="proxy_endpoints")
     proxy_requests = relationship("ProxyRequest", back_populates="endpoint")
 
-    __table_args__ = (
-        Index("ix_proxy_endpoints_org_id_is_active", "org_id", "is_active"),
-    )
+    __table_args__ = (Index("ix_proxy_endpoints_org_id_is_active", "org_id", "is_active"),)
 
 
 class ProxyRequest(TimestampMixin, Base):

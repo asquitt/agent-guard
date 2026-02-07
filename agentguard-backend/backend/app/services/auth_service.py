@@ -57,9 +57,7 @@ async def register_user(
         raise ValidationError("Email already registered")
 
     slug = generate_slug(org_name)
-    slug_result = await db.execute(
-        select(Organization).where(Organization.slug == slug)
-    )
+    slug_result = await db.execute(select(Organization).where(Organization.slug == slug))
     if slug_result.scalar_one_or_none() is not None:
         raise ValidationError("Organization name already taken")
 
@@ -138,9 +136,7 @@ def decode_refresh_token(token: str) -> str:
     Validates type="refresh" to prevent token confusion attacks.
     """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except JWTError as e:
         raise AuthenticationError(f"Invalid refresh token: {e}")
 

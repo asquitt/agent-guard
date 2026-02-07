@@ -54,18 +54,14 @@ async def list_destinations(
     org: Organization = Depends(get_current_org),
 ) -> AlertDestinationListResponse:
     """List alert destinations for the current org."""
-    items, total = await alert_service.list_destinations(
-        db, UUID(str(org.id)), skip, limit
-    )
+    items, total = await alert_service.list_destinations(db, UUID(str(org.id)), skip, limit)
     return AlertDestinationListResponse(
         items=[AlertDestinationResponse.model_validate(d) for d in items],
         total=total,
     )
 
 
-@router.patch(
-    "/destinations/{dest_id}", response_model=AlertDestinationResponse
-)
+@router.patch("/destinations/{dest_id}", response_model=AlertDestinationResponse)
 async def update_destination(
     dest_id: UUID,
     body: AlertDestinationUpdateRequest,
@@ -84,15 +80,11 @@ async def update_destination(
             config=body.config,
         )
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return AlertDestinationResponse.model_validate(dest)
 
 
-@router.delete(
-    "/destinations/{dest_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/destinations/{dest_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_destination(
     dest_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -101,13 +93,9 @@ async def delete_destination(
 ) -> None:
     """Delete an alert destination."""
     try:
-        await alert_service.delete_destination(
-            db, UUID(str(org.id)), dest_id
-        )
+        await alert_service.delete_destination(db, UUID(str(org.id)), dest_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
 
 @router.post("/destinations/{dest_id}/test")
@@ -119,17 +107,11 @@ async def test_destination(
 ) -> dict[str, str]:
     """Send a test alert to a destination."""
     try:
-        error = await alert_service.test_destination(
-            db, UUID(str(org.id)), dest_id
-        )
+        error = await alert_service.test_destination(db, UUID(str(org.id)), dest_id)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     if error:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail=error
-        )
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=error)
     return {"status": "ok", "message": "Test alert sent successfully"}
 
 

@@ -60,9 +60,7 @@ class User(TimestampMixin, Base):
     incident_actions = relationship("IncidentAction", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
 
-    __table_args__ = (
-        Index("ix_users_org_id_email", "org_id", "email"),
-    )
+    __table_args__ = (Index("ix_users_org_id_email", "org_id", "email"),)
 
 
 class ApiKey(TimestampMixin, Base):

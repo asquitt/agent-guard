@@ -99,11 +99,7 @@ class ComplianceDetector:
         keyword_hits: dict[str, list[str]] = {}
         for framework in frameworks:
             patterns = _FRAMEWORK_PATTERNS.get(framework, [])
-            matched = [
-                p.pattern.replace("\\", "")
-                for p in patterns
-                if p.search(response_lower)
-            ]
+            matched = [p.pattern.replace("\\", "") for p in patterns if p.search(response_lower)]
             if matched:
                 keyword_hits[framework] = matched
 
@@ -114,9 +110,7 @@ class ComplianceDetector:
         llm_verified = self._llm_verify(response_body, keyword_hits)
 
         # Build result
-        hit_summary = ", ".join(
-            f"{fw} ({len(kws)})" for fw, kws in keyword_hits.items()
-        )
+        hit_summary = ", ".join(f"{fw} ({len(kws)})" for fw, kws in keyword_hits.items())
 
         severity = IncidentSeverity.MEDIUM.value
         if any(fw in ("SOX", "PCI-DSS") for fw in keyword_hits):
@@ -136,9 +130,11 @@ class ComplianceDetector:
                 + (
                     f"LLM confirmed violation: {llm_verified.get('explanation', 'N/A')}"
                     if llm_verified.get("violation") is True
-                    else "LLM did not confirm violation (keyword match only)."
-                    if llm_verified
-                    else "LLM verification unavailable."
+                    else (
+                        "LLM did not confirm violation (keyword match only)."
+                        if llm_verified
+                        else "LLM verification unavailable."
+                    )
                 )
             ),
             details={
@@ -150,14 +146,10 @@ class ComplianceDetector:
         )
 
     @staticmethod
-    def _llm_verify(
-        response_body: str, keyword_hits: dict[str, list[str]]
-    ) -> dict[str, object]:
+    def _llm_verify(response_body: str, keyword_hits: dict[str, list[str]]) -> dict[str, object]:
         """Send flagged content to LLM for compliance verification."""
         frameworks_str = ", ".join(keyword_hits.keys())
-        keywords_str = "; ".join(
-            f"{fw}: {', '.join(kws)}" for fw, kws in keyword_hits.items()
-        )
+        keywords_str = "; ".join(f"{fw}: {', '.join(kws)}" for fw, kws in keyword_hits.items())
 
         prompt = (
             f"Check if this text violates {frameworks_str} regulations.\n"

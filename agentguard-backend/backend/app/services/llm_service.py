@@ -62,9 +62,7 @@ def call_llm(
         return ""
 
 
-def _call_openai(
-    system_prompt: str, user_prompt: str, max_tokens: int, timeout: float
-) -> str:
+def _call_openai(system_prompt: str, user_prompt: str, max_tokens: int, timeout: float) -> str:
     api_key = settings.OPENAI_API_KEY
     if not api_key:
         logger.warning("OPENAI_API_KEY not set, skipping detection LLM call")
@@ -94,9 +92,7 @@ def _call_openai(
     return ""
 
 
-def _call_anthropic(
-    system_prompt: str, user_prompt: str, max_tokens: int, timeout: float
-) -> str:
+def _call_anthropic(system_prompt: str, user_prompt: str, max_tokens: int, timeout: float) -> str:
     api_key = settings.ANTHROPIC_API_KEY
     if not api_key:
         logger.warning("ANTHROPIC_API_KEY not set, skipping detection LLM call")
