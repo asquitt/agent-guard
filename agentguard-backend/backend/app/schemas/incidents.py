@@ -73,3 +73,36 @@ class IncidentListResponse(BaseModel):
 
     items: list[IncidentResponse]
     total: int
+
+
+class IncidentStatsResponse(BaseModel):
+    """Aggregate incident statistics."""
+
+    by_severity: dict[str, int] = Field(serialization_alias="bySeverity")
+    by_category: dict[str, int] = Field(serialization_alias="byCategory")
+    by_status: dict[str, int] = Field(serialization_alias="byStatus")
+    total: int
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class BulkStatusUpdateRequest(BaseModel):
+    """Bulk update incident statuses."""
+
+    incident_ids: list[UUID] = Field(min_length=1, max_length=100)
+    status: str
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        valid = [s.value for s in IncidentStatus]
+        if v not in valid:
+            msg = f"Status must be one of: {', '.join(valid)}"
+            raise ValueError(msg)
+        return v
+
+
+class BulkStatusUpdateResponse(BaseModel):
+    """Result of bulk status update."""
+
+    updated: int

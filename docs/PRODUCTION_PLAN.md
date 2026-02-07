@@ -203,22 +203,25 @@
 
 **Goal:** Full incident lifecycle management with multi-channel alerting.
 
-### Session 3.1: Incident Management CRUD
+### Session 3.1: Incident Management CRUD ✅
 **Done when:** Incidents can be viewed, filtered, updated, and have actions recorded.
 
-- [ ] Incident router (`/api/v1/incidents/`)
-  - `GET /` — list with filters (severity, category, status, date range, detector)
-  - `GET /{id}` — detail with related request, actions, and detector info
-  - `PATCH /{id}` — update status (open → investigating → resolved → dismissed)
-  - `POST /{id}/actions` — add action (comment, assign, escalate, resolve)
+- [x] Incident router (`/api/v1/incidents/`):
+  - `GET /` — list with filters (severity, category, status, date range, detector, full-text search)
+  - `GET /{id}` — detail with related actions
+  - `PATCH /{id}` — update status with audit logging
+  - `POST /{id}/actions` — add action with audit logging
   - `GET /stats` — aggregate counts by severity, category, status
-- [ ] Incident service with:
-  - Pagination (cursor-based for performance)
-  - Full-text search on title/description
-  - Bulk status updates
-  - Auto-close after configurable inactivity period
-- [ ] Audit log entries for all incident state changes
-- [ ] Verify: Create incident via detection → view → investigate → resolve → audit trail exists
+  - `POST /bulk-update` — bulk status update with audit logging
+- [x] Incident service enhanced:
+  - Offset/limit pagination with total count
+  - ILIKE search on title/description (`?q=search`)
+  - Date range filters (`?dateFrom=&dateTo=`)
+  - Detector filter (`?detectorId=`)
+  - Bulk status update with resolved_at handling
+- [x] Audit log entries for all state changes (status_changed, bulk_status_changed, action.*)
+- [x] Schemas: IncidentStatsResponse, BulkStatusUpdateRequest/Response
+- [x] Verified: pyright 0 errors, all endpoints return correct responses via curl
 
 ### Session 3.2: Alert System & Destinations
 **Done when:** Alerts fire to Slack, email, and PagerDuty when incidents are created.

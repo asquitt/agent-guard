@@ -1,19 +1,23 @@
 """Incident management router."""
 
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.incidents import (
+    BulkStatusUpdateRequest,
+    BulkStatusUpdateResponse,
     IncidentActionCreateRequest,
     IncidentActionResponse,
     IncidentDetailResponse,
     IncidentListResponse,
     IncidentResponse,
+    IncidentStatsResponse,
     IncidentUpdateRequest,
 )
 from app.services import incident_service
@@ -21,13 +25,27 @@ from app.services import incident_service
 router = APIRouter()
 
 
+@router.get("/stats", response_model=IncidentStatsResponse)
+async def get_stats(
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> IncidentStatsResponse:
+    """Get aggregate incident statistics."""
+    stats = await incident_service.get_stats(db, UUID(str(org.id)))
+    return IncidentStatsResponse(**stats)
+
+
 @router.get("/", response_model=IncidentListResponse)
 async def list_incidents(
     skip: int = 0,
     limit: int = 50,
-    status_filter: str | None = None,
+    status_filter: str | None = Query(None, alias="status"),
     severity: str | None = None,
     category: str | None = None,
+    detector_id: str | None = Query(None, alias="detectorId"),
+    search: str | None = Query(None, alias="q"),
+    date_from: datetime | None = Query(None, alias="dateFrom"),
+    date_to: datetime | None = Query(None, alias="dateTo"),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> IncidentListResponse:
@@ -40,6 +58,10 @@ async def list_incidents(
         status=status_filter,
         severity=severity,
         category=category,
+        detector_id=detector_id,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
     )
     return IncidentListResponse(
         items=[IncidentResponse.model_validate(i) for i in items],
@@ -70,12 +92,17 @@ async def update_incident(
     incident_id: UUID,
     body: IncidentUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
 ) -> IncidentResponse:
     """Update incident status."""
     try:
         incident = await incident_service.update_incident_status(
-            db, UUID(str(org.id)), incident_id, body.status
+            db,
+            UUID(str(org.id)),
+            incident_id,
+            body.status,
+            user_id=UUID(str(current_user.id)),
         )
     except NotFoundError as e:
         raise HTTPException(
@@ -111,3 +138,24 @@ async def add_action(
             status_code=status.HTTP_404_NOT_FOUND, detail=e.message
         )
     return IncidentActionResponse.model_validate(action)
+
+
+@router.post(
+    "/bulk-update",
+    response_model=BulkStatusUpdateResponse,
+)
+async def bulk_update_status(
+    body: BulkStatusUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    org: Organization = Depends(get_current_org),
+) -> BulkStatusUpdateResponse:
+    """Bulk update incident statuses."""
+    updated = await incident_service.bulk_update_status(
+        db,
+        UUID(str(org.id)),
+        body.incident_ids,
+        body.status,
+        user_id=UUID(str(current_user.id)),
+    )
+    return BulkStatusUpdateResponse(updated=updated)
