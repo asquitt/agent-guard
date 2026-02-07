@@ -41,6 +41,33 @@ response = client.messages.create(
 )
 ```
 
+### Custom Metadata
+
+Attach metadata headers to every proxied request for tracing and analytics:
+
+```python
+client = agentguard.wrap_openai(
+    client,
+    api_key="ag_live_...",
+    metadata={
+        "user_id": "u_123",
+        "session_id": "sess_456",
+        "agent_name": "support-bot",
+    },
+)
+```
+
+### Async Support
+
+```python
+from agentguard import AsyncAgentGuardClient
+
+async with AsyncAgentGuardClient(api_key="ag_live_...") as ag:
+    incidents = await ag.list_incidents(severity="high")
+```
+
+Async OpenAI/Anthropic clients work with `wrap_openai` / `wrap_anthropic` unchanged.
+
 ## API Reference
 
 ### `agentguard.wrap_openai(client, api_key, **kwargs)`
@@ -48,48 +75,37 @@ response = client.messages.create(
 Wraps an OpenAI client to route all requests through AgentGuard.
 
 **Parameters:**
-- `client` -- An `openai.OpenAI` instance
+- `client` -- An `openai.OpenAI` or `openai.AsyncOpenAI` instance
 - `api_key` (str) -- Your AgentGuard API key (`ag_live_...`)
-- `base_url` (str, optional) -- Custom AgentGuard proxy URL. Defaults to `https://proxy.agentguard.app/api/v1/proxy`
+- `base_url` (str, optional) -- Custom AgentGuard proxy URL
 - `endpoint_id` (str, optional) -- UUID of a specific proxy endpoint configuration
+- `metadata` (dict, optional) -- Key-value pairs sent as `X-AgentGuard-*` headers
 
-**Returns:** The wrapped OpenAI client. Use it exactly as you would a normal OpenAI client.
+**Returns:** The wrapped client.
 
 ### `agentguard.wrap_anthropic(client, api_key, **kwargs)`
 
 Wraps an Anthropic client to route all requests through AgentGuard.
 
 **Parameters:**
-- `client` -- An `anthropic.Anthropic` instance
+- `client` -- An `anthropic.Anthropic` or `anthropic.AsyncAnthropic` instance
 - `api_key` (str) -- Your AgentGuard API key (`ag_live_...`)
 - `base_url` (str, optional) -- Custom AgentGuard proxy URL
 - `endpoint_id` (str, optional) -- UUID of a specific proxy endpoint configuration
+- `metadata` (dict, optional) -- Key-value pairs sent as `X-AgentGuard-*` headers
 
-**Returns:** The wrapped Anthropic client.
+**Returns:** The wrapped client.
 
-### `agentguard.AgentGuardClient(api_key, base_url=None)`
+### `AgentGuardClient` / `AsyncAgentGuardClient`
 
-Low-level client for direct API access.
+Low-level clients for direct API access (sync and async).
 
 ```python
 from agentguard import AgentGuardClient
 
-ag = AgentGuardClient(api_key="ag_live_...")
-
-# List incidents
-incidents = ag.incidents.list(severity="high", status="open")
-
-# Get incident detail
-incident = ag.incidents.get("incident-uuid")
-
-# Update incident status
-ag.incidents.update("incident-uuid", status="resolved")
-
-# List detectors
-detectors = ag.detectors.list()
-
-# Get dashboard metrics
-metrics = ag.dashboard.metrics()
+with AgentGuardClient(api_key="ag_live_...") as ag:
+    incidents = ag.list_incidents(severity="high", status="open")
+    incident = ag.get_incident("incident-uuid")
 ```
 
 ## Streaming
