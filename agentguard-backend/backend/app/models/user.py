@@ -31,6 +31,7 @@ class Organization(TimestampMixin, Base):
     alert_destinations = relationship("AlertDestination", back_populates="organization")
     audit_logs = relationship("AuditLog", back_populates="organization")
     agents = relationship("Agent", back_populates="organization")
+    agent_policies = relationship("AgentPolicy", back_populates="organization")
 
 
 class User(TimestampMixin, Base):

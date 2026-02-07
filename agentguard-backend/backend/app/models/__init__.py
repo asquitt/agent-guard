@@ -8,6 +8,7 @@ Run `python scripts/check_model_imports.py` after any model changes.
 """
 
 from app.models.agent import Agent
+from app.models.agent_policy import AgentPolicy
 from app.models.alert import Alert, AlertDestination
 from app.models.audit import AuditLog
 from app.models.compliance_report import ComplianceReport
@@ -22,6 +23,7 @@ from app.models.user import ApiKey, Organization, User
 
 __all__ = [
     "Agent",
+    "AgentPolicy",
     "Alert",
     "AlertDestination",
     "ApiKey",

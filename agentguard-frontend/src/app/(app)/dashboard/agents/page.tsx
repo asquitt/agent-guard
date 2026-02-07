@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { listAgents, createAgent, updateAgent, deleteAgent } from '@/lib/api';
@@ -256,12 +257,20 @@ function AgentRow({
       </td>
       <td className="px-4 py-3 text-sm text-gray-500">{agent.owner ?? '-'}</td>
       <td className="px-4 py-3">
-        <button
-          onClick={onDelete}
-          className="text-xs font-medium text-red-600 hover:text-red-500"
-        >
-          Delete
-        </button>
+        <div className="flex gap-3">
+          <Link
+            href={`/dashboard/agents/${agent.id}/policies`}
+            className="text-xs font-medium text-primary-600 hover:text-primary-500"
+          >
+            Policies
+          </Link>
+          <button
+            onClick={onDelete}
+            className="text-xs font-medium text-red-600 hover:text-red-500"
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );

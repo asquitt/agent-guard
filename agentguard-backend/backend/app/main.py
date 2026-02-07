@@ -101,6 +101,7 @@ async def detailed_health_check():
 
 # Router registration
 from app.api import (  # noqa: E402
+    agent_policies,
     agents,
     alerts,
     api_keys,
@@ -121,6 +122,7 @@ from app.api import (  # noqa: E402
     websocket,
 )
 
+app.include_router(agent_policies.router, prefix="/api/v1/agents", tags=["Agent Policies"])
 app.include_router(agents.router, prefix="/api/v1/agents", tags=["Agents"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(sso.router, prefix="/api/v1/auth/sso", tags=["SSO"])

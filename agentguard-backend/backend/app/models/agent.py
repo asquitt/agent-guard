@@ -30,6 +30,7 @@ class Agent(TimestampMixin, Base):
 
     # Relationships
     organization = relationship("Organization", back_populates="agents")
+    policies = relationship("AgentPolicy", back_populates="agent", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_agents_org_id_status", "org_id", "status"),

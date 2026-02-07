@@ -67,5 +67,14 @@ export {
   deleteAgent,
 } from './agents';
 export type { AgentData, AgentFilters } from './agents';
+export {
+  listPolicies,
+  getPolicy,
+  createPolicy,
+  updatePolicy,
+  deletePolicy,
+  listPolicyTemplates,
+} from './agent-policies';
+export type { AgentPolicy, PolicyCreateData, PolicyTemplate } from './agent-policies';
 export { listTraces, getTrace } from './traces';
 export type { TraceListItem, TraceDetail, TraceFilters } from './traces';
