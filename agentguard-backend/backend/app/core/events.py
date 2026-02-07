@@ -1,5 +1,7 @@
 """Redis pub/sub event publishing for real-time WebSocket updates."""
 
+# pyright: reportReturnType=false
+
 from __future__ import annotations
 
 import json

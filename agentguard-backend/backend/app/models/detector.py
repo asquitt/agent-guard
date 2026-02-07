@@ -1,12 +1,6 @@
 """Detector and detector rule models."""
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    ForeignKey,
-    Index,
-    String,
-)
+from sqlalchemy import Boolean, Column, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 

@@ -52,12 +52,7 @@ from app.schemas.incidents import (
     IncidentResponse,
     IncidentUpdateRequest,
 )
-from app.schemas.organizations import (
-    MemberListResponse,
-    MemberResponse,
-    OrgDetailResponse,
-    OrgUpdateRequest,
-)
+from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
 from app.schemas.proxy_endpoints import (
     ProxyEndpointCreateRequest,
     ProxyEndpointListResponse,

@@ -8,12 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_org, get_db, require_admin
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
-from app.schemas.webhooks import (
-    WebhookCreateRequest,
-    WebhookListResponse,
-    WebhookResponse,
-    WebhookUpdateRequest,
-)
+from app.schemas.webhooks import WebhookCreateRequest, WebhookListResponse, WebhookResponse, WebhookUpdateRequest
 from app.services import webhook_service
 
 router = APIRouter()

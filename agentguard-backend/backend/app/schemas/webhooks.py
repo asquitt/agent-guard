@@ -49,5 +49,3 @@ class WebhookListResponse(BaseModel):
 
     items: list[WebhookResponse]
     total: int
-
-

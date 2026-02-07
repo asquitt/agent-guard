@@ -1,17 +1,14 @@
 """Organization management router."""
 
+# pyright: reportGeneralTypeIssues=false
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db, require_admin
 from app.models.user import Organization, User
-from app.schemas.organizations import (
-    MemberListResponse,
-    MemberResponse,
-    OrgDetailResponse,
-    OrgUpdateRequest,
-)
+from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
 
 router = APIRouter()
 

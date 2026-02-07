@@ -13,17 +13,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.detector import Detector
 from app.models.incident import Incident
-from app.services.detection.registry import (
-    ASYNC_CATEGORIES,
-    SYNC_CATEGORIES,
-    get_sync_detector,
-)
-from app.services.detection.types import (
-    ACTION_MODE_MAP,
-    DetectionAction,
-    DetectionResult,
-    PipelineDecision,
-)
+from app.services.detection.registry import ASYNC_CATEGORIES, SYNC_CATEGORIES, get_sync_detector
+from app.services.detection.types import ACTION_MODE_MAP, DetectionAction, DetectionResult, PipelineDecision
 
 logger = logging.getLogger(__name__)
 

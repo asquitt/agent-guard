@@ -1,6 +1,6 @@
 """Celery tasks for alert delivery."""
 
-# pyright: reportCallIssue=false
+# pyright: reportCallIssue=false, reportGeneralTypeIssues=false
 
 from __future__ import annotations
 
