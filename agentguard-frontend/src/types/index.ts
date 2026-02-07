@@ -194,6 +194,33 @@ export interface DashboardMetrics {
   recentIncidents: RecentIncidentSummary[];
 }
 
+// Cost Analytics
+export interface CostByModel {
+  model: string;
+  cost: number;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface DailyCost {
+  date: string;
+  cost: number;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface CostAnalytics {
+  totalCost: number;
+  totalRequests: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  costByModel: CostByModel[];
+  dailyCosts: DailyCost[];
+  periodDays: number;
+}
+
 // Billing
 export interface BillingStatus {
   planTier: string;

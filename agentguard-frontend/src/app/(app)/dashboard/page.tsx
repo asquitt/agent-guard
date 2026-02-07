@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { getDashboardMetrics } from '@/lib/api';
+import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { Toast } from '@/components/ui/Toast';
 import type { ToastItem } from '@/components/ui/Toast';
 import type { RecentIncidentSummary } from '@/types';
@@ -91,6 +92,9 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
       </div>
+
+      {/* Cost analytics */}
+      <CostAnalyticsSection />
 
       {/* Recent incidents */}
       <div className="mt-8 rounded-xl border border-gray-200 bg-white">

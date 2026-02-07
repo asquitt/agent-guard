@@ -31,6 +31,7 @@ from app.schemas.billing import (
     CheckoutSessionResponse,
     CustomerPortalResponse,
 )
+from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
 from app.schemas.dashboard import (
     DashboardMetricsResponse,
     IncidentCountBySeverity,
@@ -62,6 +63,9 @@ from app.schemas.proxy_endpoints import (
 )
 
 __all__ = [
+    "CostAnalyticsResponse",
+    "CostByModel",
+    "DailyCost",
     "BillingStatusResponse",
     "CheckoutSessionRequest",
     "CheckoutSessionResponse",

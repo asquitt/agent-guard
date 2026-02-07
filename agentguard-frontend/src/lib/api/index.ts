@@ -15,6 +15,7 @@ export {
   createCheckoutSession,
   createCustomerPortal,
 } from './billing';
+export { getCostAnalytics } from './cost-analytics';
 export { getDashboardMetrics } from './dashboard';
 export {
   listIncidents,
