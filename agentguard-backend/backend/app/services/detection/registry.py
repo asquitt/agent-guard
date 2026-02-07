@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from app.models.enums import DetectorCategory
 from app.services.detection.base import AsyncDetector, SyncDetector
+from app.services.detection.compliance import ComplianceDetector
 from app.services.detection.cost import CostAnomalyDetector
+from app.services.detection.hallucination import HallucinationDetector
 from app.services.detection.loop import LoopDetector
 from app.services.detection.pii import PIIDetector
 from app.services.detection.types import DetectionAction, DetectionResult
@@ -73,9 +75,11 @@ class _StubAsyncDetector:
 
 _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.PII_LEAK.value: PIIDetector(),
+    DetectorCategory.COMPLIANCE.value: ComplianceDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
+    DetectorCategory.HALLUCINATION.value: HallucinationDetector(),
     DetectorCategory.COST_ANOMALY.value: CostAnomalyDetector(),
     DetectorCategory.LOOP.value: LoopDetector(),
 }

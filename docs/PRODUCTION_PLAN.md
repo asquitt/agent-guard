@@ -173,26 +173,29 @@
 - [x] Created app/tasks/reports.py stub (fixed pre-existing worker crash)
 - [x] Verified: pyright 0 errors, all detectors pass functional tests in Docker
 
-### Session 2.5: LLM-Powered Detectors (Hallucination, Compliance)
+### Session 2.5: LLM-Powered Detectors (Hallucination, Compliance) ✅
 **Done when:** Hallucination and compliance detectors work using AgentGuard's own LLM.
 
-- [ ] **Hallucination Detector** (`app/services/detection/hallucination.py`):
-  - Send response + context to AgentGuard's LLM for fact-checking
-  - Structured prompt: "Does this response contain fabricated facts, invented citations, or unverifiable claims?"
-  - Confidence score (0-1) with configurable threshold
-  - Cache common patterns to reduce LLM costs
-  - Async only (post-response) — never blocks client
-- [ ] **Compliance Detector** (`app/services/detection/compliance.py`):
-  - Rule-based first pass: keyword matching for regulated terms
-  - LLM second pass: "Does this response violate [SOX/PCI-DSS/FFIEC] regulations?"
-  - Pre-built regulatory rule sets:
-    - SOX: Financial statement accuracy, internal controls
-    - PCI-DSS: Cardholder data exposure
-    - FFIEC: Fair lending language, risk disclosures
-  - Configurable regulatory frameworks per org
-- [ ] AgentGuard LLM service (separate API key management for internal LLM calls)
-- [ ] Rate limiting on internal LLM calls (cost protection)
-- [ ] Verify: Send hallucination-prone response → detected; Send compliance-violating content → detected
+- [x] **LLM Service** (`app/services/llm_service.py`):
+  - Shared internal LLM client (httpx POST to OpenAI/Anthropic, no SDK dependency)
+  - Configurable via DETECTION_LLM_PROVIDER, DETECTION_LLM_MODEL, DETECTION_LLM_RPM
+  - Sliding-window rate limiter (per-process)
+  - Graceful failure: returns empty string on error (detectors fail-open)
+  - JSON response parser with markdown fence stripping
+- [x] **Hallucination Detector** (`app/services/detection/hallucination.py`):
+  - AsyncDetector — sends response to internal LLM for fact-checking
+  - Structured prompt for confidence score (0-1) + issue list
+  - Configurable threshold (default 0.7), severity escalation by confidence
+  - Fail-open: if LLM unavailable, returns detected=False
+  - Extracts text from both OpenAI and Anthropic response formats
+- [x] **Compliance Detector** (`app/services/detection/compliance.py`):
+  - SyncDetector — two-pass: keyword matching + LLM verification
+  - SOX (7 keywords), PCI-DSS (7 keywords), FFIEC (7 keywords)
+  - Configurable frameworks list per detector config
+  - LLM second pass verifies keyword matches (graceful degradation)
+  - Severity: high for SOX/PCI-DSS, critical if LLM confirms violation
+- [x] All 5 detectors now registered: sync (PII, compliance), async (hallucination, cost, loop)
+- [x] Verified: pyright 0 errors, all detectors functional in Docker (API + worker)
 
 ---
 

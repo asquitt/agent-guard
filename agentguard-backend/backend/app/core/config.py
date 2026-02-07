@@ -29,9 +29,14 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
 
-    # LLM Providers
+    # LLM Providers (customer traffic proxy)
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+
+    # Internal LLM for detection (hallucination & compliance checks)
+    DETECTION_LLM_PROVIDER: str = "openai"  # "openai" or "anthropic"
+    DETECTION_LLM_MODEL: str = "gpt-4o-mini"
+    DETECTION_LLM_RPM: int = 60  # rate limit: requests per minute
 
     # Alerting
     SLACK_WEBHOOK_URL: str = ""
