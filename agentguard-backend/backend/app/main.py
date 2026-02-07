@@ -2,7 +2,10 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
+from app.api.auth import limiter
 from app.core.config import settings
 
 app = FastAPI(
@@ -12,6 +15,10 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
+
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # CORS middleware
 app.add_middleware(
@@ -29,9 +36,10 @@ async def health_check():
     return {"status": "healthy", "app": settings.APP_NAME}
 
 
-# Router registration (uncomment as implemented)
-# from app.api import auth, proxy, incidents, detectors, alerts, dashboard, webhooks
-# app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+# Router registration
+from app.api import auth  # noqa: E402
+
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 # app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 # app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["Incidents"])
 # app.include_router(detectors.router, prefix="/api/v1/detectors", tags=["Detectors"])
