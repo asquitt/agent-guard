@@ -368,6 +368,29 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
+// Detection Efficacy
+export interface CategoryEfficacy {
+  category: string;
+  total: number;
+  resolved: number;
+  dismissed: number;
+  open: number;
+  falsePositiveRate: number;
+  meanTimeToResolveHours: number | null;
+}
+
+export interface DailyDetectionCount {
+  date: string;
+  count: number;
+}
+
+export interface DetectionEfficacy {
+  categories: CategoryEfficacy[];
+  dailyTrend: DailyDetectionCount[];
+  overallFalsePositiveRate: number;
+  periodDays: number;
+}
+
 // Playground
 export interface PlaygroundTestRequest {
   request_text: string;

@@ -9,7 +9,10 @@ from app.core.deps import get_current_org, get_db
 from app.models.user import Organization
 from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
 from app.schemas.dashboard import (
+    CategoryEfficacy,
+    DailyDetectionCount,
     DashboardMetricsResponse,
+    DetectionEfficacyResponse,
     IncidentCountBySeverity,
     IncidentCountByStatus,
     RecentIncidentSummary,
@@ -72,5 +75,21 @@ async def get_sla_metrics(
         avg_throughput_per_hour=data["avg_throughput_per_hour"],
         uptime_pct=data["uptime_pct"],
         by_provider=[ProviderSlaMetrics(**p) for p in data["by_provider"]],
+        period_days=data["period_days"],
+    )
+
+
+@router.get("/detection-efficacy", response_model=DetectionEfficacyResponse)
+async def get_detection_efficacy(
+    days: int = Query(default=30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> DetectionEfficacyResponse:
+    """Get detection efficacy analytics (FP rates, MTTR, trends)."""
+    data = await dashboard_service.get_detection_efficacy(db, UUID(str(org.id)), days)
+    return DetectionEfficacyResponse(
+        categories=[CategoryEfficacy(**c) for c in data["categories"]],
+        daily_trend=[DailyDetectionCount(**d) for d in data["daily_trend"]],
+        overall_false_positive_rate=data["overall_false_positive_rate"],
         period_days=data["period_days"],
     )

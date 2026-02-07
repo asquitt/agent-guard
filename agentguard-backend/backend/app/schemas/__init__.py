@@ -44,7 +44,10 @@ from app.schemas.health import (
     SlaMetricsResponse,
 )
 from app.schemas.dashboard import (
+    CategoryEfficacy,
+    DailyDetectionCount,
     DashboardMetricsResponse,
+    DetectionEfficacyResponse,
     IncidentCountBySeverity,
     IncidentCountByStatus,
     RecentIncidentSummary,
@@ -95,7 +98,10 @@ __all__ = [
     "ApiKeyListResponse",
     "ApiKeyResponse",
     "ApiKeyUpdateRequest",
+    "CategoryEfficacy",
+    "DailyDetectionCount",
     "DashboardMetricsResponse",
+    "DetectionEfficacyResponse",
     "DetectorCreateRequest",
     "DetectorListResponse",
     "DetectorResponse",

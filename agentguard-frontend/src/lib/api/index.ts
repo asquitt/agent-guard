@@ -16,7 +16,7 @@ export {
   createCustomerPortal,
 } from './billing';
 export { getCostAnalytics } from './cost-analytics';
-export { getDashboardMetrics, getSlaMetrics } from './dashboard';
+export { getDashboardMetrics, getSlaMetrics, getDetectionEfficacy } from './dashboard';
 export {
   listIncidents,
   getIncident,
