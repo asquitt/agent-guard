@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Traces', href: '/dashboard/traces', icon: '🔗' },
   { label: 'Conversations', href: '/dashboard/conversations', icon: '💬' },
   { label: 'Threat Intel', href: '/dashboard/threat-intel', icon: '🛡️' },
+  { label: 'Red Team', href: '/dashboard/red-team', icon: '🎯' },
   { label: 'Playground', href: '/dashboard/playground', icon: '🧪' },
   { label: 'API Keys', href: '/dashboard/api-keys', icon: '🔑' },
   { label: 'Billing', href: '/dashboard/billing', icon: '💳' },

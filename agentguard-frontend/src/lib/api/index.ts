@@ -83,6 +83,8 @@ export { listDiscoveries, getShadowAISummary, updateDiscoveryStatus } from './sh
 export type { ShadowAIDiscovery, ShadowAIFilters, ShadowAISummary } from './shadow-ai';
 export { listConversations, getConversation, getConversationStats, updateConversationStatus } from './conversations';
 export type { Conversation, ConversationDetail, ConversationTurn, ConversationFilters, ConversationStats } from './conversations';
+export { listRedTeamRuns, getRedTeamRun, getRedTeamStats, createRedTeamRun } from './red-team';
+export type { RedTeamRun, RedTeamRunDetail, RedTeamFinding, RedTeamStats, RedTeamRunCreate } from './red-team';
 export { listIndicators, getThreatSummary, createIndicator, updateIndicator, seedPlatformIndicators } from './threat-intel';
 export type { ThreatIndicator, ThreatIndicatorFilters, ThreatSummary, IndicatorCreateData } from './threat-intel';
 export { listTraces, getTrace } from './traces';

@@ -17,6 +17,7 @@ from app.models.data_archive import DataArchive
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
 from app.models.proxy import ProxyEndpoint, ProxyRequest
+from app.models.red_team import RedTeamFinding, RedTeamRun
 from app.models.retention_policy import RetentionPolicy
 from app.models.review_queue import ReviewItem
 from app.models.shadow_ai import ShadowAIDiscovery
@@ -43,6 +44,8 @@ __all__ = [
     "Organization",
     "ProxyEndpoint",
     "ProxyRequest",
+    "RedTeamFinding",
+    "RedTeamRun",
     "RetentionPolicy",
     "ReviewItem",
     "ShadowAIDiscovery",
