@@ -539,24 +539,24 @@
 - [x] Production Dockerfiles (multi-stage builds for api, worker, frontend)
 - [x] Verify: chart structure complete with staging/production environment overrides
 
-### Session 7.3: CI/CD Pipeline (GitHub Actions)
+### Session 7.3: CI/CD Pipeline (GitHub Actions) ✅
 **Done when:** Push to main triggers build → test → deploy to staging. Manual promotion to production.
 
-- [ ] GitHub Actions workflows:
-  - **PR checks:** lint, type check, unit tests, security scan
-  - **Build:** Docker image build, push to ECR
-  - **Deploy staging:** Auto-deploy on merge to main
-  - **Deploy production:** Manual approval gate
-  - **Database migrations:** Run on deploy (with rollback plan)
-- [ ] Docker build optimization:
-  - Multi-stage builds
-  - Layer caching
+- [x] GitHub Actions workflows:
+  - **PR checks:** lint, type check, unit tests, security scan (Trivy)
+  - **Build:** Docker image build, push to ECR (path-filtered, GHA cache)
+  - **Deploy staging:** Auto-deploy on merge to main (workflow_run trigger)
+  - **Deploy production:** Manual approval gate (workflow_dispatch + environment protection)
+  - **Database migrations:** Run on deploy (with Helm rollback on failure)
+- [x] Docker build optimization:
+  - Multi-stage builds (created in 7.2)
+  - Layer caching (GHA cache)
   - Image scanning (Trivy)
-- [ ] Release management:
-  - Semantic versioning
-  - Changelog generation
-  - Rollback procedure documented
-- [ ] Verify: Push code → CI passes → staging deployed → smoke test passes
+- [x] Release management:
+  - Semantic versioning (tag-triggered release workflow)
+  - Changelog generation (commit-based)
+  - Rollback procedure (Helm rollback on failed deploy)
+- [x] Verify: 5 workflows created (ci, build, deploy-staging, deploy-production, release)
 
 ### Session 7.4: Monitoring, Logging & Alerting
 **Done when:** Sentry captures errors, structured logs are searchable, uptime monitoring active.

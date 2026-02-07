@@ -1,0 +1,129 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (commit SHA)"
+        required: true
+      skip_migration:
+        description: "Skip database migration"
+        required: false
+        default: "false"
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER: agentguard-production
+  NAMESPACE: agentguard
+  HELM_RELEASE: agentguard
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval in GitHub
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Verify image exists
+        run: |
+          aws ecr describe-images \
+            --repository-name agentguard-api \
+            --image-ids imageTag=${{ inputs.image_tag }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER }} --region ${{ env.AWS_REGION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Capture current state (for rollback)
+        run: |
+          helm get values ${{ env.HELM_RELEASE }} \
+            --namespace ${{ env.NAMESPACE }} > /tmp/previous-values.yaml 2>/dev/null || true
+          echo "PREVIOUS_REVISION=$(helm history ${{ env.HELM_RELEASE }} \
+            --namespace ${{ env.NAMESPACE }} --max 1 -o json | jq -r '.[0].revision')" >> $GITHUB_ENV
+
+      - name: Run database migrations
+        if: inputs.skip_migration != 'true'
+        run: |
+          kubectl run migration-${{ inputs.image_tag }} \
+            --image=${{ steps.ecr.outputs.registry }}/agentguard-api:${{ inputs.image_tag }} \
+            --restart=Never \
+            --namespace=${{ env.NAMESPACE }} \
+            --env="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --command -- alembic upgrade head
+          kubectl wait --for=condition=Complete \
+            job/migration-${{ inputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} \
+            --timeout=120s || true
+          kubectl delete pod migration-${{ inputs.image_tag }} \
+            --namespace=${{ env.NAMESPACE }} --ignore-not-found
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE }} \
+            infrastructure/k8s/agentguard \
+            --namespace ${{ env.NAMESPACE }} \
+            --create-namespace \
+            -f infrastructure/k8s/agentguard/environments/production.yaml \
+            --set global.imageRegistry=${{ steps.ecr.outputs.registry }} \
+            --set api.image.tag=${{ inputs.image_tag }} \
+            --set worker.image.tag=${{ inputs.image_tag }} \
+            --set beat.image.tag=${{ inputs.image_tag }} \
+            --set frontend.image.tag=${{ inputs.image_tag }} \
+            --set externalSecrets.dbSecretArn=${{ secrets.DB_SECRET_ARN }} \
+            --set externalSecrets.redisSecretArn=${{ secrets.REDIS_SECRET_ARN }} \
+            --set externalSecrets.appSecretArn=${{ secrets.APP_SECRET_ARN }} \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        id: verify
+        run: |
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }}-api \
+            --namespace=${{ env.NAMESPACE }} --timeout=180s
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }}-worker \
+            --namespace=${{ env.NAMESPACE }} --timeout=180s
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }}-frontend \
+            --namespace=${{ env.NAMESPACE }} --timeout=180s
+
+      - name: Smoke test
+        id: smoke
+        run: |
+          API_URL=$(kubectl get ingress ${{ env.HELM_RELEASE }}-ingress \
+            --namespace=${{ env.NAMESPACE }} \
+            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${API_URL}/health" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: got $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "Smoke test failed"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && (steps.verify.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        run: |
+          echo "Deployment failed — rolling back to revision ${{ env.PREVIOUS_REVISION }}"
+          helm rollback ${{ env.HELM_RELEASE }} ${{ env.PREVIOUS_REVISION }} \
+            --namespace ${{ env.NAMESPACE }} --wait --timeout 5m
