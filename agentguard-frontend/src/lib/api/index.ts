@@ -76,5 +76,7 @@ export {
   listPolicyTemplates,
 } from './agent-policies';
 export type { AgentPolicy, PolicyCreateData, PolicyTemplate } from './agent-policies';
+export { listReviews, getReviewStats, decideReview, escalateReview } from './reviews';
+export type { ReviewItem, ReviewFilters, ReviewStats } from './reviews';
 export { listTraces, getTrace } from './traces';
 export type { TraceListItem, TraceDetail, TraceFilters } from './traces';

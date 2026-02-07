@@ -45,6 +45,7 @@ class Incident(TimestampMixin, Base):
     detector = relationship("Detector", back_populates="incidents")
     actions = relationship("IncidentAction", back_populates="incident")
     alerts = relationship("Alert", back_populates="incident")
+    review_items = relationship("ReviewItem", back_populates="incident")
 
     __table_args__ = (
         Index("ix_incidents_org_id_status", "org_id", "status"),
