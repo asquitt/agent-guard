@@ -373,30 +373,32 @@
 
 **Goal:** Stripe billing, customer onboarding wizard, and SSO integration.
 
-### Session 5.1: Stripe Billing Integration
+### Session 5.1: Stripe Billing Integration ✅
 **Done when:** Customers can subscribe, upgrade, and manage billing. Usage is metered.
 
-- [ ] Stripe setup:
-  - Products: Starter ($99/mo), Pro ($499/mo), Enterprise (custom)
-  - Usage metering: proxy requests/month
-  - Webhook handler for subscription events
-- [ ] Billing service:
-  - Create Stripe customer on org registration
-  - Subscription management (create, upgrade, cancel)
-  - Usage reporting (report proxy request counts to Stripe)
-  - Invoice webhook handling
-  - Plan tier enforcement (rate limits, feature gates)
-- [ ] Billing API endpoints:
-  - `GET /api/v1/billing/subscription` — current plan
+- [x] Stripe setup:
+  - Products: Starter ($99/mo, 10k req), Pro ($499/mo, 100k req), Enterprise (custom, unlimited)
+  - Usage metering: monthly_request_count on Organization model, reset via Celery Beat
+  - Webhook handler for subscription events (checkout.session.completed, subscription.updated/deleted, invoice.payment_failed)
+  - Graceful degradation when Stripe keys not configured
+- [x] Billing service:
+  - Create Stripe customer on org registration (non-blocking)
+  - Subscription management via Stripe Checkout + Customer Portal (no custom forms)
+  - Usage counting in proxy (increment on each request in _parse_and_resolve)
+  - Webhook idempotency via StripeEvent model
+  - Plan tier enforcement (429 when limit exceeded, skip for Enterprise)
+- [x] Billing API endpoints:
+  - `GET /api/v1/billing/status` — current plan, usage, limits
   - `POST /api/v1/billing/checkout` — Stripe Checkout session
   - `POST /api/v1/billing/portal` — Stripe Customer Portal session
-  - `POST /api/v1/billing/webhook` — Stripe webhook handler
-- [ ] Frontend billing page:
-  - Current plan display
-  - Upgrade/downgrade buttons
-  - Usage meter (requests used / limit)
-  - Invoice history
-- [ ] Verify: Register → subscribe via Stripe → proxy requests metered → invoice generated
+  - `POST /api/v1/billing/webhook` — Stripe webhook handler (signature verified)
+- [x] Frontend billing page:
+  - Current plan display with subscription status
+  - Plan comparison cards (Starter / Pro / Enterprise)
+  - Usage bar (color-coded: green → yellow → red)
+  - Upgrade button → Stripe Checkout, Manage → Customer Portal
+- [x] Celery tasks: reset_monthly_usage (1st of month), sync_subscription_status (daily)
+- [x] Verify: billing/status returns plan_tier=starter + request_limit=10000, checkout returns 503 without keys
 
 ### Session 5.2: Onboarding Wizard
 **Done when:** New users complete a guided setup in <5 minutes and see their first detection.

@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -23,6 +24,10 @@ class Organization(TimestampMixin, Base):
     slug = Column(String(255), unique=True, nullable=False, index=True)
     plan_tier = Column(String(50), nullable=False, default=PlanTier.STARTER.value)
     stripe_customer_id = Column(String(255), nullable=True, unique=True)
+    stripe_subscription_id = Column(String(255), nullable=True, unique=True)
+    subscription_status = Column(String(50), nullable=True)
+    subscription_current_period_end = Column(DateTime(timezone=True), nullable=True)
+    monthly_request_count = Column(Integer, nullable=False, server_default="0")
     settings = Column(JSONB, nullable=False, server_default="{}")
 
     # Relationships

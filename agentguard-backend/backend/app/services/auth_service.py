@@ -89,6 +89,20 @@ async def register_user(
 
     await db.refresh(user)
     await db.refresh(org)
+
+    # Create Stripe customer (non-blocking — don't fail registration)
+    try:
+        from app.services.billing_service import get_or_create_stripe_customer
+
+        await get_or_create_stripe_customer(db, org)
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Failed to create Stripe customer for org %s — will retry later",
+            org.id,
+        )
+
     return user, org
 
 

@@ -1,6 +1,7 @@
 """Celery application configuration."""
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import settings
 
@@ -11,6 +12,7 @@ celery_app = Celery(
     include=[
         "app.tasks.analysis",
         "app.tasks.alerting",
+        "app.tasks.billing",
         "app.tasks.reports",
     ],
 )
@@ -33,5 +35,13 @@ celery_app.conf.beat_schedule = {
     "generate-daily-report": {
         "task": "app.tasks.reports.generate_daily_report",
         "schedule": 86400.0,  # Every 24 hours
+    },
+    "reset-monthly-usage": {
+        "task": "app.tasks.billing.reset_monthly_usage",
+        "schedule": crontab(day_of_month=1, hour=0, minute=0),
+    },
+    "sync-subscription-status": {
+        "task": "app.tasks.billing.sync_subscription_status",
+        "schedule": crontab(hour=3, minute=0),
     },
 }

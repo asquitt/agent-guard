@@ -12,8 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
+from app.models.enums import PlanTier
 from app.models.user import Organization
 from app.services import proxy_service
+from app.services.billing_service import get_request_limit
 from app.services.detection import pipeline as detection_pipeline
 from app.services.detection.types import DetectionAction
 
@@ -93,6 +95,24 @@ async def _parse_and_resolve(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=e.message,
         )
+
+    # Usage limit enforcement
+    limit = get_request_limit(org.plan_tier)  # type: ignore[arg-type]
+    current_count = org.monthly_request_count or 0
+    if limit is not None and current_count >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": "Monthly request limit exceeded",
+                "limit": limit,
+                "current": current_count,
+                "upgrade_url": "/dashboard/billing",
+            },
+        )
+
+    # Increment usage counter
+    org.monthly_request_count = current_count + 1  # type: ignore[assignment]
+    await db.flush()
 
     return body, path, endpoint, api_key, proxy_req
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function SettingsPage() {
@@ -62,10 +63,18 @@ export default function SettingsPage() {
           title="Security"
           description="SSO configuration, session timeout, IP allowlist"
         />
-        <PlaceholderSection
-          title="Billing"
-          description="Manage subscription, view usage, update payment method"
-        />
+        <Link
+          href="/dashboard/billing"
+          className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
+        >
+          <h3 className="text-sm font-semibold text-gray-700">Billing</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Manage subscription, view usage, update payment method
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600">
+            Go to Billing &rarr;
+          </p>
+        </Link>
       </div>
     </div>
   );

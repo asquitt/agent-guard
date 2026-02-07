@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     SLACK_WEBHOOK_URL: str = ""
     PAGERDUTY_API_KEY: str = ""
 
+    # Stripe Billing
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_STARTER_PRICE_ID: str = ""
+    STRIPE_PRO_PRICE_ID: str = ""
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # Sentry
     SENTRY_DSN: str = ""
 

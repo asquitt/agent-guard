@@ -62,3 +62,11 @@ class AlertStatus(str, enum.Enum):
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    PAST_DUE = "past_due"
+    CANCELED = "canceled"
+    TRIALING = "trialing"
+    INCOMPLETE = "incomplete"

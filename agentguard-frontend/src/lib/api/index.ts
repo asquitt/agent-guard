@@ -10,6 +10,11 @@ export {
   getMeApi,
   logoutApi,
 } from './auth';
+export {
+  getBillingStatus,
+  createCheckoutSession,
+  createCustomerPortal,
+} from './billing';
 export { getDashboardMetrics } from './dashboard';
 export {
   listIncidents,

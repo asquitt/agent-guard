@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface WebSocketEvent {
-  type: 'incident.new' | 'incident.updated' | 'alert.sent' | 'connected';
+  type: 'incident.new' | 'incident.updated' | 'alert.sent' | 'billing.updated' | 'connected';
   data: Record<string, unknown>;
   timestamp?: string;
 }

@@ -193,6 +193,23 @@ export interface DashboardMetrics {
   recentIncidents: RecentIncidentSummary[];
 }
 
+// Billing
+export interface BillingStatus {
+  planTier: string;
+  subscriptionStatus: string | null;
+  currentPeriodEnd: string | null;
+  monthlyRequestCount: number;
+  requestLimit: number | null;
+}
+
+export interface CheckoutSessionResponse {
+  checkoutUrl: string;
+}
+
+export interface CustomerPortalResponse {
+  portalUrl: string;
+}
+
 // Paginated response wrapper
 export interface PaginatedResponse<T> {
   items: T[];

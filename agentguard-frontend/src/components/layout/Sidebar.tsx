@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Detectors', href: '/dashboard/detectors', icon: '🔍' },
   { label: 'Alerts', href: '/dashboard/alerts', icon: '🔔' },
   { label: 'API Keys', href: '/dashboard/api-keys', icon: '🔑' },
+  { label: 'Billing', href: '/dashboard/billing', icon: '💳' },
   { label: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
 ];
 

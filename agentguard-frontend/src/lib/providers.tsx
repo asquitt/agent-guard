@@ -29,6 +29,9 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
       case 'alert.sent':
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
         break;
+      case 'billing.updated':
+        queryClient.invalidateQueries({ queryKey: ['billing'] });
+        break;
     }
   }, [lastEvent, queryClient]);
 

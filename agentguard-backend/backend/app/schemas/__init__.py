@@ -1,5 +1,11 @@
 """Pydantic schemas for request/response validation."""
 
+from app.schemas.billing import (
+    BillingStatusResponse,
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    CustomerPortalResponse,
+)
 from app.schemas.alerts import (
     AlertDestinationCreateRequest,
     AlertDestinationListResponse,
@@ -60,6 +66,10 @@ from app.schemas.proxy_endpoints import (
 )
 
 __all__ = [
+    "BillingStatusResponse",
+    "CheckoutSessionRequest",
+    "CheckoutSessionResponse",
+    "CustomerPortalResponse",
     "AlertDestinationCreateRequest",
     "AlertDestinationListResponse",
     "AlertDestinationResponse",
