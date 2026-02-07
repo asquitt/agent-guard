@@ -14,6 +14,8 @@ from app.core.deps import get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
 from app.models.user import Organization
 from app.services import proxy_service
+from app.services.detection import pipeline as detection_pipeline
+from app.services.detection.types import DetectionAction
 
 router = APIRouter()
 
@@ -103,6 +105,7 @@ async def _handle_non_streaming(
     proxy_req: Any,
     db: AsyncSession,
     start_time: float,
+    org_id: UUID,
 ) -> JSONResponse:
     """Forward a non-streaming request and log the response."""
     try:
@@ -152,7 +155,26 @@ async def _handle_non_streaming(
         latency_ms, input_tokens, output_tokens, response_model,
     )
 
-    # Pass upstream response through as-is
+    # Run detection pipeline on successful responses
+    if response.status_code == 200:
+        decision = await detection_pipeline.run_sync_detectors(
+            db, org_id, json.dumps(body), response_text, response_model,
+            UUID(str(proxy_req.id)),
+        )
+        await db.commit()
+
+        if decision.action == DetectionAction.BLOCK:
+            return JSONResponse(
+                status_code=403,
+                content={"error": {"message": "Request blocked by security policy", "type": "detection_blocked"}},
+            )
+        if decision.action == DetectionAction.REDACT and decision.modified_response:
+            response_data = json.loads(decision.modified_response)
+
+        await detection_pipeline.queue_async_detectors(
+            db, org_id, UUID(str(proxy_req.id))
+        )
+
     return JSONResponse(
         status_code=response.status_code,
         content=response_data if response_data else json.loads(response_text),
@@ -167,6 +189,7 @@ async def _handle_streaming(
     proxy_req: Any,
     db: AsyncSession,
     start_time: float,
+    org_id: UUID,
 ) -> StreamingResponse:
     """Forward a streaming request, passthrough SSE, log after completion."""
     # Inject stream_options to get usage in final chunk
@@ -250,6 +273,12 @@ async def _handle_streaming(
             latency_ms, input_tokens, output_tokens, model_name,
         )
 
+        # Queue async detection for streaming responses
+        if resp_status == 200:
+            await detection_pipeline.queue_async_detectors(
+                db, org_id, UUID(str(proxy_req.id))
+            )
+
     return StreamingResponse(
         stream_generator(),
         media_type="text/event-stream",
@@ -273,6 +302,7 @@ async def proxy_chat_completions(
 ) -> JSONResponse | StreamingResponse:
     """Proxy OpenAI chat completions (streaming + non-streaming)."""
     start_time = time.time()
+    org_id = UUID(str(org.id))
     body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
         request, db, org, x_agentguard_endpoint_id
     )
@@ -282,10 +312,10 @@ async def proxy_chat_completions(
 
     if body.get("stream"):
         return await _handle_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time
+            client, target_url, body, api_key, proxy_req, db, start_time, org_id
         )
     return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time
+        client, target_url, body, api_key, proxy_req, db, start_time, org_id
     )
 
 
@@ -298,6 +328,7 @@ async def proxy_completions(
 ) -> JSONResponse | StreamingResponse:
     """Proxy OpenAI legacy completions (streaming + non-streaming)."""
     start_time = time.time()
+    org_id = UUID(str(org.id))
     body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
         request, db, org, x_agentguard_endpoint_id
     )
@@ -307,10 +338,10 @@ async def proxy_completions(
 
     if body.get("stream"):
         return await _handle_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time
+            client, target_url, body, api_key, proxy_req, db, start_time, org_id
         )
     return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time
+        client, target_url, body, api_key, proxy_req, db, start_time, org_id
     )
 
 
@@ -323,6 +354,7 @@ async def proxy_embeddings(
 ) -> JSONResponse:
     """Proxy OpenAI embeddings (never streaming)."""
     start_time = time.time()
+    org_id = UUID(str(org.id))
     body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
         request, db, org, x_agentguard_endpoint_id
     )
@@ -331,7 +363,7 @@ async def proxy_embeddings(
     target_url = proxy_service.build_target_url(endpoint, path)
 
     return await _handle_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time
+        client, target_url, body, api_key, proxy_req, db, start_time, org_id
     )
 
 
@@ -346,6 +378,7 @@ async def _handle_anthropic_non_streaming(
     proxy_req: Any,
     db: AsyncSession,
     start_time: float,
+    org_id: UUID,
 ) -> JSONResponse:
     """Forward a non-streaming Anthropic request and log the response."""
     try:
@@ -394,6 +427,26 @@ async def _handle_anthropic_non_streaming(
         latency_ms, input_tokens, output_tokens, response_model,
     )
 
+    # Run detection pipeline on successful responses
+    if response.status_code == 200:
+        decision = await detection_pipeline.run_sync_detectors(
+            db, org_id, json.dumps(body), response_text, response_model,
+            UUID(str(proxy_req.id)),
+        )
+        await db.commit()
+
+        if decision.action == DetectionAction.BLOCK:
+            return JSONResponse(
+                status_code=403,
+                content={"type": "error", "error": {"type": "detection_blocked", "message": "Request blocked by security policy"}},
+            )
+        if decision.action == DetectionAction.REDACT and decision.modified_response:
+            response_data = json.loads(decision.modified_response)
+
+        await detection_pipeline.queue_async_detectors(
+            db, org_id, UUID(str(proxy_req.id))
+        )
+
     return JSONResponse(
         status_code=response.status_code,
         content=response_data if response_data else json.loads(response_text),
@@ -408,6 +461,7 @@ async def _handle_anthropic_streaming(
     proxy_req: Any,
     db: AsyncSession,
     start_time: float,
+    org_id: UUID,
 ) -> StreamingResponse:
     """Forward an Anthropic streaming request, passthrough SSE, log after."""
 
@@ -500,6 +554,12 @@ async def _handle_anthropic_streaming(
             latency_ms, input_tokens, output_tokens, model_name,
         )
 
+        # Queue async detection for streaming responses
+        if resp_status == 200:
+            await detection_pipeline.queue_async_detectors(
+                db, org_id, UUID(str(proxy_req.id))
+            )
+
     return StreamingResponse(
         stream_generator(),
         media_type="text/event-stream",
@@ -520,6 +580,7 @@ async def proxy_anthropic_messages(
 ) -> JSONResponse | StreamingResponse:
     """Proxy Anthropic Messages API (streaming + non-streaming)."""
     start_time = time.time()
+    org_id = UUID(str(org.id))
     body, _path, endpoint, api_key, proxy_req = await _parse_and_resolve(
         request, db, org, x_agentguard_endpoint_id, provider="anthropic"
     )
@@ -529,8 +590,8 @@ async def proxy_anthropic_messages(
 
     if body.get("stream"):
         return await _handle_anthropic_streaming(
-            client, target_url, body, api_key, proxy_req, db, start_time
+            client, target_url, body, api_key, proxy_req, db, start_time, org_id
         )
     return await _handle_anthropic_non_streaming(
-        client, target_url, body, api_key, proxy_req, db, start_time
+        client, target_url, body, api_key, proxy_req, db, start_time, org_id
     )

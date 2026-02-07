@@ -133,22 +133,24 @@
 - [x] Normalize request/response logging (common schema across providers, provider-aware endpoint resolution)
 - [x] Verify: Route registered, endpoint resolves to Anthropic, requests logged to DB, pyright 0 errors
 
-### Session 2.3: Detection Pipeline Architecture
+### Session 2.3: Detection Pipeline Architecture ✅
 **Done when:** Detection pipeline processes every proxy response through configured detectors asynchronously.
 
-- [ ] Design detection pipeline:
+- [x] Design detection pipeline:
   1. Proxy response received
   2. Sync pre-response detectors run (block/redact decisions — PII, compliance)
   3. Response sent to client (with or without modifications)
   4. Async post-response detectors run via Celery (hallucination, cost, loop)
   5. Incidents created for any detections
   6. Alerts fired based on severity + destination config
-- [ ] Implement `DetectionPipeline` service:
-  - `run_sync_detectors(request, response)` → `DetectionResult` (pass/block/redact)
-  - `queue_async_detectors(request_id)` → Celery task
-- [ ] Implement `DetectionResult` model: `detected`, `severity`, `category`, `details`, `action`
-- [ ] Implement detector loading: fetch org's active detectors, ordered by priority
-- [ ] Verify: Proxy request triggers detection pipeline, Celery task queued
+- [x] Implement detection pipeline service (`app/services/detection/pipeline.py`):
+  - `run_sync_detectors(db, org_id, request_body, response_body, model, proxy_request_id)` → `PipelineDecision`
+  - `queue_async_detectors(db, org_id, proxy_request_id)` → Celery task ID
+- [x] Implement `DetectionResult` dataclass + `PipelineDecision` + `DetectionAction` enum (`types.py`)
+- [x] Implement `SyncDetector`/`AsyncDetector` protocols (`base.py`), registry with stub detectors (`registry.py`)
+- [x] Implement Celery task `run_async_detection` (`app/tasks/analysis.py`) with sync DB, retry logic
+- [x] Integrate pipeline into all 4 proxy handlers (non-streaming: sync+async, streaming: async only)
+- [x] Verify: All imports work at runtime, proxy endpoints respond correctly, pyright 0 errors
 
 ### Session 2.4: Rule-Based Detectors (PII, Cost, Loop)
 **Done when:** PII, cost anomaly, and loop detectors create incidents when violations found.
