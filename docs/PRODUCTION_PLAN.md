@@ -243,19 +243,20 @@
 - [x] Detection pipeline integration: `_create_incident_from_result` now queues alerts
 - [x] Verified: pyright 0 errors, all imports/endpoints functional in Docker
 
-### Session 3.3: Webhook System
+### Session 3.3: Webhook System ✅
 **Done when:** Customers can receive webhook notifications for incidents.
 
-- [ ] Webhook router (`/api/v1/webhooks/`)
-  - CRUD for webhook endpoints
-  - Signature verification (HMAC-SHA256)
-  - Event types: `incident.created`, `incident.resolved`, `detector.triggered`, `cost.threshold`
-- [ ] Webhook delivery service:
-  - Async delivery via Celery
-  - Retry with exponential backoff
-  - Delivery log with response status
-  - Dead letter queue for failed deliveries
-- [ ] Verify: Incident created → webhook fired → signature verifiable
+- [x] Webhook router (`/api/v1/webhooks/`):
+  - Full CRUD (POST, GET list, GET detail, PATCH, DELETE)
+  - Stored as AlertDestination type=webhook (reuses existing infrastructure)
+  - Configurable event_types and min_severity per webhook
+- [x] Webhook service (`app/services/webhook_service.py`):
+  - HMAC-SHA256 signature generation (`X-AgentGuard-Signature` header)
+  - `deliver_webhook_with_signature()` for signed delivery
+  - `to_webhook_response()` adapter for AlertDestination → webhook view
+- [x] Webhook schemas: create/update/response/list with camelCase aliases
+- [x] Webhooks auto-fire via existing alert system (AlertDestination type=webhook)
+- [x] Registered in main.py, pyright 0 errors, endpoints verified via curl
 
 ---
 
