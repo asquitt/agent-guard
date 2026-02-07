@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db, require_admin
-from app.models.enums import ROLE_PERMISSIONS, UserRole
+from app.models.enums import ROLE_PERMISSIONS, Environment, UserRole
 from app.models.user import Organization, User
 from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
 
@@ -187,3 +187,34 @@ async def update_member_role(
     await db.commit()
     await db.refresh(member)
     return MemberResponse.model_validate(member)
+
+
+# ---------------------------------------------------------------------------
+# Environments
+# ---------------------------------------------------------------------------
+
+
+class EnvironmentInfo(BaseModel):
+    name: str
+    label: str
+
+
+class EnvironmentsResponse(BaseModel):
+    environments: list[EnvironmentInfo]
+    current: str
+
+
+@router.get("/environments", response_model=EnvironmentsResponse)
+async def list_environments(
+    org: Organization = Depends(get_current_org),
+) -> EnvironmentsResponse:
+    """List available environments and the org's default."""
+    settings_dict: dict = org.settings or {}  # type: ignore[assignment]
+    current = settings_dict.get("default_environment", Environment.PRODUCTION.value)
+    return EnvironmentsResponse(
+        environments=[
+            EnvironmentInfo(name=e.value, label=e.value.replace("_", " ").title())
+            for e in Environment
+        ],
+        current=current,
+    )

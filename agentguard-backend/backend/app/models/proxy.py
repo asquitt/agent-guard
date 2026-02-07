@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
+from app.models.enums import Environment
 
 
 class ProxyEndpoint(TimestampMixin, Base):
@@ -20,6 +21,7 @@ class ProxyEndpoint(TimestampMixin, Base):
     name = Column(String(255), nullable=False)
     provider = Column(String(50), nullable=False)
     target_url = Column(String(2048), nullable=False)
+    environment = Column(String(20), nullable=False, default=Environment.PRODUCTION.value)
     is_active = Column(Boolean, nullable=False, default=True)
     config = Column(JSONB, nullable=False, server_default="{}")
 

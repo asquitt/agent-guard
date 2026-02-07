@@ -162,6 +162,12 @@ class AgentStatus(str, enum.Enum):
     DEPRECATED = "deprecated"
 
 
+class Environment(str, enum.Enum):
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
 class SubscriptionStatus(str, enum.Enum):
     ACTIVE = "active"
     PAST_DUE = "past_due"

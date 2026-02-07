@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
-from app.models.enums import PlanTier, UserRole
+from app.models.enums import Environment, PlanTier, UserRole
 
 
 class Organization(TimestampMixin, Base):
@@ -80,6 +80,7 @@ class ApiKey(TimestampMixin, Base):
     prefix = Column(String(20), nullable=False)
     name = Column(String(255), nullable=False)
     scopes = Column(JSONB, nullable=False, server_default='["proxy"]')
+    environment = Column(String(20), nullable=False, default=Environment.PRODUCTION.value)
     is_active = Column(Boolean, nullable=False, default=True)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)

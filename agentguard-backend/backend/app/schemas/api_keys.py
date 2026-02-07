@@ -11,6 +11,7 @@ class ApiKeyCreateRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=255)
     scopes: list[str] = Field(default=["proxy"])
+    environment: str = "production"
     expires_at: datetime | None = None
 
 
@@ -24,6 +25,7 @@ class ApiKeyCreateResponse(BaseModel):
     prefix: str
     name: str
     scopes: list[str]
+    environment: str = "production"
     is_active: bool = Field(serialization_alias="isActive")
     expires_at: datetime | None = Field(serialization_alias="expiresAt")
     created_at: datetime = Field(serialization_alias="createdAt")
@@ -38,6 +40,7 @@ class ApiKeyResponse(BaseModel):
     prefix: str
     name: str
     scopes: list[str]
+    environment: str = "production"
     is_active: bool = Field(serialization_alias="isActive")
     last_used_at: datetime | None = Field(serialization_alias="lastUsedAt")
     expires_at: datetime | None = Field(serialization_alias="expiresAt")
