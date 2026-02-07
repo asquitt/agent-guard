@@ -454,8 +454,9 @@
 - [ ] FFIEC/SOX report templates
 - [ ] Verify: Take various actions → audit log entries exist → generate compliance report
 
-### Session 6.2: Data Retention Pipeline
+### Session 6.2: Data Retention Pipeline ✅
 **Done when:** Data automatically moves from hot → warm → cold storage based on age.
+**Status:** COMPLETE — Per-org retention policies, JSONL.gz archive storage with ArchiveStorage protocol (S3-swappable), daily Celery task for archive + batch delete, retention API with frontend settings page.
 
 - [ ] Tiered retention architecture:
   - **Hot (0-30 days):** PostgreSQL — full query capability
