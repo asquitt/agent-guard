@@ -12,6 +12,7 @@ from app.models.agent_policy import AgentPolicy
 from app.models.alert import Alert, AlertDestination
 from app.models.audit import AuditLog
 from app.models.compliance_report import ComplianceReport
+from app.models.conversation import Conversation, ConversationTurn
 from app.models.data_archive import DataArchive
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
@@ -31,6 +32,8 @@ __all__ = [
     "ApiKey",
     "AuditLog",
     "ComplianceReport",
+    "Conversation",
+    "ConversationTurn",
     "DataArchive",
     "Detector",
     "DetectorRule",

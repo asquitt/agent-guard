@@ -34,6 +34,7 @@ class Organization(TimestampMixin, Base):
     agent_policies = relationship("AgentPolicy", back_populates="organization")
     review_items = relationship("ReviewItem", back_populates="organization")
     shadow_discoveries = relationship("ShadowAIDiscovery", back_populates="organization")
+    conversations = relationship("Conversation", back_populates="organization")
 
 
 class User(TimestampMixin, Base):

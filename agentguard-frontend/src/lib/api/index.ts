@@ -81,5 +81,7 @@ export { listReviews, getReviewStats, decideReview, escalateReview } from './rev
 export type { ReviewItem, ReviewFilters, ReviewStats } from './reviews';
 export { listDiscoveries, getShadowAISummary, updateDiscoveryStatus } from './shadow-ai';
 export type { ShadowAIDiscovery, ShadowAIFilters, ShadowAISummary } from './shadow-ai';
+export { listConversations, getConversation, getConversationStats, updateConversationStatus } from './conversations';
+export type { Conversation, ConversationDetail, ConversationTurn, ConversationFilters, ConversationStats } from './conversations';
 export { listTraces, getTrace } from './traces';
 export type { TraceListItem, TraceDetail, TraceFilters } from './traces';
