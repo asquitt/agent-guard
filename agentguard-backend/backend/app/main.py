@@ -117,6 +117,7 @@ from app.api import (  # noqa: E402
     proxy_endpoints,
     retention,
     reviews,
+    shadow_ai,
     sso,
     traces,
     webhooks,
@@ -141,5 +142,6 @@ app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["Compli
 app.include_router(retention.router, prefix="/api/v1/retention", tags=["Retention"])
 app.include_router(playground.router, prefix="/api/v1/playground", tags=["Playground"])
 app.include_router(reviews.router, prefix="/api/v1/reviews", tags=["Reviews"])
+app.include_router(shadow_ai.router, prefix="/api/v1/shadow-ai", tags=["Shadow AI"])
 app.include_router(traces.router, prefix="/api/v1/traces", tags=["Traces"])
 app.include_router(websocket.router, tags=["WebSocket"])
