@@ -26,3 +26,11 @@ export {
   deleteDetector,
 } from './detectors';
 export { listApiKeys, createApiKey, revokeApiKey } from './api-keys';
+export {
+  listDestinations,
+  createDestination,
+  updateDestination,
+  deleteDestination,
+  testDestination,
+  listAlerts,
+} from './alerts';

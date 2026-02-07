@@ -125,20 +125,21 @@ export type AlertDestinationType = 'slack' | 'pagerduty' | 'email' | 'webhook';
 
 export interface AlertDestination {
   id: UUID;
-  organizationId: UUID;
   name: string;
-  type: AlertDestinationType;
+  destinationType: string;
   config: Record<string, unknown>;
-  enabled: boolean;
+  isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Alert {
   id: UUID;
   incidentId: UUID;
   destinationId: UUID;
-  status: 'pending' | 'sent' | 'failed';
-  sentAt?: string;
+  status: string;
+  sentAt: string | null;
+  errorMessage: string | null;
   createdAt: string;
 }
 
