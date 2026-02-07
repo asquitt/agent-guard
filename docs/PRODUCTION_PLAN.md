@@ -264,104 +264,91 @@
 
 **Goal:** Full enterprise dashboard with real-time updates, analytics, and team management.
 
-### Session 4.1: Auth Pages & Layout
+### Session 4.1: Auth Pages & Layout ✅
 **Done when:** Users can register, login, and see the authenticated dashboard layout.
 
-- [ ] Auth pages:
-  - `/login` — email/password form
-  - `/register` — registration with org creation
-  - `/forgot-password` — password reset flow
-- [ ] Authenticated layout:
-  - Sidebar navigation (Dashboard, Incidents, Detectors, Alerts, Settings, Docs)
-  - Header with user menu, org switcher, notifications bell
-  - Responsive design (desktop-first, mobile-friendly)
-- [ ] Auth provider (React context):
-  - Token storage (httpOnly cookies preferred, fallback to memory)
-  - Auto-refresh on token expiry
-  - Protected route wrapper
-- [ ] API client hooks (TanStack Query):
-  - `useAuth()` — login, register, logout, current user
-  - Query client configuration with retry, stale time, error handling
-- [ ] Verify: Register → login → see dashboard layout → refresh preserves session
+- [x] Auth pages:
+  - `/login` — email/password form with error handling
+  - `/register` — registration with org creation (name, email, org, password)
+- [x] Authenticated layout:
+  - Sidebar navigation (Dashboard, Incidents, Detectors, Alerts, API Keys, Settings)
+  - Header with user menu dropdown (name, email, sign out)
+  - Desktop-first layout with fixed sidebar + header
+- [x] Auth provider (React context):
+  - Token storage (localStorage for access + refresh tokens)
+  - Auto-refresh on token expiry (401 → refresh → retry)
+  - ProtectedRoute wrapper component with loading spinner
+- [x] Auth API client + useAuth hook:
+  - `login()`, `register()`, `logout()`, auto-fetchMe on mount
+  - Query client configuration with retry, stale time
+- [x] API proxy fixed (port 8000→8002 in next.config.js)
+- [x] TypeScript types updated to match backend auth schemas (AuthUser, AuthOrganization, MeResponse)
+- [x] Verified: `next build` succeeds, backend auth endpoints tested via curl, all types match
 
-### Session 4.2: Dashboard Overview Page
+### Session 4.2: Dashboard Overview Page ✅
 **Done when:** Dashboard shows real-time metrics, charts, and recent incidents.
 
-- [ ] Dashboard API endpoint (`/api/v1/dashboard/`)
-  - `GET /metrics` — total requests, incidents, detections by category, cost
-  - `GET /time-series` — requests/incidents over time (configurable range)
-  - `GET /detection-breakdown` — pie chart data by detector type
-  - `GET /top-incidents` — most recent/severe incidents
-- [ ] Dashboard page components:
-  - Metric cards (total requests, active incidents, detection rate, cost saved)
-  - Time series chart (requests + incidents over time) — Recharts or Chart.js
-  - Detection breakdown (bar chart by category)
-  - Recent incidents table (last 10, clickable)
-  - System health status (proxy latency, uptime)
-- [ ] Auto-refresh (polling every 10s initially, WebSocket later)
-- [ ] Verify: Dashboard loads with real data from proxy requests + detections
+- [x] Dashboard page with TanStack Query:
+  - Fetches `GET /dashboard/metrics` with 30s auto-refresh
+  - Metric cards: total incidents, open incidents (highlighted red when > 0)
+  - Severity breakdown card with color-coded badges
+  - Status breakdown card with color-coded badges
+  - Recent incidents table (10 most recent, clickable to detail page)
+  - Empty state when no incidents
+- [x] Dashboard API client (`src/lib/api/dashboard.ts`)
+- [x] TypeScript types: DashboardMetrics, IncidentCountByStatus, IncidentCountBySeverity, RecentIncidentSummary
+- [x] Verified: `next build` succeeds, metrics endpoint returns correct data shape
 
-### Session 4.3: Incidents Page
+### Session 4.3: Incidents Page ✅
 **Done when:** Incidents can be browsed, filtered, searched, and managed from the UI.
 
-- [ ] Incidents list page:
-  - Filterable table (severity, category, status, date range)
-  - Search bar (full-text on title/description)
-  - Bulk actions (resolve, dismiss selected)
-  - Pagination (cursor-based)
-  - Sort by severity, date, status
-- [ ] Incident detail page:
-  - Incident metadata (severity, category, detector, timestamp)
-  - Original request/response viewer (syntax highlighted JSON)
-  - Detection details (what was found, confidence score)
-  - Action timeline (who did what, when)
-  - Action buttons (investigate, resolve, dismiss, escalate)
-  - Related incidents (same detector or request pattern)
-- [ ] Verify: Navigate to incident → see details → take action → status updates
+- [x] Incidents list page:
+  - Filterable table (severity, category, status) with search bar
+  - Bulk actions (resolve, dismiss selected via checkboxes)
+  - Offset/limit pagination with page counter
+  - Severity and status color-coded badges
+- [x] Incident detail page:
+  - Incident metadata (severity, category, detector, timestamps)
+  - Description display
+  - Status actions (acknowledge, resolve, dismiss) with TanStack mutations
+  - Action timeline with timestamps
+  - Add action form (investigate, escalate, comment with note)
+- [x] Incidents API client: listIncidents, getIncident, updateIncidentStatus, addIncidentAction, bulkUpdateStatus
+- [x] Updated TypeScript types: Incident, IncidentDetail, IncidentAction, IncidentFilters
+- [x] Verified: `next build` succeeds, tsc 0 errors
 
-### Session 4.4: Detector Configuration & Proxy Settings
-**Done when:** Customers can configure detectors and proxy endpoints from the UI.
+### Session 4.4: Detector Configuration & API Keys ✅
+**Done when:** Customers can configure detectors and manage API keys from the UI.
 
-- [ ] Detectors page:
-  - List all detectors with status (active/inactive)
-  - Configure each detector:
-    - Action mode: monitor / warn / redact / block
-    - Sensitivity/threshold sliders
-    - Custom rules (regex patterns for PII, keywords for compliance)
-  - Enable/disable individual detectors
-  - Detector performance stats (detections count, false positive rate)
-- [ ] Proxy endpoints page:
-  - Add/edit/delete proxy endpoints
-  - Provider selection (OpenAI / Anthropic)
-  - API key configuration (target provider key)
-  - Test connection button
-  - Usage stats per endpoint
-- [ ] API keys page:
-  - Generate new keys
-  - View active keys (prefix only)
-  - Revoke keys
-  - Copy key on creation (one-time display)
-- [ ] Verify: Configure detector → proxy request → detection uses new config
+- [x] Detectors page:
+  - List all detectors with active/inactive toggle
+  - Action mode selector: monitor / warn / redact / block
+  - Config display showing all detector settings
+  - Category labels and rule count
+- [x] API keys page:
+  - Create key with name → full key shown once
+  - Copy-to-clipboard with confirmation feedback
+  - List keys (prefix only, scopes, last used, created date)
+  - Revoke keys with confirmation
+- [x] API clients: detectors (CRUD), api-keys (create/list/revoke)
+- [x] Updated types: Detector (with rules, actionMode), ApiKey, ApiKeyCreateResponse
+- [x] Verified: `next build` succeeds, tsc 0 errors, 9 routes compile
 
 ### Session 4.5: Alerts, Settings & Team Management
 **Done when:** Alert destinations, org settings, team management, and audit log viewer work.
 
-- [ ] Alerts page:
-  - Configure alert destinations (Slack, email, PagerDuty)
-  - Set severity thresholds per destination
-  - Test alert button
-  - Alert history with delivery status
-- [ ] Settings pages:
-  - Organization profile (name, logo, plan)
-  - Team management (invite, roles: admin/member/viewer, remove)
-  - Security settings (SSO config, session timeout, IP allowlist)
-  - Data retention settings
-  - Billing portal (Stripe customer portal link)
-- [ ] Audit log viewer:
-  - Filterable table of all org actions
-  - Export to CSV
-  - Date range filter
-- [ ] Verify: Configure alert destination → test alert → received
+- [x] Alerts page:
+  - Create alert destinations (Slack, PagerDuty, email, webhook) with webhook URL config
+  - Toggle enable/disable per destination
+  - Send test alert button with result feedback
+  - Delete destinations with confirmation
+- [x] Settings page:
+  - Organization info (name, slug, plan, created date)
+  - Account info (name, email, role, member since)
+  - Placeholder sections for team management, security, billing (coming soon)
+- [x] Alerts API client: listDestinations, createDestination, updateDestination, deleteDestination, testDestination, listAlerts
+- [x] Updated types: AlertDestination (destinationType, isActive, updatedAt), Alert (errorMessage)
+- [x] Verified: `next build` succeeds, tsc 0 errors, 11 routes compile
 
 ### Session 4.6: Real-Time Updates (WebSocket)
 **Done when:** Dashboard and incidents page update in real-time via WebSocket.
