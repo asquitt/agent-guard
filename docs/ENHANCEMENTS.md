@@ -71,7 +71,7 @@ Based on analysis of 15 competitors (Lakera, CalypsoAI/F5, Cisco AI Defense, Art
 
 ---
 
-### 1.2 System Prompt Extraction Prevention [P1]
+### 1.2 System Prompt Extraction Prevention [P1] ✅ DONE (a44f5d0)
 **Gap:** System prompt extraction was the #1 attacker objective in Q4 2025. No competitor addresses this specifically — most treat it as a subset of prompt injection.
 
 **Enhancement:**
