@@ -39,7 +39,7 @@ export interface MeResponse {
 // Incidents
 export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
-export type IncidentCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call';
+export type IncidentCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security';
 
 export interface Incident {
   id: UUID;
@@ -81,7 +81,7 @@ export interface IncidentFilters {
 }
 
 // Detectors
-export type DetectorCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call';
+export type DetectorCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security';
 
 export interface DetectorRule {
   id: UUID;

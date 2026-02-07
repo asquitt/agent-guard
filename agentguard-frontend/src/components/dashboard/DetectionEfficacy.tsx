@@ -14,6 +14,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   cost_anomaly: 'Cost Anomaly',
   loop: 'Loop Detection',
   toxicity: 'Toxicity & Bias',
+  tool_call: 'Tool Call Validation',
+  mcp_security: 'MCP Security',
 };
 
 export function DetectionEfficacySection() {

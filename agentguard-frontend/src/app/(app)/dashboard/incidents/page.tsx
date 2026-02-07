@@ -145,6 +145,7 @@ export default function IncidentsPage() {
           <option value="prompt_extraction">Prompt Extraction</option>
           <option value="toxicity">Toxicity & Bias</option>
           <option value="tool_call">Tool Call Validation</option>
+          <option value="mcp_security">MCP Security</option>
         </select>
       </div>
 

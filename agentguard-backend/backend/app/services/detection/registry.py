@@ -11,6 +11,7 @@ from app.services.detection.loop import LoopDetector
 from app.services.detection.pii import PIIDetector
 from app.services.detection.prompt_extraction import PromptExtractionDetector
 from app.services.detection.prompt_injection import PromptInjectionDetector
+from app.services.detection.mcp_security import MCPSecurityDetector
 from app.services.detection.tool_call import ToolCallDetector
 from app.services.detection.toxicity import ToxicityDetector
 from app.services.detection.types import DetectionAction, DetectionResult
@@ -23,6 +24,7 @@ SYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.PROMPT_INJECTION.value,
         DetectorCategory.PROMPT_EXTRACTION.value,
         DetectorCategory.TOOL_CALL.value,
+        DetectorCategory.MCP_SECURITY.value,
     }
 )
 
@@ -91,6 +93,7 @@ _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.PROMPT_INJECTION.value: PromptInjectionDetector(),
     DetectorCategory.PROMPT_EXTRACTION.value: PromptExtractionDetector(),
     DetectorCategory.TOOL_CALL.value: ToolCallDetector(),
+    DetectorCategory.MCP_SECURITY.value: MCPSecurityDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {

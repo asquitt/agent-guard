@@ -17,6 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   prompt_extraction: 'Prompt Extraction',
   toxicity: 'Toxicity & Bias',
   tool_call: 'Tool Call Validation',
+  mcp_security: 'MCP Security',
 };
 
 const MODE_COLORS: Record<string, string> = {

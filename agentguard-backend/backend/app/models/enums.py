@@ -126,6 +126,7 @@ class DetectorCategory(str, enum.Enum):
     PROMPT_EXTRACTION = "prompt_extraction"
     TOXICITY = "toxicity"
     TOOL_CALL = "tool_call"
+    MCP_SECURITY = "mcp_security"
 
 
 class ActionMode(str, enum.Enum):
