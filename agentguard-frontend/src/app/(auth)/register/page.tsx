@@ -23,7 +23,7 @@ export default function RegisterPage() {
 
     try {
       await register(email, password, fullName, orgName);
-      router.push('/dashboard');
+      router.push('/onboarding');
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

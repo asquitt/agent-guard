@@ -35,7 +35,8 @@ async def update_organization(
     if body.name is not None:
         org.name = body.name  # type: ignore[assignment]
     if body.settings is not None:
-        org.settings = body.settings  # type: ignore[assignment]
+        current = org.settings or {}
+        org.settings = {**current, **body.settings}  # type: ignore[assignment]
     await db.commit()
     await db.refresh(org)
     return OrgDetailResponse.model_validate(org)

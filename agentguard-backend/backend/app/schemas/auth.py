@@ -2,6 +2,7 @@
 
 import re
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -59,6 +60,7 @@ class OrgResponse(BaseModel):
     name: str
     slug: str
     plan_tier: str = Field(serialization_alias="planTier")
+    settings: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(serialization_alias="createdAt")
 
 

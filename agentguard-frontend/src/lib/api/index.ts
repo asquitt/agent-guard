@@ -39,3 +39,5 @@ export {
   testDestination,
   listAlerts,
 } from './alerts';
+export { createProxyEndpoint } from './proxy-endpoints';
+export { updateOrgSettings } from './organizations';

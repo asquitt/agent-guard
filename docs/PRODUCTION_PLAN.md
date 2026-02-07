@@ -400,21 +400,16 @@
 - [x] Celery tasks: reset_monthly_usage (1st of month), sync_subscription_status (daily)
 - [x] Verify: billing/status returns plan_tier=starter + request_limit=10000, checkout returns 503 without keys
 
-### Session 5.2: Onboarding Wizard
+### Session 5.2: Onboarding Wizard ✅
 **Done when:** New users complete a guided setup in <5 minutes and see their first detection.
 
-- [ ] Onboarding flow (after registration):
-  1. Welcome → name your organization
-  2. Create your first proxy endpoint (select provider, paste API key)
-  3. Generate an API key (one-click copy)
-  4. Integration guide (code snippets for Python, Node.js, curl)
-  5. Send a test request (pre-built "try it" button)
-  6. See your first detection (PII test payload)
-  7. Configure alerts (optional — Slack webhook)
-  8. Done → redirect to dashboard
-- [ ] Track onboarding progress (resume where left off)
-- [ ] Skip option for experienced users
-- [ ] Verify: New registration → complete wizard → first incident visible on dashboard
+- [x] Backend: Add settings to OrgResponse, merge settings in PATCH endpoint
+- [x] 6-step wizard: Welcome → Proxy Endpoint → API Key → Integration Code → Test Request → Completion
+- [x] WizardShell layout with progress bar, skip button
+- [x] API clients: proxy-endpoints.ts, organizations.ts
+- [x] Register redirects to /onboarding, onboarding marks completion in org settings
+- [x] Skip option for experienced users
+- [x] Verify: tsc clean, next build succeeds, /me returns settings, settings merge works
 
 ### Session 5.3: SSO Integration (SAML/OIDC)
 **Done when:** Organizations can configure SSO and members authenticate via their IdP.

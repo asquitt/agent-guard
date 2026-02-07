@@ -27,7 +27,13 @@ export interface AuthOrganization {
   name: string;
   slug: string;
   planTier: string;
+  settings: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface OnboardingProgress {
+  currentStep: number;
+  completed: boolean;
 }
 
 export interface MeResponse {

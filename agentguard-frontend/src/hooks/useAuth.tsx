@@ -34,6 +34,7 @@ interface AuthContextType extends AuthState {
     orgName: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
+  fetchMe: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -152,8 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ...state, login, register, logout }),
-    [state, login, register, logout],
+    () => ({ ...state, login, register, logout, fetchMe }),
+    [state, login, register, logout, fetchMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
