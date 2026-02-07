@@ -37,9 +37,12 @@ async def health_check():
 
 
 # Router registration
-from app.api import auth  # noqa: E402
+from app.api import api_keys, auth, organizations, proxy_endpoints  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(api_keys.router, prefix="/api/v1/api-keys", tags=["API Keys"])
+app.include_router(organizations.router, prefix="/api/v1/organizations", tags=["Organizations"])
+app.include_router(proxy_endpoints.router, prefix="/api/v1/proxy-endpoints", tags=["Proxy Endpoints"])
 # app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 # app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["Incidents"])
 # app.include_router(detectors.router, prefix="/api/v1/detectors", tags=["Detectors"])
