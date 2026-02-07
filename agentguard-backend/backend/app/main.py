@@ -7,7 +7,13 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.auth import limiter
 from app.core.config import settings
+from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.core.security import RequestSizeLimitMiddleware, SecurityHeadersMiddleware
+from app.core.sentry import init_sentry
+
+# Initialize observability before app creation
+configure_logging()
+init_sentry()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -21,11 +27,13 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
-# Security middleware (outermost = applied last, so order matters)
+# Middleware (outermost = applied last, so order matters)
 # 1. Security headers on every response
 app.add_middleware(SecurityHeadersMiddleware)
 # 2. Request body size limit (10 MB)
 app.add_middleware(RequestSizeLimitMiddleware)
+# 3. Request logging with correlation IDs
+app.add_middleware(RequestLoggingMiddleware)
 
 # CORS middleware — explicit methods/headers instead of wildcards
 app.add_middleware(
@@ -39,8 +47,44 @@ app.add_middleware(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Liveness probe — always returns 200 if the process is running."""
     return {"status": "healthy", "app": settings.APP_NAME}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    """Readiness probe — checks database and Redis connectivity."""
+    import redis.asyncio as aioredis
+    from sqlalchemy import text
+
+    from app.core.database import AsyncSessionLocal
+
+    checks: dict[str, str] = {}
+
+    # Database
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "error"
+
+    # Redis
+    try:
+        r = aioredis.from_url(settings.REDIS_URL)
+        await r.ping()
+        await r.aclose()
+        checks["redis"] = "ok"
+    except Exception:
+        checks["redis"] = "error"
+
+    healthy = all(v == "ok" for v in checks.values())
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={"status": "ready" if healthy else "degraded", "checks": checks},
+    )
 
 
 # Router registration

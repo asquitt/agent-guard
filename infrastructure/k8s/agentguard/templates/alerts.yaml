@@ -1,0 +1,86 @@
+{{- if .Values.alerts.enabled | default false }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-alerts
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: agentguard.api
+      rules:
+        # API error rate > 1% over 5 minutes
+        - alert: APIHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}",service="{{ .Release.Name }}-api",status=~"5.."}[5m]))
+            / sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}",service="{{ .Release.Name }}-api"}[5m]))
+            > 0.01
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "API error rate above 1%"
+            description: "{{ "{{ $value | humanizePercentage }}" }} of API requests are returning 5xx errors"
+
+        # API P99 latency > 500ms
+        - alert: APIHighLatency
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_seconds_bucket{namespace="{{ .Release.Namespace }}",service="{{ .Release.Name }}-api"}[5m])) by (le)
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "API P99 latency above 500ms"
+            description: "P99 latency is {{ "{{ $value }}s" }}"
+
+    - name: agentguard.worker
+      rules:
+        # Worker queue depth > 1000
+        - alert: WorkerQueueBacklog
+          expr: |
+            celery_queue_length{namespace="{{ .Release.Namespace }}",queue="default"} > 1000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Celery queue backlog exceeds 1000 tasks"
+            description: "Queue depth: {{ \"{{ $value }}\" }} tasks"
+
+        # Worker task failure rate > 5%
+        - alert: WorkerHighFailureRate
+          expr: |
+            sum(rate(celery_task_failed_total{namespace="{{ .Release.Namespace }}"}[10m]))
+            / sum(rate(celery_task_received_total{namespace="{{ .Release.Namespace }}"}[10m]))
+            > 0.05
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Celery task failure rate above 5%"
+
+    - name: agentguard.infra
+      rules:
+        # Pod restarts
+        - alert: PodCrashLooping
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="{{ .Release.Namespace }}"}[1h]) > 5
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ \"{{ $labels.pod }}\" }} is crash-looping"
+
+        # High memory usage
+        - alert: HighMemoryUsage
+          expr: |
+            container_memory_working_set_bytes{namespace="{{ .Release.Namespace }}"}
+            / container_spec_memory_limit_bytes{namespace="{{ .Release.Namespace }}"}
+            > 0.9
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Container {{ \"{{ $labels.container }}\" }} memory above 90%"
+{{- end }}
