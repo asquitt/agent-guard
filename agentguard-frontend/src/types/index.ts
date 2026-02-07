@@ -38,20 +38,45 @@ export interface MeResponse {
 // Incidents
 export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
-export type IncidentType = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
+export type IncidentCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
 
 export interface Incident {
   id: UUID;
-  organizationId: UUID;
-  type: IncidentType;
-  severity: IncidentSeverity;
-  status: IncidentStatus;
+  severity: string;
+  category: string;
   title: string;
-  description: string;
-  proxyRequestId?: UUID;
-  detectorId?: UUID;
+  description: string | null;
+  status: string;
+  actionTaken: string | null;
+  proxyRequestId: UUID | null;
+  detectorId: UUID | null;
+  resolvedAt: string | null;
   createdAt: string;
-  resolvedAt?: string;
+  updatedAt: string;
+}
+
+export interface IncidentAction {
+  id: UUID;
+  actionType: string;
+  userId: UUID | null;
+  details: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface IncidentDetail extends Incident {
+  actions: IncidentAction[];
+}
+
+export interface IncidentFilters {
+  status?: string;
+  severity?: string;
+  category?: string;
+  detectorId?: string;
+  q?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  skip?: number;
+  limit?: number;
 }
 
 // Detectors

@@ -1,0 +1,297 @@
+'use client';
+
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import { clsx } from 'clsx';
+import { listIncidents, bulkUpdateStatus } from '@/lib/api';
+import type { Incident, IncidentFilters } from '@/types';
+
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: 'bg-danger-50 text-danger-600',
+  high: 'bg-red-50 text-red-600',
+  medium: 'bg-warning-50 text-warning-600',
+  low: 'bg-blue-50 text-blue-600',
+  info: 'bg-gray-100 text-gray-600',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  open: 'bg-danger-50 text-danger-600',
+  acknowledged: 'bg-warning-50 text-warning-600',
+  resolved: 'bg-success-50 text-success-600',
+  dismissed: 'bg-gray-100 text-gray-500',
+};
+
+const PAGE_SIZE = 20;
+
+export default function IncidentsPage() {
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<IncidentFilters>({ limit: PAGE_SIZE });
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['incidents', filters],
+    queryFn: () => listIncidents(filters),
+  });
+
+  const bulkMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
+      bulkUpdateStatus(ids, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      setSelected(new Set());
+    },
+  });
+
+  const incidents = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const page = Math.floor((filters.skip ?? 0) / PAGE_SIZE);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  function updateFilter(key: keyof IncidentFilters, value: string) {
+    setFilters((f) => ({
+      ...f,
+      [key]: value || undefined,
+      skip: 0,
+    }));
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (selected.size === incidents.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(incidents.map((i) => i.id)));
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Incidents</h1>
+          <p className="text-sm text-gray-500">{total} total</p>
+        </div>
+
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">
+              {selected.size} selected
+            </span>
+            <button
+              onClick={() =>
+                bulkMutation.mutate({
+                  ids: Array.from(selected),
+                  status: 'resolved',
+                })
+              }
+              className="rounded-lg bg-success-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-success-500"
+            >
+              Resolve
+            </button>
+            <button
+              onClick={() =>
+                bulkMutation.mutate({
+                  ids: Array.from(selected),
+                  status: 'dismissed',
+                })
+              }
+              className="rounded-lg bg-gray-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-500"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          type="text"
+          placeholder="Search incidents..."
+          value={filters.q ?? ''}
+          onChange={(e) => updateFilter('q', e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+        />
+        <select
+          value={filters.status ?? ''}
+          onChange={(e) => updateFilter('status', e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="">All statuses</option>
+          <option value="open">Open</option>
+          <option value="acknowledged">Acknowledged</option>
+          <option value="resolved">Resolved</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+        <select
+          value={filters.severity ?? ''}
+          onChange={(e) => updateFilter('severity', e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="">All severities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+          <option value="info">Info</option>
+        </select>
+        <select
+          value={filters.category ?? ''}
+          onChange={(e) => updateFilter('category', e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="">All categories</option>
+          <option value="hallucination">Hallucination</option>
+          <option value="pii_leak">PII Leak</option>
+          <option value="compliance">Compliance</option>
+          <option value="cost_anomaly">Cost Anomaly</option>
+          <option value="loop">Loop</option>
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-gray-200 bg-white">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          </div>
+        ) : incidents.length === 0 ? (
+          <div className="py-16 text-center text-sm text-gray-500">
+            No incidents match your filters
+          </div>
+        ) : (
+          <>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.size === incidents.length && incidents.length > 0}
+                      onChange={toggleAll}
+                      className="rounded border-gray-300"
+                    />
+                  </th>
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Severity</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {incidents.map((inc) => (
+                  <IncidentRow
+                    key={inc.id}
+                    incident={inc}
+                    selected={selected.has(inc.id)}
+                    onToggle={() => toggleSelect(inc.id)}
+                  />
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+                <button
+                  disabled={page === 0}
+                  onClick={() =>
+                    setFilters((f) => ({
+                      ...f,
+                      skip: Math.max(0, (f.skip ?? 0) - PAGE_SIZE),
+                    }))
+                  }
+                  className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-500">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  disabled={page >= totalPages - 1}
+                  onClick={() =>
+                    setFilters((f) => ({
+                      ...f,
+                      skip: (f.skip ?? 0) + PAGE_SIZE,
+                    }))
+                  }
+                  className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function IncidentRow({
+  incident,
+  selected,
+  onToggle,
+}: {
+  incident: Incident;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <tr className={clsx('hover:bg-gray-50', selected && 'bg-primary-50')}>
+      <td className="px-4 py-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggle}
+          className="rounded border-gray-300"
+        />
+      </td>
+      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+        <Link
+          href={`/dashboard/incidents/${incident.id}`}
+          className="hover:text-primary-600"
+        >
+          {incident.title}
+        </Link>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-600">
+        {incident.category.replace('_', ' ')}
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={clsx(
+            'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+            SEVERITY_COLORS[incident.severity] ?? 'bg-gray-100 text-gray-600',
+          )}
+        >
+          {incident.severity}
+        </span>
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={clsx(
+            'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+            STATUS_COLORS[incident.status] ?? 'bg-gray-100 text-gray-600',
+          )}
+        >
+          {incident.status}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-500">
+        {new Date(incident.createdAt).toLocaleString()}
+      </td>
+    </tr>
+  );
+}

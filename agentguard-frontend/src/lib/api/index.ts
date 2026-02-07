@@ -11,3 +11,10 @@ export {
   logoutApi,
 } from './auth';
 export { getDashboardMetrics } from './dashboard';
+export {
+  listIncidents,
+  getIncident,
+  updateIncidentStatus,
+  addIncidentAction,
+  bulkUpdateStatus,
+} from './incidents';
