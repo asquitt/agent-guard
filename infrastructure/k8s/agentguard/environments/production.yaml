@@ -1,0 +1,102 @@
+# Production environment overrides
+global:
+  environment: production
+  domain: agentguard.app
+  imageRegistry: ""  # Set to ECR URL after terraform apply
+
+api:
+  replicaCount: 3
+  image:
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilization: 70
+    targetMemoryUtilization: 80
+  pdb:
+    minAvailable: 2
+
+worker:
+  replicaCount: 3
+  image:
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 8
+    targetCPUUtilization: 75
+  pdb:
+    minAvailable: 2
+  command:
+    - celery
+    - -A
+    - app.tasks.celery_app
+    - worker
+    - --loglevel=warning
+    - --concurrency=8
+
+beat:
+  image:
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  replicaCount: 3
+  image:
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 6
+    targetCPUUtilization: 75
+  pdb:
+    minAvailable: 2
+
+ingress:
+  enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/idle-timeout: "120"
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
+
+config:
+  debug: "false"
+  logLevel: warning
+  accessTokenExpireMinutes: "15"
+  refreshTokenExpireDays: "7"
+  retentionDryRun: "false"
+
+networkPolicies:
+  enabled: true

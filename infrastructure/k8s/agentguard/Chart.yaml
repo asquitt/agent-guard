@@ -1,0 +1,9 @@
+apiVersion: v2
+name: agentguard
+description: AgentGuard - AI Agent Incident Response for Financial Services
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: AgentGuard Engineering
+    email: engineering@agentguard.app

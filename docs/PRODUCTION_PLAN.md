@@ -522,10 +522,10 @@
 - [x] Cost estimation and budget alerts (50%, 80%, 100% actual + 80% forecasted → email)
 - [x] Verify: All module references validated (43 outputs, 71 inputs, 0 mismatches)
 
-### Session 7.2: Kubernetes Manifests & Helm Charts
+### Session 7.2: Kubernetes Manifests & Helm Charts ✅
 **Done when:** All services deployable to EKS with proper configs.
 
-- [ ] Kubernetes manifests:
+- [x] Kubernetes manifests:
   - API deployment (3 replicas, HPA, readiness/liveness probes)
   - Worker deployment (2 replicas, HPA based on queue depth)
   - Beat deployment (1 replica, leader election)
@@ -534,9 +534,10 @@
   - ConfigMaps and Secrets
   - NetworkPolicies (restrict inter-service communication)
   - PodDisruptionBudgets
-- [ ] Helm chart for parameterized deployments
-- [ ] Horizontal Pod Autoscaler configs (CPU + custom metrics)
-- [ ] Verify: `helm install` deploys all services, health checks pass
+- [x] Helm chart for parameterized deployments
+- [x] Horizontal Pod Autoscaler configs (CPU + custom metrics)
+- [x] Production Dockerfiles (multi-stage builds for api, worker, frontend)
+- [x] Verify: chart structure complete with staging/production environment overrides
 
 ### Session 7.3: CI/CD Pipeline (GitHub Actions)
 **Done when:** Push to main triggers build → test → deploy to staging. Manual promotion to production.

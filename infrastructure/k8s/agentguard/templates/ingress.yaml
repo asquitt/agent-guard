@@ -1,0 +1,57 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | default "" | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.global.domain }}
+      http:
+        paths:
+          # API routes
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.api.service.port }}
+          # WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.api.service.port }}
+          # Health check (for ALB)
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.api.service.port }}
+          # Stripe webhook
+          - path: /api/v1/billing/webhook
+            pathType: Exact
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.api.service.port }}
+          # Frontend — catch-all (must be last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+{{- end }}

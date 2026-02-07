@@ -1,0 +1,116 @@
+{{- if .Values.networkPolicies.enabled }}
+# Default deny all ingress — pods must explicitly allow traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-default-deny
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+---
+# API: accept from ALB ingress + frontend + worker + beat
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  policyTypes:
+    - Ingress
+  ingress:
+    # From ALB ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8000
+    # From frontend pods
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "agentguard.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+    # From worker pods (callback / health)
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "agentguard.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: worker
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# Frontend: accept from ALB ingress only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+# Worker: no inbound traffic needed (pulls from Redis queue)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  policyTypes:
+    - Ingress
+  ingress: []
+---
+# Beat: no inbound traffic needed (scheduler only)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-beat
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  policyTypes:
+    - Ingress
+  ingress: []
+{{- end }}

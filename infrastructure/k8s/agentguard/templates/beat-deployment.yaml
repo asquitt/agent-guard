@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-beat
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  # Beat must be exactly 1 replica — multiple beats cause duplicate task scheduling
+  replicas: {{ .Values.beat.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        {{- include "agentguard.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: beat
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-worker
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: beat
+          image: {{ include "agentguard.image" (merge (dict "repository" .Values.beat.image.repository "tag" .Values.beat.image.tag) .) }}
+          imagePullPolicy: {{ .Values.beat.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.beat.command | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-db-credentials
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis-credentials
+                  key: REDIS_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-app-secrets
+                  key: SECRET_KEY
+          resources:
+            {{- toYaml .Values.beat.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: beat-schedule
+              mountPath: /app/celerybeat-schedule
+      volumes:
+        - name: beat-schedule
+          emptyDir: {}
