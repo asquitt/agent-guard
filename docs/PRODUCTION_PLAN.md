@@ -122,16 +122,16 @@
 - [x] 512KB body truncation for DB logging
 - [x] Verify: All 3 endpoints forward to OpenAI, requests logged to DB with latency/status/model
 
-### Session 2.2: Proxy Request Handler (Anthropic)
+### Session 2.2: Proxy Request Handler (Anthropic) ✅
 **Done when:** Anthropic Messages API calls work through the proxy.
 
-- [ ] Add Anthropic proxy endpoint
+- [x] Add Anthropic proxy endpoint
   - `POST /v1/messages` — Anthropic Messages API compatible
-- [ ] Handle Anthropic-specific auth (x-api-key header forwarding)
-- [ ] Handle Anthropic streaming (SSE format differences)
-- [ ] Anthropic cost calculation (model pricing table)
-- [ ] Normalize request/response logging (common schema across providers)
-- [ ] Verify: Point an Anthropic SDK client at AgentGuard proxy, get responses
+- [x] Handle Anthropic-specific auth (x-api-key header forwarding)
+- [x] Handle Anthropic streaming (SSE format differences — event: lines, content_block_delta, message_delta usage)
+- [x] Anthropic cost calculation (8-model pricing table with prefix matching)
+- [x] Normalize request/response logging (common schema across providers, provider-aware endpoint resolution)
+- [x] Verify: Route registered, endpoint resolves to Anthropic, requests logged to DB, pyright 0 errors
 
 ### Session 2.3: Detection Pipeline Architecture
 **Done when:** Detection pipeline processes every proxy response through configured detectors asynchronously.

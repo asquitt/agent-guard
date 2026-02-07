@@ -40,6 +40,7 @@ async def _parse_and_resolve(
     db: AsyncSession,
     org: Organization,
     endpoint_header: str | None,
+    provider: str = "openai",
 ) -> tuple[dict[str, Any], str, Any, str, Any]:
     """Shared setup: parse body, resolve endpoint, log request, get API key.
 
@@ -59,7 +60,7 @@ async def _parse_and_resolve(
     endpoint_id = UUID(endpoint_header) if endpoint_header else None
     try:
         endpoint = await proxy_service.resolve_endpoint(
-            db, UUID(str(org.id)), endpoint_id
+            db, UUID(str(org.id)), endpoint_id, provider=provider
         )
     except (NotFoundError, ProxyError) as e:
         raise HTTPException(
@@ -330,5 +331,206 @@ async def proxy_embeddings(
     target_url = proxy_service.build_target_url(endpoint, path)
 
     return await _handle_non_streaming(
+        client, target_url, body, api_key, proxy_req, db, start_time
+    )
+
+
+# --- Anthropic ---
+
+
+async def _handle_anthropic_non_streaming(
+    client: httpx.AsyncClient,
+    target_url: str,
+    body: dict[str, Any],
+    api_key: str,
+    proxy_req: Any,
+    db: AsyncSession,
+    start_time: float,
+) -> JSONResponse:
+    """Forward a non-streaming Anthropic request and log the response."""
+    try:
+        response = await proxy_service.forward_anthropic_request(
+            client, target_url, body, api_key
+        )
+    except httpx.TimeoutException:
+        latency_ms = int((time.time() - start_time) * 1000)
+        await proxy_service.update_request_log(
+            db, proxy_req, 504, '{"error":"upstream timeout"}',
+            latency_ms, None, None, None,
+        )
+        return JSONResponse(
+            status_code=504,
+            content={"type": "error", "error": {"type": "timeout_error", "message": "Upstream LLM request timed out"}},
+        )
+    except httpx.HTTPError as e:
+        latency_ms = int((time.time() - start_time) * 1000)
+        await proxy_service.update_request_log(
+            db, proxy_req, 502, json.dumps({"error": str(e)}),
+            latency_ms, None, None, None,
+        )
+        return JSONResponse(
+            status_code=502,
+            content={"type": "error", "error": {"type": "proxy_error", "message": f"Upstream LLM error: {e}"}},
+        )
+
+    latency_ms = int((time.time() - start_time) * 1000)
+    response_text = response.text
+
+    response_data: dict[str, Any] = {}
+    if response.status_code == 200:
+        try:
+            response_data = response.json()
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    input_tokens, output_tokens = proxy_service.extract_anthropic_tokens(
+        response_data
+    )
+    response_model = response_data.get("model") or proxy_service.extract_model_from_body(body)
+
+    await proxy_service.update_request_log(
+        db, proxy_req, response.status_code,
+        proxy_service.truncate_body(response_text),
+        latency_ms, input_tokens, output_tokens, response_model,
+    )
+
+    return JSONResponse(
+        status_code=response.status_code,
+        content=response_data if response_data else json.loads(response_text),
+    )
+
+
+async def _handle_anthropic_streaming(
+    client: httpx.AsyncClient,
+    target_url: str,
+    body: dict[str, Any],
+    api_key: str,
+    proxy_req: Any,
+    db: AsyncSession,
+    start_time: float,
+) -> StreamingResponse:
+    """Forward an Anthropic streaming request, passthrough SSE, log after."""
+
+    async def stream_generator():
+        accumulated_content = ""
+        input_tokens: int | None = None
+        output_tokens: int | None = None
+        model_name: str | None = None
+        resp_status = 200
+
+        try:
+            async with client.stream(
+                "POST",
+                target_url,
+                json=body,
+                headers={
+                    "x-api-key": api_key,
+                    "content-type": "application/json",
+                    "anthropic-version": "2023-06-01",
+                },
+                timeout=120.0,
+            ) as response:
+                resp_status = response.status_code
+
+                if response.status_code != 200:
+                    error_body = b""
+                    async for chunk in response.aiter_bytes():
+                        error_body += chunk
+                        yield chunk
+                    latency_ms = int((time.time() - start_time) * 1000)
+                    await proxy_service.update_request_log(
+                        db, proxy_req, resp_status,
+                        error_body.decode("utf-8", errors="replace"),
+                        latency_ms, None, None, None,
+                    )
+                    return
+
+                # Anthropic SSE: "event: <type>\ndata: <json>\n\n"
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    yield f"{line}\n\n"
+
+                    if not line.startswith("data: "):
+                        continue
+
+                    try:
+                        chunk_data = json.loads(line[6:])
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+
+                    event_type = chunk_data.get("type", "")
+
+                    if event_type == "message_start":
+                        msg = chunk_data.get("message", {})
+                        if model_name is None:
+                            model_name = msg.get("model")
+                        usage = msg.get("usage", {})
+                        if usage.get("input_tokens"):
+                            input_tokens = usage["input_tokens"]
+
+                    elif event_type == "content_block_delta":
+                        delta = chunk_data.get("delta", {})
+                        if delta.get("type") == "text_delta":
+                            text = delta.get("text", "")
+                            if text:
+                                accumulated_content += text
+
+                    elif event_type == "message_delta":
+                        usage = chunk_data.get("usage", {})
+                        if usage.get("output_tokens"):
+                            output_tokens = usage["output_tokens"]
+
+        except httpx.TimeoutException:
+            yield 'event: error\ndata: {"type":"error","error":{"type":"timeout_error","message":"upstream timeout"}}\n\n'
+            resp_status = 504
+        except httpx.HTTPError as e:
+            yield f'event: error\ndata: {{"type":"error","error":{{"type":"proxy_error","message":"{e}"}}}}\n\n'
+            resp_status = 502
+
+        latency_ms = int((time.time() - start_time) * 1000)
+        response_summary = json.dumps({
+            "streamed": True,
+            "content_preview": accumulated_content[:500],
+            "model": model_name,
+        })
+        await proxy_service.update_request_log(
+            db, proxy_req, resp_status,
+            proxy_service.truncate_body(response_summary),
+            latency_ms, input_tokens, output_tokens, model_name,
+        )
+
+    return StreamingResponse(
+        stream_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/v1/messages", response_model=None)
+async def proxy_anthropic_messages(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org_from_api_key),
+    x_agentguard_endpoint_id: str | None = Header(default=None),
+) -> JSONResponse | StreamingResponse:
+    """Proxy Anthropic Messages API (streaming + non-streaming)."""
+    start_time = time.time()
+    body, _path, endpoint, api_key, proxy_req = await _parse_and_resolve(
+        request, db, org, x_agentguard_endpoint_id, provider="anthropic"
+    )
+
+    client = await get_http_client()
+    target_url = proxy_service.build_target_url(endpoint, "/v1/messages")
+
+    if body.get("stream"):
+        return await _handle_anthropic_streaming(
+            client, target_url, body, api_key, proxy_req, db, start_time
+        )
+    return await _handle_anthropic_non_streaming(
         client, target_url, body, api_key, proxy_req, db, start_time
     )
