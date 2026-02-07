@@ -16,10 +16,16 @@ import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
 const PAGE_SIZE = 20;
 
 const REPORT_TYPES = [
-  { value: 'access_audit', label: 'Access Audit' },
-  { value: 'incident_summary', label: 'Incident Summary' },
-  { value: 'detection_efficacy', label: 'Detection Efficacy' },
-  { value: 'configuration_changes', label: 'Configuration Changes' },
+  { value: 'access_audit', label: 'Access Audit', group: 'General' },
+  { value: 'incident_summary', label: 'Incident Summary', group: 'General' },
+  { value: 'detection_efficacy', label: 'Detection Efficacy', group: 'General' },
+  { value: 'configuration_changes', label: 'Configuration Changes', group: 'General' },
+  { value: 'sox_governance', label: 'SOX Governance', group: 'Regulatory' },
+  { value: 'pci_dss_security', label: 'PCI-DSS Security', group: 'Regulatory' },
+  { value: 'ffiec_risk', label: 'FFIEC Risk Assessment', group: 'Regulatory' },
+  { value: 'nydfs_500_cyber', label: 'NYDFS Part 500', group: 'Regulatory' },
+  { value: 'dora_ict', label: 'DORA ICT Risk', group: 'Regulatory' },
+  { value: 'eu_ai_act', label: 'EU AI Act', group: 'Regulatory' },
 ];
 
 export default function CompliancePage() {
@@ -248,9 +254,16 @@ function ReportsTab() {
               onChange={(e) => setReportType(e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
             >
-              {REPORT_TYPES.map((rt) => (
-                <option key={rt.value} value={rt.value}>{rt.label}</option>
-              ))}
+              <optgroup label="General">
+                {REPORT_TYPES.filter((rt) => rt.group === 'General').map((rt) => (
+                  <option key={rt.value} value={rt.value}>{rt.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Regulatory Frameworks">
+                {REPORT_TYPES.filter((rt) => rt.group === 'Regulatory').map((rt) => (
+                  <option key={rt.value} value={rt.value}>{rt.label}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
           <div>

@@ -34,8 +34,14 @@ class ChainVerificationResponse(BaseModel):
     broken_at: UUID | None = Field(None, serialization_alias="brokenAt")
 
 
+_VALID_REPORT_TYPES = (
+    "access_audit|incident_summary|detection_efficacy|configuration_changes"
+    "|sox_governance|pci_dss_security|ffiec_risk|nydfs_500_cyber|dora_ict|eu_ai_act"
+)
+
+
 class ComplianceReportRequest(BaseModel):
-    report_type: str = Field(pattern="^(access_audit|incident_summary|detection_efficacy|configuration_changes)$")
+    report_type: str = Field(pattern=f"^({_VALID_REPORT_TYPES})$")
     date_from: datetime
     date_to: datetime
 
