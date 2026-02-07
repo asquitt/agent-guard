@@ -7,7 +7,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.api_keys import (
@@ -37,12 +37,15 @@ async def create_api_key(
     org: Organization = Depends(get_current_org),
 ) -> ApiKeyCreateResponse:
     """Generate a new API key. Full key returned ONCE."""
+    client_ip = get_client_ip(request)
     api_key, full_key = await api_key_service.create_api_key(
         db=db,
         org_id=UUID(str(org.id)),
         name=body.name,
         scopes=body.scopes,
         expires_at=body.expires_at,
+        user_id=UUID(str(admin_user.id)),
+        ip_address=client_ip,
     )
     response = ApiKeyCreateResponse.model_validate(api_key)
     response.key = full_key
@@ -68,13 +71,15 @@ async def list_api_keys(
 @router.delete("/{key_id}", response_model=ApiKeyResponse)
 async def revoke_api_key(
     key_id: UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
 ) -> ApiKeyResponse:
     """Revoke (soft-delete) an API key."""
+    client_ip = get_client_ip(request)
     try:
-        api_key = await api_key_service.revoke_api_key(db, UUID(str(org.id)), key_id)
+        api_key = await api_key_service.revoke_api_key(db, UUID(str(org.id)), key_id, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
     return ApiKeyResponse.model_validate(api_key)

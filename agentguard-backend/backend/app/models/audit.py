@@ -37,6 +37,8 @@ class AuditLog(Base):
     resource_id = Column(UUID(as_uuid=True), nullable=True)
     details = Column(JSONB, nullable=False, server_default="{}")
     ip_address = Column(String(45), nullable=True)
+    prev_hash = Column(String(64), nullable=True)
+    entry_hash = Column(String(64), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError
 from app.models.detector import Detector, DetectorRule
+from app.services.audit_service import write_audit
 
 
 async def create_detector(
@@ -21,6 +22,8 @@ async def create_detector(
     action_mode: str,
     config: dict[str, Any] | None = None,
     rules: list[dict[str, Any]] | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> Detector:
     """Create a detector with optional inline rules."""
     detector = Detector(
@@ -45,6 +48,7 @@ async def create_detector(
             )
             db.add(rule)
 
+    await write_audit(db, org_id, user_id, "detector.created", "detector", detector.id, {"name": name, "category": category}, ip_address)
     await db.commit()
 
     # Reload with rules
@@ -94,6 +98,8 @@ async def update_detector(
     is_active: bool | None = None,
     action_mode: str | None = None,
     config: dict[str, Any] | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> Detector:
     """Update detector fields."""
     detector = await get_detector(db, org_id, detector_id)
@@ -105,14 +111,18 @@ async def update_detector(
         detector.action_mode = action_mode  # type: ignore[assignment]
     if config is not None:
         detector.config = config  # type: ignore[assignment]
+    await write_audit(db, org_id, user_id, "detector.updated", "detector", detector_id, {"name": name}, ip_address)
     await db.commit()
     await db.refresh(detector)
     return detector
 
 
-async def delete_detector(db: AsyncSession, org_id: UUID, detector_id: UUID) -> None:
+async def delete_detector(
+    db: AsyncSession, org_id: UUID, detector_id: UUID, user_id: UUID | None = None, ip_address: str | None = None
+) -> None:
     """Hard-delete a detector (cascades to rules)."""
     detector = await get_detector(db, org_id, detector_id)
+    await write_audit(db, org_id, user_id, "detector.deleted", "detector", detector_id, {"name": str(detector.name)}, ip_address)
     await db.delete(detector)
     await db.commit()
 

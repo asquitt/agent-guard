@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundError
-from app.models.audit import AuditLog
 from app.models.incident import Incident, IncidentAction
+from app.services.audit_service import write_audit
 
 
 async def list_incidents(
@@ -81,6 +81,7 @@ async def update_incident_status(
     incident_id: UUID,
     new_status: str,
     user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> Incident:
     """Update incident status and log audit trail."""
     incident = await get_incident(db, org_id, incident_id)
@@ -90,7 +91,7 @@ async def update_incident_status(
     if new_status == "resolved":
         incident.resolved_at = func.now()  # type: ignore[assignment]
 
-    await _write_audit(
+    await write_audit(
         db,
         org_id=org_id,
         user_id=user_id,
@@ -98,6 +99,7 @@ async def update_incident_status(
         resource_type="incident",
         resource_id=incident_id,
         details={"old_status": old_status, "new_status": new_status},
+        ip_address=ip_address,
     )
 
     await db.commit()
@@ -129,6 +131,7 @@ async def add_action(
     action_type: str,
     user_id: UUID | None = None,
     details: dict[str, Any] | None = None,
+    ip_address: str | None = None,
 ) -> IncidentAction:
     """Add an action to an incident and log audit trail."""
     await get_incident(db, org_id, incident_id)
@@ -141,7 +144,7 @@ async def add_action(
     )
     db.add(action)
 
-    await _write_audit(
+    await write_audit(
         db,
         org_id=org_id,
         user_id=user_id,
@@ -149,6 +152,7 @@ async def add_action(
         resource_type="incident",
         resource_id=incident_id,
         details={"action_type": action_type, **(details or {})},
+        ip_address=ip_address,
     )
 
     await db.commit()
@@ -189,6 +193,7 @@ async def bulk_update_status(
     incident_ids: list[UUID],
     new_status: str,
     user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> int:
     """Bulk update incident statuses. Returns count of updated rows."""
     values: dict[str, Any] = {"status": new_status}
@@ -200,7 +205,7 @@ async def bulk_update_status(
     result = await db.execute(stmt)
     updated: int = result.rowcount  # type: ignore[assignment]
 
-    await _write_audit(
+    await write_audit(
         db,
         org_id=org_id,
         user_id=user_id,
@@ -212,6 +217,7 @@ async def bulk_update_status(
             "new_status": new_status,
             "updated_count": updated,
         },
+        ip_address=ip_address,
     )
 
     await db.commit()
@@ -235,28 +241,3 @@ async def bulk_update_status(
     return updated
 
 
-# ------------------------------------------------------------------
-# Audit helpers
-# ------------------------------------------------------------------
-
-
-async def _write_audit(
-    db: AsyncSession,
-    org_id: UUID,
-    user_id: UUID | None,
-    action: str,
-    resource_type: str,
-    resource_id: UUID | None,
-    details: dict[str, Any] | None = None,
-) -> None:
-    """Write an append-only audit log entry."""
-    entry = AuditLog(
-        org_id=org_id,
-        user_id=user_id,
-        action=action,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        details=details or {},
-    )
-    db.add(entry)
-    await db.flush()

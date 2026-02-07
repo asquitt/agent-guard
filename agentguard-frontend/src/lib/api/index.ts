@@ -41,3 +41,10 @@ export {
 } from './alerts';
 export { createProxyEndpoint } from './proxy-endpoints';
 export { updateOrgSettings } from './organizations';
+export {
+  listAuditLogs,
+  verifyAuditChain,
+  createComplianceReport,
+  listComplianceReports,
+  getReportDownloadUrl,
+} from './compliance';

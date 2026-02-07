@@ -42,6 +42,7 @@ from app.api import (  # noqa: E402
     api_keys,
     auth,
     billing,
+    compliance,
     dashboard,
     detectors,
     incidents,
@@ -65,4 +66,5 @@ app.include_router(billing.router, prefix="/api/v1/billing", tags=["Billing"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
+app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["Compliance"])
 app.include_router(websocket.router, tags=["WebSocket"])

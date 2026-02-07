@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.detectors import (
@@ -31,6 +31,7 @@ async def create_detector(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> DetectorResponse:
     """Create a detector with optional inline rules."""
     rules_data = None
@@ -45,6 +46,8 @@ async def create_detector(
         action_mode=body.action_mode,
         config=body.config,
         rules=rules_data,
+        user_id=UUID(str(admin_user.id)),
+        ip_address=client_ip,
     )
     return DetectorResponse.model_validate(detector)
 
@@ -85,6 +88,7 @@ async def update_detector(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> DetectorResponse:
     """Update detector fields."""
     try:
@@ -96,6 +100,8 @@ async def update_detector(
             is_active=body.is_active,
             action_mode=body.action_mode,
             config=body.config,
+            user_id=UUID(str(admin_user.id)),
+            ip_address=client_ip,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -108,10 +114,11 @@ async def delete_detector(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> None:
     """Delete a detector and its rules."""
     try:
-        await detector_service.delete_detector(db, UUID(str(org.id)), detector_id)
+        await detector_service.delete_detector(db, UUID(str(org.id)), detector_id, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 

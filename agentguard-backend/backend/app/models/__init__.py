@@ -9,6 +9,7 @@ Run `python scripts/check_model_imports.py` after any model changes.
 
 from app.models.alert import Alert, AlertDestination
 from app.models.audit import AuditLog
+from app.models.compliance_report import ComplianceReport
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
 from app.models.proxy import ProxyEndpoint, ProxyRequest
@@ -21,6 +22,7 @@ __all__ = [
     "AlertDestination",
     "ApiKey",
     "AuditLog",
+    "ComplianceReport",
     "Detector",
     "DetectorRule",
     "Incident",

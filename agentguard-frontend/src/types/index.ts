@@ -211,6 +211,47 @@ export interface CustomerPortalResponse {
   portalUrl: string;
 }
 
+// Audit / Compliance
+export interface AuditLogEntry {
+  id: UUID;
+  userId: UUID | null;
+  action: string;
+  resourceType: string;
+  resourceId: UUID | null;
+  details: Record<string, unknown>;
+  ipAddress: string | null;
+  entryHash: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogFilters {
+  action?: string;
+  resourceType?: string;
+  userId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export interface ChainVerification {
+  valid: boolean;
+  checked: number;
+  brokenAt: string | null;
+}
+
+export interface ComplianceReport {
+  id: UUID;
+  reportType: string;
+  status: string;
+  dateFrom: string;
+  dateTo: string;
+  fileSizeBytes: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 // Paginated response wrapper
 export interface PaginatedResponse<T> {
   items: T[];

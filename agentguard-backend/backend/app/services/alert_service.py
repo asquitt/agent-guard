@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
 from app.models.alert import Alert, AlertDestination
 from app.services.alert_delivery import deliver
+from app.services.audit_service import write_audit
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ async def create_destination(
     name: str,
     destination_type: str,
     config: dict[str, Any] | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> AlertDestination:
     """Create an alert destination."""
     dest = AlertDestination(
@@ -32,6 +35,8 @@ async def create_destination(
         is_active=True,
     )
     db.add(dest)
+    await db.flush()
+    await write_audit(db, org_id, user_id, "alert_destination.created", "alert_destination", dest.id, {"name": name, "type": destination_type}, ip_address)
     await db.commit()
     await db.refresh(dest)
     return dest
@@ -78,6 +83,8 @@ async def update_destination(
     name: str | None = None,
     is_active: bool | None = None,
     config: dict[str, Any] | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> AlertDestination:
     """Update alert destination fields."""
     dest = await get_destination(db, org_id, dest_id)
@@ -87,14 +94,18 @@ async def update_destination(
         dest.is_active = is_active  # type: ignore[assignment]
     if config is not None:
         dest.config = config  # type: ignore[assignment]
+    await write_audit(db, org_id, user_id, "alert_destination.updated", "alert_destination", dest_id, {"name": name}, ip_address)
     await db.commit()
     await db.refresh(dest)
     return dest
 
 
-async def delete_destination(db: AsyncSession, org_id: UUID, dest_id: UUID) -> None:
+async def delete_destination(
+    db: AsyncSession, org_id: UUID, dest_id: UUID, user_id: UUID | None = None, ip_address: str | None = None
+) -> None:
     """Hard-delete an alert destination."""
     dest = await get_destination(db, org_id, dest_id)
+    await write_audit(db, org_id, user_id, "alert_destination.deleted", "alert_destination", dest_id, {"name": str(dest.name)}, ip_address)
     await db.delete(dest)
     await db.commit()
 

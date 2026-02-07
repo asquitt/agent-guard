@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.alert import AlertDestination
+from app.services.audit_service import write_audit
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,8 @@ async def create_webhook(
     secret: str | None = None,
     event_types: list[str] | None = None,
     min_severity: str = "info",
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> AlertDestination:
     """Create a webhook endpoint (stored as AlertDestination type=webhook)."""
     dest = AlertDestination(
@@ -52,6 +55,8 @@ async def create_webhook(
         is_active=True,
     )
     db.add(dest)
+    await db.flush()
+    await write_audit(db, org_id, user_id, "webhook.created", "webhook", UUID(str(dest.id)), {"name": name, "url": url}, ip_address)
     await db.commit()
     await db.refresh(dest)
     return dest
@@ -103,6 +108,8 @@ async def update_webhook(
     event_types: list[str] | None = None,
     min_severity: str | None = None,
     is_active: bool | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> AlertDestination:
     """Update webhook fields."""
     dest = await get_webhook(db, org_id, webhook_id)
@@ -122,14 +129,16 @@ async def update_webhook(
         config["min_severity"] = min_severity
     dest.config = config  # type: ignore[assignment]
 
+    await write_audit(db, org_id, user_id, "webhook.updated", "webhook", webhook_id, {"name": name}, ip_address)
     await db.commit()
     await db.refresh(dest)
     return dest
 
 
-async def delete_webhook(db: AsyncSession, org_id: UUID, webhook_id: UUID) -> None:
+async def delete_webhook(db: AsyncSession, org_id: UUID, webhook_id: UUID, user_id: UUID | None = None, ip_address: str | None = None) -> None:
     """Delete a webhook."""
     dest = await get_webhook(db, org_id, webhook_id)
+    await write_audit(db, org_id, user_id, "webhook.deleted", "webhook", webhook_id, {"name": str(dest.name)}, ip_address)
     await db.delete(dest)
     await db.commit()
 

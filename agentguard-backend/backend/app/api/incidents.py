@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_current_user, get_db
+from app.core.deps import get_client_ip, get_current_org, get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.incidents import (
@@ -90,6 +90,7 @@ async def update_incident(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> IncidentResponse:
     """Update incident status."""
     try:
@@ -99,6 +100,7 @@ async def update_incident(
             incident_id,
             body.status,
             user_id=UUID(str(current_user.id)),
+            ip_address=client_ip,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -116,6 +118,7 @@ async def add_action(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> IncidentActionResponse:
     """Add an action to an incident."""
     try:
@@ -126,6 +129,7 @@ async def add_action(
             action_type=body.action_type,
             user_id=UUID(str(current_user.id)),
             details=body.details,
+            ip_address=client_ip,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -141,6 +145,7 @@ async def bulk_update_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> BulkStatusUpdateResponse:
     """Bulk update incident statuses."""
     updated = await incident_service.bulk_update_status(
@@ -149,5 +154,6 @@ async def bulk_update_status(
         body.incident_ids,
         body.status,
         user_id=UUID(str(current_user.id)),
+        ip_address=client_ip,
     )
     return BulkStatusUpdateResponse(updated=updated)

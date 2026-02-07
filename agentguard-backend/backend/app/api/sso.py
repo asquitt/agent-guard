@@ -11,8 +11,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.deps import get_current_org, get_db, require_admin
-from app.models.user import Organization
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
+from app.models.user import Organization, User
 from app.schemas.sso import (
     SSOConfigCreate,
     SSOConfigResponse,
@@ -33,11 +33,12 @@ router = APIRouter()
 async def create_sso_config(
     body: SSOConfigCreate,
     org: Organization = Depends(get_current_org),
-    _admin=Depends(require_admin),
+    admin_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    client_ip: str = Depends(get_client_ip),
 ) -> SSOConfigResponse:
     """Create SSO configuration for the current organization."""
-    config = await sso_service.create_sso_config(db, UUID(str(org.id)), body)
+    config = await sso_service.create_sso_config(db, UUID(str(org.id)), body, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     return _to_response(config)
 
 
@@ -59,11 +60,12 @@ async def update_sso_config(
     config_id: UUID,
     body: SSOConfigUpdate,
     org: Organization = Depends(get_current_org),
-    _admin=Depends(require_admin),
+    admin_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    client_ip: str = Depends(get_client_ip),
 ) -> SSOConfigResponse:
     """Update SSO configuration."""
-    config = await sso_service.update_sso_config(db, UUID(str(org.id)), config_id, body)
+    config = await sso_service.update_sso_config(db, UUID(str(org.id)), config_id, body, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     if config is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO config not found")
     return _to_response(config)
@@ -73,11 +75,12 @@ async def update_sso_config(
 async def delete_sso_config(
     config_id: UUID,
     org: Organization = Depends(get_current_org),
-    _admin=Depends(require_admin),
+    admin_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    client_ip: str = Depends(get_client_ip),
 ) -> None:
     """Delete SSO configuration."""
-    deleted = await sso_service.delete_sso_config(db, UUID(str(org.id)), config_id)
+    deleted = await sso_service.delete_sso_config(db, UUID(str(org.id)), config_id, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO config not found")
 
@@ -121,8 +124,9 @@ async def test_sso_connection(
 async def toggle_sso_enforcement(
     body: SSOEnforceRequest,
     org: Organization = Depends(get_current_org),
-    _admin=Depends(require_admin),
+    admin_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
+    client_ip: str = Depends(get_client_ip),
 ) -> dict:
     """Enable or disable SSO enforcement for the organization."""
     if body.enforce:
@@ -133,7 +137,7 @@ async def toggle_sso_enforcement(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Configure SSO before enabling enforcement",
             )
-    org = await sso_service.set_sso_enforcement(db, org, body.enforce)
+    org = await sso_service.set_sso_enforcement(db, org, body.enforce, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     return {"sso_enforced": body.enforce}
 
 

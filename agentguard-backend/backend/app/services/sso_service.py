@@ -10,6 +10,7 @@ from app.models.enums import UserRole
 from app.models.sso_config import SSOConfig
 from app.models.user import Organization, User
 from app.schemas.sso import SSOConfigCreate, SSOConfigUpdate
+from app.services.audit_service import write_audit
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ async def get_sso_config_by_id(db: AsyncSession, org_id: UUID, config_id: UUID) 
 
 
 async def create_sso_config(
-    db: AsyncSession, org_id: UUID, data: SSOConfigCreate
+    db: AsyncSession, org_id: UUID, data: SSOConfigCreate, user_id: UUID | None = None, ip_address: str | None = None
 ) -> SSOConfig:
     """Create an SSO config for an organization.
 
@@ -64,13 +65,15 @@ async def create_sso_config(
         oidc_discovery_url=data.oidc_discovery_url,
     )
     db.add(sso_config)
+    await db.flush()
+    await write_audit(db, org_id, user_id, "sso_config.created", "sso_config", UUID(str(sso_config.id)), {"provider_type": data.provider_type}, ip_address)
     await db.commit()
     await db.refresh(sso_config)
     return sso_config
 
 
 async def update_sso_config(
-    db: AsyncSession, org_id: UUID, config_id: UUID, data: SSOConfigUpdate
+    db: AsyncSession, org_id: UUID, config_id: UUID, data: SSOConfigUpdate, user_id: UUID | None = None, ip_address: str | None = None
 ) -> SSOConfig | None:
     """Update an SSO config, scoped to org."""
     config = await get_sso_config_by_id(db, org_id, config_id)
@@ -81,17 +84,19 @@ async def update_sso_config(
     for field, value in update_data.items():
         setattr(config, field, value)
 
+    await write_audit(db, org_id, user_id, "sso_config.updated", "sso_config", config_id, {"fields": list(update_data.keys())}, ip_address)
     await db.commit()
     await db.refresh(config)
     return config
 
 
-async def delete_sso_config(db: AsyncSession, org_id: UUID, config_id: UUID) -> bool:
+async def delete_sso_config(db: AsyncSession, org_id: UUID, config_id: UUID, user_id: UUID | None = None, ip_address: str | None = None) -> bool:
     """Delete an SSO config, scoped to org."""
     config = await get_sso_config_by_id(db, org_id, config_id)
     if config is None:
         return False
 
+    await write_audit(db, org_id, user_id, "sso_config.deleted", "sso_config", config_id, {"provider_type": str(config.provider_type)}, ip_address)
     await db.delete(config)
     await db.commit()
     return True
@@ -154,11 +159,12 @@ async def find_or_create_sso_user(
     return user
 
 
-async def set_sso_enforcement(db: AsyncSession, org: Organization, enforce: bool) -> Organization:
+async def set_sso_enforcement(db: AsyncSession, org: Organization, enforce: bool, user_id: UUID | None = None, ip_address: str | None = None) -> Organization:
     """Toggle SSO enforcement for an organization."""
     current_settings: dict = dict(org.settings) if org.settings else {}  # type: ignore[arg-type]
     current_settings["sso_enforced"] = enforce
     org.settings = current_settings  # type: ignore[assignment]
+    await write_audit(db, org_id=UUID(str(org.id)), user_id=user_id, action="sso.enforcement_changed", resource_type="organization", resource_id=UUID(str(org.id)), details={"enforce": enforce}, ip_address=ip_address)
     await db.commit()
     await db.refresh(org)
     return org

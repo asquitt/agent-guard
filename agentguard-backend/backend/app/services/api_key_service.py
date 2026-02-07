@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.user import ApiKey
+from app.services.audit_service import write_audit
 
 API_KEY_PREFIX = "ag_live_"
 
@@ -37,6 +38,8 @@ async def create_api_key(
     name: str,
     scopes: list[str],
     expires_at: datetime | None = None,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> tuple[ApiKey, str]:
     """Create a new API key. Returns (model, full_key).
 
@@ -56,6 +59,8 @@ async def create_api_key(
         is_active=True,
     )
     db.add(api_key)
+    await db.flush()
+    await write_audit(db, org_id, user_id, "api_key.created", "api_key", api_key.id, {"name": name, "prefix": prefix}, ip_address)
     await db.commit()
     await db.refresh(api_key)
     return api_key, full_key
@@ -86,10 +91,11 @@ async def get_api_key(db: AsyncSession, org_id: UUID, key_id: UUID) -> ApiKey:
     return api_key
 
 
-async def revoke_api_key(db: AsyncSession, org_id: UUID, key_id: UUID) -> ApiKey:
+async def revoke_api_key(db: AsyncSession, org_id: UUID, key_id: UUID, user_id: UUID | None = None, ip_address: str | None = None) -> ApiKey:
     """Soft-delete (deactivate) an API key."""
     api_key = await get_api_key(db, org_id, key_id)
     api_key.is_active = False  # type: ignore[assignment]
+    await write_audit(db, org_id, user_id, "api_key.revoked", "api_key", key_id, {"name": str(api_key.name), "prefix": str(api_key.prefix)}, ip_address)
     await db.commit()
     await db.refresh(api_key)
     return api_key

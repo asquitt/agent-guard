@@ -3,7 +3,7 @@
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -93,6 +93,14 @@ async def require_admin(
             detail="Admin access required",
         )
     return current_user
+
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP, checking X-Forwarded-For for proxied requests."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 async def get_current_org_from_api_key(

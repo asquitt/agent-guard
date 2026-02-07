@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.webhooks import WebhookCreateRequest, WebhookListResponse, WebhookResponse, WebhookUpdateRequest
@@ -20,6 +20,7 @@ async def create_webhook(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> WebhookResponse:
     """Register a webhook endpoint."""
     dest = await webhook_service.create_webhook(
@@ -30,6 +31,8 @@ async def create_webhook(
         secret=body.secret,
         event_types=body.event_types,
         min_severity=body.min_severity,
+        user_id=UUID(str(admin_user.id)),
+        ip_address=client_ip,
     )
     return WebhookResponse(**webhook_service.to_webhook_response(dest))
 
@@ -70,6 +73,7 @@ async def update_webhook(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> WebhookResponse:
     """Update a webhook."""
     try:
@@ -83,6 +87,8 @@ async def update_webhook(
             event_types=body.event_types,
             min_severity=body.min_severity,
             is_active=body.is_active,
+            user_id=UUID(str(admin_user.id)),
+            ip_address=client_ip,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -95,9 +101,10 @@ async def delete_webhook(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> None:
     """Delete a webhook."""
     try:
-        await webhook_service.delete_webhook(db, UUID(str(org.id)), webhook_id)
+        await webhook_service.delete_webhook(db, UUID(str(org.id)), webhook_id, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)

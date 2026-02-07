@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.alerts import (
@@ -34,6 +34,7 @@ async def create_destination(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> AlertDestinationResponse:
     """Create an alert destination (Slack, PagerDuty, etc.)."""
     dest = await alert_service.create_destination(
@@ -42,6 +43,8 @@ async def create_destination(
         name=body.name,
         destination_type=body.destination_type,
         config=body.config,
+        user_id=UUID(str(admin_user.id)),
+        ip_address=client_ip,
     )
     return AlertDestinationResponse.model_validate(dest)
 
@@ -68,6 +71,7 @@ async def update_destination(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> AlertDestinationResponse:
     """Update an alert destination."""
     try:
@@ -78,6 +82,8 @@ async def update_destination(
             name=body.name,
             is_active=body.is_active,
             config=body.config,
+            user_id=UUID(str(admin_user.id)),
+            ip_address=client_ip,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
@@ -90,10 +96,11 @@ async def delete_destination(
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
+    client_ip: str = Depends(get_client_ip),
 ) -> None:
     """Delete an alert destination."""
     try:
-        await alert_service.delete_destination(db, UUID(str(org.id)), dest_id)
+        await alert_service.delete_destination(db, UUID(str(org.id)), dest_id, user_id=UUID(str(admin_user.id)), ip_address=client_ip)
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
