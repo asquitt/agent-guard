@@ -18,6 +18,9 @@ class PlanTier(str, enum.Enum):
 class Provider(str, enum.Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    GOOGLE_GEMINI = "google_gemini"
+    AZURE_OPENAI = "azure_openai"
+    BEDROCK = "bedrock"
     CUSTOM = "custom"
 
 

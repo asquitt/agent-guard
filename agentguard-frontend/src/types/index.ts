@@ -149,7 +149,7 @@ export interface ProxyEndpoint {
   id: UUID;
   organizationId: UUID;
   name: string;
-  provider: 'openai' | 'anthropic' | 'custom';
+  provider: 'openai' | 'anthropic' | 'google_gemini' | 'azure_openai' | 'bedrock' | 'custom';
   baseUrl: string;
   enabled: boolean;
   createdAt: string;

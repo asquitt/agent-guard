@@ -5,38 +5,24 @@
 from typing import Any
 from uuid import UUID
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import NotFoundError, ProxyError
 from app.models.proxy import ProxyEndpoint, ProxyRequest
-
-# Cost per 1M tokens: (input, output)
-OPENAI_PRICING: dict[str, tuple[float, float]] = {
-    "gpt-4o": (2.50, 10.00),
-    "gpt-4o-mini": (0.15, 0.60),
-    "gpt-4-turbo": (10.00, 30.00),
-    "gpt-4": (30.00, 60.00),
-    "gpt-3.5-turbo": (0.50, 1.50),
-    "text-embedding-3-small": (0.02, 0.0),
-    "text-embedding-3-large": (0.13, 0.0),
-    "text-embedding-ada-002": (0.10, 0.0),
-}
-
-ANTHROPIC_PRICING: dict[str, tuple[float, float]] = {
-    "claude-opus-4-6": (15.00, 75.00),
-    "claude-sonnet-4-5": (3.00, 15.00),
-    "claude-haiku-4-5": (0.80, 4.00),
-    "claude-3-5-sonnet": (3.00, 15.00),
-    "claude-3-5-haiku": (0.80, 4.00),
-    "claude-3-opus": (15.00, 75.00),
-    "claude-3-sonnet": (3.00, 15.00),
-    "claude-3-haiku": (0.25, 1.25),
-}
+from app.services.providers.pricing import calculate_cost
 
 MAX_BODY_SIZE = 512 * 1024  # 512 KB
+
+# Provider → global settings key mapping
+_PROVIDER_KEY_MAP: dict[str, str] = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "google_gemini": "GOOGLE_GEMINI_API_KEY",
+    "azure_openai": "AZURE_OPENAI_API_KEY",
+    "bedrock": "AWS_ACCESS_KEY_ID",
+}
 
 
 async def resolve_endpoint(
@@ -130,40 +116,9 @@ async def update_request_log(
     await db.commit()
 
 
-def _lookup_pricing(model: str, table: dict[str, tuple[float, float]]) -> tuple[float, float] | None:
-    """Find pricing by exact match, then longest prefix match."""
-    if model in table:
-        return table[model]
-    for known in sorted(table, key=len, reverse=True):
-        if model.startswith(known):
-            return table[known]
-    return None
-
-
-def calculate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    """Calculate cost in USD. Returns 0.0 for unknown models."""
-    pricing = _lookup_pricing(model, OPENAI_PRICING) or _lookup_pricing(model, ANTHROPIC_PRICING)
-    if pricing is None:
-        return 0.0
-
-    input_price, output_price = pricing
-    cost = (input_tokens * input_price / 1_000_000) + (output_tokens * output_price / 1_000_000)
-    return round(cost, 6)
-
-
 def extract_model_from_body(body: dict[str, Any]) -> str | None:
     """Extract model name from request body."""
     return body.get("model")
-
-
-def extract_tokens_from_response(
-    body: dict[str, Any],
-) -> tuple[int | None, int | None]:
-    """Extract input/output token counts from OpenAI response usage."""
-    usage = body.get("usage")
-    if not usage or not isinstance(usage, dict):
-        return None, None
-    return usage.get("prompt_tokens"), usage.get("completion_tokens")
 
 
 def truncate_body(body: str) -> str:
@@ -187,64 +142,20 @@ def get_upstream_api_key(endpoint: ProxyEndpoint) -> str:
             return str(key)
 
     provider = str(endpoint.provider)  # type: ignore[union-attr]
-    if provider == "anthropic":
-        if settings.ANTHROPIC_API_KEY:
-            return settings.ANTHROPIC_API_KEY
-        raise ProxyError("No Anthropic API key configured")
+    settings_key = _PROVIDER_KEY_MAP.get(provider)
+    if settings_key:
+        val = getattr(settings, settings_key, "")
+        if val:
+            return str(val)
+        raise ProxyError(f"No {provider} API key configured (set {settings_key})")
 
+    # Fallback for unknown providers
     if settings.OPENAI_API_KEY:
         return settings.OPENAI_API_KEY
-    raise ProxyError("No OpenAI API key configured")
+    raise ProxyError(f"No API key configured for provider '{provider}'")
 
 
 def build_target_url(endpoint: ProxyEndpoint, path: str) -> str:
     """Build the full upstream URL from endpoint target_url + path."""
     base = str(endpoint.target_url).rstrip("/")  # type: ignore[union-attr]
     return f"{base}{path}"
-
-
-def extract_anthropic_tokens(
-    body: dict[str, Any],
-) -> tuple[int | None, int | None]:
-    """Extract input/output token counts from Anthropic response usage."""
-    usage = body.get("usage")
-    if not usage or not isinstance(usage, dict):
-        return None, None
-    return usage.get("input_tokens"), usage.get("output_tokens")
-
-
-async def forward_request(
-    client: httpx.AsyncClient,
-    target_url: str,
-    body: dict[str, Any],
-    api_key: str,
-) -> httpx.Response:
-    """Forward a non-streaming request to the upstream LLM (OpenAI)."""
-    return await client.post(
-        target_url,
-        json=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        timeout=120.0,
-    )
-
-
-async def forward_anthropic_request(
-    client: httpx.AsyncClient,
-    target_url: str,
-    body: dict[str, Any],
-    api_key: str,
-) -> httpx.Response:
-    """Forward a non-streaming request to Anthropic."""
-    return await client.post(
-        target_url,
-        json=body,
-        headers={
-            "x-api-key": api_key,
-            "content-type": "application/json",
-            "anthropic-version": "2023-06-01",
-        },
-        timeout=120.0,
-    )

@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     # LLM Providers (customer traffic proxy)
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    GOOGLE_GEMINI_API_KEY: str = ""
+    AZURE_OPENAI_API_KEY: str = ""
+    AZURE_OPENAI_ENDPOINT: str = ""  # e.g. https://<resource>.openai.azure.com
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
 
     # Internal LLM for detection (hallucination & compliance checks)
     DETECTION_LLM_PROVIDER: str = "openai"  # "openai" or "anthropic"

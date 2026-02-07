@@ -9,13 +9,31 @@ const PROVIDERS = [
     id: 'openai',
     name: 'OpenAI',
     url: 'https://api.openai.com/v1',
-    desc: 'GPT-4, GPT-3.5, and other OpenAI models',
+    desc: 'GPT-4o, GPT-4, and other OpenAI models',
   },
   {
     id: 'anthropic',
     name: 'Anthropic',
     url: 'https://api.anthropic.com/v1',
     desc: 'Claude and other Anthropic models',
+  },
+  {
+    id: 'google_gemini',
+    name: 'Google Gemini',
+    url: 'https://generativelanguage.googleapis.com/v1beta',
+    desc: 'Gemini 2.0, 1.5 Pro/Flash models',
+  },
+  {
+    id: 'azure_openai',
+    name: 'Azure OpenAI',
+    url: '',
+    desc: 'OpenAI models via Azure (set your deployment URL)',
+  },
+  {
+    id: 'bedrock',
+    name: 'AWS Bedrock',
+    url: '',
+    desc: 'Claude, Llama, Titan via AWS Bedrock',
   },
 ] as const;
 
@@ -43,7 +61,7 @@ export default function ProxyEndpointStep({ onNext }: ProxyEndpointStepProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {PROVIDERS.map((provider) => (
           <button
             key={provider.id}
