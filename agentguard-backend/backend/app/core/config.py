@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     STRIPE_PRO_PRICE_ID: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # SSO
+    SSO_SP_ENTITY_ID_BASE: str = ""  # e.g. https://agentguard.app/saml/sp
+    SSO_ACS_URL_BASE: str = ""  # e.g. https://agentguard.app/api/v1/auth/saml/acs
+    SSO_OIDC_REDIRECT_URI_BASE: str = ""  # e.g. https://agentguard.app/api/v1/auth/oidc/callback
+
     # Sentry
     SENTRY_DSN: str = ""
 

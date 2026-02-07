@@ -63,7 +63,10 @@ async def login(
     body: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    """Authenticate user and return tokens."""
+    """Authenticate user and return tokens.
+
+    Returns 403 if the user's organization enforces SSO.
+    """
     try:
         user = await auth_service.authenticate_user(db=db, email=body.email, password=body.password)
     except AuthenticationError:
@@ -71,6 +74,18 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+
+    # Check SSO enforcement on the user's org
+    result = await db.execute(select(Organization).where(Organization.id == user.org_id))
+    org = result.scalar_one_or_none()
+    if org is not None:
+        org_settings: dict = org.settings or {}  # type: ignore[assignment]
+        if org_settings.get("sso_enforced"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="SSO required for this organization",
+                headers={"X-SSO-Org-Slug": str(org.slug)},
+            )
 
     access, refresh = auth_service.create_token_pair(UUID(str(user.id)))
     return TokenResponse(access_token=access, refresh_token=refresh)

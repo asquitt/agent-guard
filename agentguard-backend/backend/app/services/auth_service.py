@@ -107,9 +107,13 @@ async def authenticate_user(
     """Validate email/password and return user.
 
     Returns generic error to prevent email enumeration.
+    SSO-only users (no password hash) cannot use password login.
     """
     user = await get_user_by_email(db, email)
     if user is None:
+        raise AuthenticationError("Invalid email or password")
+    if not user.hashed_password:  # type: ignore[truthy-bool]
+        # SSO-only user — no password set
         raise AuthenticationError("Invalid email or password")
     if not verify_password(password, user.hashed_password):  # type: ignore[arg-type]
         raise AuthenticationError("Invalid email or password")

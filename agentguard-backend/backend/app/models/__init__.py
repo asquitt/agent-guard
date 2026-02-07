@@ -12,6 +12,7 @@ from app.models.audit import AuditLog
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
 from app.models.proxy import ProxyEndpoint, ProxyRequest
+from app.models.sso_config import SSOConfig
 from app.models.stripe_event import StripeEvent
 from app.models.user import ApiKey, Organization, User
 
@@ -27,6 +28,7 @@ __all__ = [
     "Organization",
     "ProxyEndpoint",
     "ProxyRequest",
+    "SSOConfig",
     "StripeEvent",
     "User",
 ]

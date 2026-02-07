@@ -36,7 +36,7 @@ class User(TimestampMixin, Base):
     __tablename__ = "users"
 
     email = Column(String(255), unique=True, nullable=False, index=True)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=True)  # Nullable for SSO-only users
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default=UserRole.MEMBER.value)
     org_id = Column(
@@ -46,13 +46,18 @@ class User(TimestampMixin, Base):
         index=True,
     )
     is_active = Column(Boolean, nullable=False, default=True)
+    sso_provider = Column(String(50), nullable=True)  # e.g. "saml", "oidc"
+    sso_external_id = Column(String(255), nullable=True)  # IdP user ID
 
     # Relationships
     organization = relationship("Organization", back_populates="users")
     incident_actions = relationship("IncidentAction", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
 
-    __table_args__ = (Index("ix_users_org_id_email", "org_id", "email"),)
+    __table_args__ = (
+        Index("ix_users_org_id_email", "org_id", "email"),
+        Index("ix_users_sso_lookup", "sso_provider", "sso_external_id"),
+    )
 
 
 class ApiKey(TimestampMixin, Base):

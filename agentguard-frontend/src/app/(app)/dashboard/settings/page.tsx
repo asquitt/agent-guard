@@ -59,10 +59,18 @@ export default function SettingsPage() {
           title="Team Management"
           description="Invite members, manage roles, and remove users"
         />
-        <PlaceholderSection
-          title="Security"
-          description="SSO configuration, session timeout, IP allowlist"
-        />
+        <Link
+          href="/dashboard/settings/sso"
+          className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
+        >
+          <h3 className="text-sm font-semibold text-gray-700">Single Sign-On</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Configure SAML 2.0 or OIDC for enterprise authentication
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600">
+            Configure SSO &rarr;
+          </p>
+        </Link>
         <Link
           href="/dashboard/billing"
           className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"

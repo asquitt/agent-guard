@@ -23,6 +23,12 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        // SSO enforced — redirect to SSO login
+        setError('Your organization requires SSO. Redirecting...');
+        setTimeout(() => router.push('/login/sso'), 1500);
+        return;
+      }
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
@@ -106,6 +112,15 @@ export default function LoginPage() {
               Create one
             </Link>
           </p>
+
+          <div className="mt-4 border-t border-gray-200 pt-4 text-center">
+            <Link
+              href="/login/sso"
+              className="text-sm font-medium text-gray-600 hover:text-gray-800"
+            >
+              Sign in with SSO
+            </Link>
+          </div>
         </form>
       </div>
     </div>
