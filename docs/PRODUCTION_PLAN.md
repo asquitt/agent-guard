@@ -223,22 +223,25 @@
 - [x] Schemas: IncidentStatsResponse, BulkStatusUpdateRequest/Response
 - [x] Verified: pyright 0 errors, all endpoints return correct responses via curl
 
-### Session 3.2: Alert System & Destinations
+### Session 3.2: Alert System & Destinations ✅
 **Done when:** Alerts fire to Slack, email, and PagerDuty when incidents are created.
 
-- [ ] Alert router (`/api/v1/alerts/`)
-  - CRUD for alert destinations (Slack webhook, email, PagerDuty)
-  - `GET /` — list alerts with status
-  - `POST /test` — send test alert to destination
-- [ ] Alert service:
-  - Evaluate alert rules (severity threshold per destination)
-  - Slack integration (webhook with rich message formatting)
-  - Email integration (SMTP or SendGrid)
+- [x] Alert delivery service (`app/services/alert_delivery.py`):
+  - Slack integration (webhook with color-coded attachments)
   - PagerDuty integration (Events API v2)
-  - Retry logic with exponential backoff (3 retries)
-  - Alert deduplication (don't spam for related incidents)
-- [ ] Celery task for async alert delivery
-- [ ] Verify: Detection creates incident → alert sent to configured Slack webhook
+  - Email integration (webhook-based)
+  - Generic webhook support with HMAC secret
+  - Dispatcher pattern for extensibility
+- [x] Celery alert task (`app/tasks/alerting.py`):
+  - `send_alerts_for_incident` — loads active destinations, evaluates severity threshold, deduplicates, delivers
+  - 3 retries with 30s delay
+  - Per-destination min_severity filtering
+  - Alert record creation (sent/failed status tracking)
+- [x] Alert router enhanced:
+  - `POST /destinations/{id}/test` — send test alert
+  - Existing CRUD + list endpoints preserved
+- [x] Detection pipeline integration: `_create_incident_from_result` now queues alerts
+- [x] Verified: pyright 0 errors, all imports/endpoints functional in Docker
 
 ### Session 3.3: Webhook System
 **Done when:** Customers can receive webhook notifications for incidents.

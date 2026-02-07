@@ -10,6 +10,7 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     include=[
         "app.tasks.analysis",
+        "app.tasks.alerting",
         "app.tasks.reports",
     ],
 )

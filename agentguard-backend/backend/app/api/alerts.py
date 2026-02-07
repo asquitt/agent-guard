@@ -110,6 +110,29 @@ async def delete_destination(
         )
 
 
+@router.post("/destinations/{dest_id}/test")
+async def test_destination(
+    dest_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+    org: Organization = Depends(get_current_org),
+) -> dict[str, str]:
+    """Send a test alert to a destination."""
+    try:
+        error = await alert_service.test_destination(
+            db, UUID(str(org.id)), dest_id
+        )
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.message
+        )
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail=error
+        )
+    return {"status": "ok", "message": "Test alert sent successfully"}
+
+
 # --- Alerts ---
 
 

@@ -2,6 +2,7 @@
 
 # pyright: reportCallIssue=false
 
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -10,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.alert import Alert, AlertDestination
+from app.services.alert_delivery import deliver
+
+logger = logging.getLogger(__name__)
 
 
 async def create_destination(
@@ -129,3 +133,36 @@ async def list_alerts(
         base.order_by(Alert.created_at.desc()).offset(skip).limit(limit)
     )
     return list(result.scalars().all()), total
+
+
+async def trigger_alerts(org_id: UUID, incident_id: UUID) -> str | None:
+    """Queue Celery task to send alerts for a new incident. Returns task ID."""
+    from app.tasks.alerting import send_alerts_for_incident
+
+    task = send_alerts_for_incident.delay(str(incident_id), str(org_id))
+    logger.info("Queued alert task %s for incident %s", task.id, incident_id)
+    return str(task.id)
+
+
+async def test_destination(
+    db: AsyncSession,
+    org_id: UUID,
+    dest_id: UUID,
+) -> str | None:
+    """Send a test alert to a destination. Returns error message or None."""
+    dest = await get_destination(db, org_id, dest_id)
+    config = dest.config if isinstance(dest.config, dict) else {}
+    dest_type = str(dest.destination_type)
+
+    test_payload: dict[str, Any] = {
+        "incident_id": "00000000-0000-0000-0000-000000000000",
+        "severity": "info",
+        "category": "test",
+        "title": "AgentGuard Test Alert",
+        "description": "This is a test alert from AgentGuard.",
+        "status": "test",
+        "action_taken": "",
+        "created_at": "",
+    }
+
+    return deliver(dest_type, config, test_payload)

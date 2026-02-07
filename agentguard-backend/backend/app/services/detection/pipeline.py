@@ -170,7 +170,7 @@ async def _create_incident_from_result(
     proxy_request_id: UUID,
     result: DetectionResult,
 ) -> Incident:
-    """Create an Incident record from a DetectionResult."""
+    """Create an Incident record from a DetectionResult and queue alerts."""
     incident = Incident(
         org_id=org_id,
         proxy_request_id=proxy_request_id,
@@ -185,4 +185,13 @@ async def _create_incident_from_result(
     )
     db.add(incident)
     await db.flush()
+
+    # Queue alerts asynchronously (best-effort, never block detection)
+    try:
+        from app.services.alert_service import trigger_alerts
+
+        await trigger_alerts(org_id, UUID(str(incident.id)))
+    except Exception:
+        logger.exception("Failed to queue alerts for incident %s", incident.id)
+
     return incident
