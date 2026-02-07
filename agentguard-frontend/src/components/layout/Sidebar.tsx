@@ -13,6 +13,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: '📊' },
   { label: 'Incidents', href: '/dashboard/incidents', icon: '🚨' },
+  { label: 'Agents', href: '/dashboard/agents', icon: '🤖' },
   { label: 'Detectors', href: '/dashboard/detectors', icon: '🔍' },
   { label: 'Alerts', href: '/dashboard/alerts', icon: '🔔' },
   { label: 'Playground', href: '/dashboard/playground', icon: '🧪' },

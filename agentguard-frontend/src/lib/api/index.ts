@@ -58,3 +58,11 @@ export {
   retrieveArchive,
 } from './retention';
 export { testDetectors, getPlaygroundCategories } from './playground';
+export {
+  listAgents,
+  getAgent,
+  createAgent,
+  updateAgent,
+  deleteAgent,
+} from './agents';
+export type { AgentData, AgentFilters } from './agents';

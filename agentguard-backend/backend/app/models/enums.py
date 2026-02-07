@@ -70,6 +70,20 @@ class AlertStatus(str, enum.Enum):
     FAILED = "failed"
 
 
+class AgentRiskTier(str, enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class AgentStatus(str, enum.Enum):
+    DRAFT = "draft"
+    TESTING = "testing"
+    PRODUCTION = "production"
+    DEPRECATED = "deprecated"
+
+
 class SubscriptionStatus(str, enum.Enum):
     ACTIVE = "active"
     PAST_DUE = "past_due"
