@@ -102,7 +102,7 @@ Based on analysis of 15 competitors (Lakera, CalypsoAI/F5, Cisco AI Defense, Art
 
 ---
 
-### 1.4 Toxicity & Bias Detection [P1]
+### 1.4 Toxicity & Bias Detection [P1] ✅ DONE (09ab99c)
 **Gap:** WhyLabs' LangKit specializes in bias/toxicity detection. Arthur AI has explainability and bias monitoring. We have neither.
 
 **Enhancement:**
