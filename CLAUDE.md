@@ -107,9 +107,10 @@ Every query on these tables MUST include `org_id` filter:
 
 1. **Hallucination** — Factual inconsistency detection
 2. **PII Leak** — Personal data exposure in outputs
-3. **Compliance** — Regulatory violation detection (SOX, PCI-DSS, FFIEC)
+3. **Compliance** — Regulatory violation detection (SOX, PCI-DSS, FFIEC, NYDFS-500, DORA, EU-AI-ACT)
 4. **Cost Anomaly** — Unusual token consumption patterns
 5. **Loop Detection** — Repeated outputs indicating agent stuck
+6. **Prompt Injection** — Direct/indirect injection, jailbreak, system extraction
 
 Shared mapping: `ACTION_MODE_MAP` in `app/services/detection/types.py` (used by both sync pipeline and async Celery tasks).
 
@@ -170,6 +171,16 @@ curl http://localhost:8001/health
 # Logs
 /usr/local/bin/docker compose logs api --tail=100 -f
 ```
+
+## Enhancement Progress Tracking (MANDATORY)
+
+When working on enhancements from `docs/ENHANCEMENTS.md`:
+1. **Before starting**: Update the plan file (`.claude/plans/`) with current progress table
+2. **After each enhancement**: Mark it DONE in the plan file with commit hash
+3. **After committing**: Update `docs/ENHANCEMENTS.md` Status column (add `DONE` to completed rows)
+4. **On context loss**: Read the plan file first to pick up where you left off
+
+Current P0 status is tracked in the plan file and in the Month 1 table of `docs/ENHANCEMENTS.md`.
 
 ## Decision Authority
 
