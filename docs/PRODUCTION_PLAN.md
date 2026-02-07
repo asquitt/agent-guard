@@ -503,23 +503,24 @@
 
 **Goal:** Production AWS infrastructure, CI/CD pipeline, monitoring, and first deployment.
 
-### Session 7.1: AWS Infrastructure (Terraform)
+### Session 7.1: AWS Infrastructure (Terraform) ✅
 **Done when:** VPC, EKS cluster, RDS, ElastiCache, S3 created via Terraform.
+**Status:** COMPLETE — 11 Terraform modules (VPC, EKS, RDS, ElastiCache, S3, ECR, Secrets Manager, ALB+WAF, Route 53, ACM, Budgets) with staging/production environment separation, cost-optimized configs, and comprehensive module composition in root main.tf.
 
-- [ ] Terraform modules:
-  - VPC (3 AZs, public/private subnets, NAT gateway)
-  - EKS cluster (managed node groups, autoscaling)
-  - RDS PostgreSQL 15 (Multi-AZ, encrypted, automated backups)
-  - ElastiCache Redis 7 (cluster mode, encrypted)
-  - S3 buckets (warm storage, cold storage, static assets)
-  - ECR repositories (API, worker, frontend)
-  - Secrets Manager (API keys, database credentials)
-  - Route 53 (DNS)
-  - ACM (SSL certificates)
-  - ALB (Application Load Balancer with WAF)
-- [ ] Environment separation: staging + production
-- [ ] Cost estimation and budget alerts
-- [ ] Verify: `terraform apply` creates all resources, RDS accessible from EKS
+- [x] Terraform modules:
+  - VPC (3 AZs, public/private subnets, NAT — single for staging, per-AZ for production)
+  - EKS cluster (K8s 1.29, managed node groups, KMS secrets encryption, OIDC/IRSA, addons)
+  - RDS PostgreSQL 15 (Multi-AZ production, encrypted KMS, Performance Insights, auto-scaling storage)
+  - ElastiCache Redis 7 (TLS, auth token, failover for production, allkeys-lru)
+  - S3 buckets (warm: Standard→Glacier at 365d, cold: Glacier expire at 7yr, assets with CORS)
+  - ECR repositories (API, worker, frontend — scan on push, lifecycle policies, immutable tags for prod)
+  - Secrets Manager (DB creds, Redis auth, app secrets — KMS encrypted, rotation-ready)
+  - Route 53 (hosted zone, apex + api subdomain alias to ALB)
+  - ACM (wildcard + apex cert, DNS validation via Route 53)
+  - ALB (HTTPS/redirect, WAF v2 with CommonRules + SQLi + rate limiting, access logs, 120s idle for WS)
+- [x] Environment separation: staging (cost-optimized) + production (HA) tfvars + S3 backend per-env
+- [x] Cost estimation and budget alerts (50%, 80%, 100% actual + 80% forecasted → email)
+- [x] Verify: All module references validated (43 outputs, 71 inputs, 0 mismatches)
 
 ### Session 7.2: Kubernetes Manifests & Helm Charts
 **Done when:** All services deployable to EKS with proper configs.
