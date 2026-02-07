@@ -16,6 +16,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   prompt_injection: 'Prompt Injection',
   prompt_extraction: 'Prompt Extraction',
   toxicity: 'Toxicity & Bias',
+  tool_call: 'Tool Call Validation',
 };
 
 const MODE_COLORS: Record<string, string> = {
