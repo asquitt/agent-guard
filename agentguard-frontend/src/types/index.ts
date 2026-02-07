@@ -80,16 +80,44 @@ export interface IncidentFilters {
 }
 
 // Detectors
-export type DetectorType = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
+export type DetectorCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop';
+
+export interface DetectorRule {
+  id: UUID;
+  name: string;
+  ruleType: string;
+  parameters: Record<string, unknown>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Detector {
   id: UUID;
-  organizationId: UUID;
   name: string;
-  type: DetectorType;
-  enabled: boolean;
+  category: string;
+  isActive: boolean;
+  actionMode: string;
   config: Record<string, unknown>;
+  rules: DetectorRule[];
   createdAt: string;
+  updatedAt: string;
+}
+
+// API Keys
+export interface ApiKey {
+  id: UUID;
+  prefix: string;
+  name: string;
+  scopes: string[];
+  isActive: boolean;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface ApiKeyCreateResponse extends ApiKey {
+  key: string;
 }
 
 // Alerts

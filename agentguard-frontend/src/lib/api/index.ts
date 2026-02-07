@@ -18,3 +18,11 @@ export {
   addIncidentAction,
   bulkUpdateStatus,
 } from './incidents';
+export {
+  listDetectors,
+  getDetector,
+  createDetector,
+  updateDetector,
+  deleteDetector,
+} from './detectors';
+export { listApiKeys, createApiKey, revokeApiKey } from './api-keys';
