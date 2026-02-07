@@ -66,3 +66,5 @@ export {
   deleteAgent,
 } from './agents';
 export type { AgentData, AgentFilters } from './agents';
+export { listTraces, getTrace } from './traces';
+export type { TraceListItem, TraceDetail, TraceFilters } from './traces';
