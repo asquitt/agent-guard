@@ -31,11 +31,6 @@ export interface AuthOrganization {
   createdAt: string;
 }
 
-export interface OnboardingProgress {
-  currentStep: number;
-  completed: boolean;
-}
-
 export interface MeResponse {
   user: AuthUser;
   organization: AuthOrganization;

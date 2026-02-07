@@ -9,22 +9,8 @@ import { getDashboardMetrics } from '@/lib/api';
 import { Toast } from '@/components/ui/Toast';
 import type { ToastItem } from '@/components/ui/Toast';
 import type { RecentIncidentSummary } from '@/types';
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { clsx } from 'clsx';
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-danger-50 text-danger-600',
-  high: 'bg-red-50 text-red-600',
-  medium: 'bg-warning-50 text-warning-600',
-  low: 'bg-blue-50 text-blue-600',
-  info: 'bg-gray-100 text-gray-600',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-danger-50 text-danger-600',
-  acknowledged: 'bg-warning-50 text-warning-600',
-  resolved: 'bg-success-50 text-success-600',
-  dismissed: 'bg-gray-100 text-gray-500',
-};
 
 export default function DashboardPage() {
   const { user } = useAuth();

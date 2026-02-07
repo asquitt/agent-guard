@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.detector import Detector
-from app.models.enums import ActionMode
 from app.models.incident import Incident
 from app.services.detection.registry import (
     ASYNC_CATEGORIES,
@@ -20,6 +19,7 @@ from app.services.detection.registry import (
     get_sync_detector,
 )
 from app.services.detection.types import (
+    ACTION_MODE_MAP,
     DetectionAction,
     DetectionResult,
     PipelineDecision,
@@ -34,13 +34,6 @@ _ACTION_PRIORITY: dict[str, int] = {
     DetectionAction.WARN.value: 2,
     DetectionAction.REDACT.value: 3,
     DetectionAction.BLOCK.value: 4,
-}
-
-_ACTION_MODE_MAP: dict[str, DetectionAction] = {
-    ActionMode.MONITOR.value: DetectionAction.MONITOR,
-    ActionMode.WARN.value: DetectionAction.WARN,
-    ActionMode.REDACT.value: DetectionAction.REDACT,
-    ActionMode.BLOCK.value: DetectionAction.BLOCK,
 }
 
 
@@ -95,7 +88,7 @@ async def run_sync_detectors(
             result = impl.run(request_body, response_body, model, config)
 
             if result.detected:
-                effective_action = _ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
+                effective_action = ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
                 result = DetectionResult(
                     detected=True,
                     severity=result.severity,

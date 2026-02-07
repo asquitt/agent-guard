@@ -48,7 +48,14 @@ repos:
       # File size limit - prevents tech debt
       - id: file-size-limit
         name: Check file size (800 line limit)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=AM | grep "\.py$" | grep -E "agentguard-backend/backend/app/" || true); if [ -n "$files" ]; then for f in $files; do lines=$(wc -l < "$f" 2>/dev/null || echo 0); if [ "$lines" -gt 800 ]; then echo "BLOCKED: $f exceeds 800 lines ($lines). Split into multiple files."; exit 1; fi; done; fi'
+        entry: >-
+          bash -c 'files=$(git diff --cached --name-only --diff-filter=AM |
+          grep "\.py$" | grep -E "agentguard-backend/backend/app/" || true);
+          if [ -n "$files" ]; then for f in $files; do
+          lines=$(wc -l < "$f" 2>/dev/null || echo 0);
+          if [ "$lines" -gt 800 ]; then
+          echo "BLOCKED - $f exceeds 800 lines ($lines). Split into multiple files.";
+          exit 1; fi; done; fi'
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -70,6 +77,19 @@ repos:
         files: ^agentguard-frontend/src/
         types: [ts, tsx]
         pass_filenames: false
+
+      # Duplicate constant detector (frontend)
+      - id: no-duplicate-constants
+        name: No duplicate color constants in pages
+        entry: >-
+          bash -c 'if git diff --cached --name-only |
+          xargs grep -l -E "const (SEVERITY_COLORS|STATUS_COLORS)" 2>/dev/null |
+          grep -E "agentguard-frontend/src/app/"; then
+          echo "BLOCKED: color constants must be imported from lib/constants.ts"; exit 1; fi'
+        language: system
+        files: ^agentguard-frontend/src/app/
+        pass_filenames: false
+        stages: [pre-commit]
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks

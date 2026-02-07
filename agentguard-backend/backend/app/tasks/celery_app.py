@@ -15,7 +15,6 @@ celery_app = Celery(
         "app.tasks.analysis",
         "app.tasks.alerting",
         "app.tasks.billing",
-        "app.tasks.reports",
     ],
 )
 
@@ -34,10 +33,6 @@ celery_app.conf.update(
 
 # Beat schedule for periodic tasks
 celery_app.conf.beat_schedule = {
-    "generate-daily-report": {
-        "task": "app.tasks.reports.generate_daily_report",
-        "schedule": 86400.0,  # Every 24 hours
-    },
     "reset-monthly-usage": {
         "task": "app.tasks.billing.reset_monthly_usage",
         "schedule": crontab(day_of_month=1, hour=0, minute=0),

@@ -6,21 +6,7 @@ import Link from 'next/link';
 import { clsx } from 'clsx';
 import { listIncidents, bulkUpdateStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-danger-50 text-danger-600',
-  high: 'bg-red-50 text-red-600',
-  medium: 'bg-warning-50 text-warning-600',
-  low: 'bg-blue-50 text-blue-600',
-  info: 'bg-gray-100 text-gray-600',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-danger-50 text-danger-600',
-  acknowledged: 'bg-warning-50 text-warning-600',
-  resolved: 'bg-success-50 text-success-600',
-  dismissed: 'bg-gray-100 text-gray-500',
-};
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 
 const PAGE_SIZE = 20;
 

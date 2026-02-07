@@ -10,21 +10,13 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import SessionLocal
 from app.models.detector import Detector
-from app.models.enums import ActionMode
 from app.models.incident import Incident
 from app.models.proxy import ProxyRequest
 from app.services.detection.registry import ASYNC_CATEGORIES, get_async_detector
-from app.services.detection.types import DetectionAction
+from app.services.detection.types import ACTION_MODE_MAP, DetectionAction
 from app.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
-
-_ACTION_MODE_MAP: dict[str, DetectionAction] = {
-    ActionMode.MONITOR.value: DetectionAction.MONITOR,
-    ActionMode.WARN.value: DetectionAction.WARN,
-    ActionMode.REDACT.value: DetectionAction.REDACT,
-    ActionMode.BLOCK.value: DetectionAction.BLOCK,
-}
 
 
 @celery_app.task(
@@ -94,7 +86,7 @@ def run_async_detection(
                     )
 
                     if result.detected:
-                        effective_action = _ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
+                        effective_action = ACTION_MODE_MAP.get(action_mode, DetectionAction.MONITOR)
                         incident = Incident(
                             org_id=org_id,
                             proxy_request_id=proxy_request_id,

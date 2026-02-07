@@ -38,3 +38,19 @@ class PipelineDecision:
     action: DetectionAction  # highest-priority action across all results
     results: list[DetectionResult]  # all individual results
     modified_response: str | None = None  # redacted body if action == REDACT
+
+
+# Canonical mapping from Detector.action_mode to pipeline DetectionAction.
+# Used by both sync pipeline and async Celery tasks.
+def _build_action_mode_map() -> dict[str, DetectionAction]:
+    from app.models.enums import ActionMode
+
+    return {
+        ActionMode.MONITOR.value: DetectionAction.MONITOR,
+        ActionMode.WARN.value: DetectionAction.WARN,
+        ActionMode.REDACT.value: DetectionAction.REDACT,
+        ActionMode.BLOCK.value: DetectionAction.BLOCK,
+    }
+
+
+ACTION_MODE_MAP: dict[str, DetectionAction] = _build_action_mode_map()

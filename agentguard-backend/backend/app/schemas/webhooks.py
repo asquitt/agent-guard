@@ -51,22 +51,3 @@ class WebhookListResponse(BaseModel):
     total: int
 
 
-class WebhookDeliveryResponse(BaseModel):
-    """Webhook delivery log entry."""
-
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-    id: UUID
-    webhook_id: UUID = Field(serialization_alias="webhookId")
-    event_type: str = Field(serialization_alias="eventType")
-    status: str
-    response_code: int | None = Field(serialization_alias="responseCode")
-    error_message: str | None = Field(serialization_alias="errorMessage")
-    created_at: datetime = Field(serialization_alias="createdAt")
-
-
-class WebhookDeliveryListResponse(BaseModel):
-    """Paginated list of webhook deliveries."""
-
-    items: list[WebhookDeliveryResponse]
-    total: int
