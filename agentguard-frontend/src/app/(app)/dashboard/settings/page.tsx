@@ -72,6 +72,18 @@ export default function SettingsPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/settings/ip-allowlist"
+          className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
+        >
+          <h3 className="text-sm font-semibold text-gray-700">IP Allowlisting</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Restrict proxy access to specific IP addresses or CIDR ranges
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600">
+            Configure IPs &rarr;
+          </p>
+        </Link>
+        <Link
           href="/dashboard/settings/retention"
           className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
         >

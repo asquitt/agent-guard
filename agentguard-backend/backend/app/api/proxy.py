@@ -3,6 +3,7 @@
 # pyright: reportGeneralTypeIssues=false
 
 import asyncio
+import ipaddress
 import json
 import logging
 import time
@@ -46,6 +47,24 @@ async def get_http_client() -> httpx.AsyncClient:
     return _http_client
 
 
+def _ip_in_allowlist(client_ip: str, allowlist: list[str]) -> bool:
+    """Check if client IP matches any entry in allowlist (supports CIDR)."""
+    try:
+        addr = ipaddress.ip_address(client_ip)
+    except ValueError:
+        return False
+    for entry in allowlist:
+        try:
+            if "/" in entry:
+                if addr in ipaddress.ip_network(entry, strict=False):
+                    return True
+            elif client_ip == entry:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 async def _parse_and_resolve(
     request: Request,
     db: AsyncSession,
@@ -62,7 +81,7 @@ async def _parse_and_resolve(
     ip_allowlist: list[str] = org_settings.get("ip_allowlist", [])
     if ip_allowlist:
         client_ip = get_client_ip(request)
-        if client_ip not in ip_allowlist:
+        if not _ip_in_allowlist(client_ip, ip_allowlist):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"IP {client_ip} is not in the organization's allowlist",
