@@ -42,6 +42,7 @@ class DetectorCategory(str, enum.Enum):
     COMPLIANCE = "compliance"
     COST_ANOMALY = "cost_anomaly"
     LOOP = "loop"
+    PROMPT_INJECTION = "prompt_injection"
 
 
 class ActionMode(str, enum.Enum):

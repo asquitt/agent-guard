@@ -9,6 +9,7 @@ from app.services.detection.cost import CostAnomalyDetector
 from app.services.detection.hallucination import HallucinationDetector
 from app.services.detection.loop import LoopDetector
 from app.services.detection.pii import PIIDetector
+from app.services.detection.prompt_injection import PromptInjectionDetector
 from app.services.detection.types import DetectionAction, DetectionResult
 
 # Categories that run synchronously (can block/redact)
@@ -16,6 +17,7 @@ SYNC_CATEGORIES: frozenset[str] = frozenset(
     {
         DetectorCategory.PII_LEAK.value,
         DetectorCategory.COMPLIANCE.value,
+        DetectorCategory.PROMPT_INJECTION.value,
     }
 )
 
@@ -80,6 +82,7 @@ class _StubAsyncDetector:
 _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.PII_LEAK.value: PIIDetector(),
     DetectorCategory.COMPLIANCE.value: ComplianceDetector(),
+    DetectorCategory.PROMPT_INJECTION.value: PromptInjectionDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
