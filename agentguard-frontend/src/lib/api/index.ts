@@ -48,3 +48,9 @@ export {
   listComplianceReports,
   getReportDownloadUrl,
 } from './compliance';
+export {
+  getRetentionPolicy,
+  updateRetentionPolicy,
+  listArchives,
+  retrieveArchive,
+} from './retention';

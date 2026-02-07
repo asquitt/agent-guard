@@ -72,6 +72,18 @@ export default function SettingsPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/settings/retention"
+          className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
+        >
+          <h3 className="text-sm font-semibold text-gray-700">Data Retention</h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Configure data archival policies and view archived data
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600">
+            Configure Retention &rarr;
+          </p>
+        </Link>
+        <Link
           href="/dashboard/billing"
           className="block rounded-xl border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
         >

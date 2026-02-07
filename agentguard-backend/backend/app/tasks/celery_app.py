@@ -16,6 +16,7 @@ celery_app = Celery(
         "app.tasks.alerting",
         "app.tasks.billing",
         "app.tasks.compliance",
+        "app.tasks.retention",
     ],
 )
 
@@ -41,5 +42,9 @@ celery_app.conf.beat_schedule = {
     "sync-subscription-status": {
         "task": "app.tasks.billing.sync_subscription_status",
         "schedule": crontab(hour=3, minute=0),
+    },
+    "run-retention": {
+        "task": "app.tasks.retention.run_retention",
+        "schedule": crontab(hour=3, minute=30),
     },
 }

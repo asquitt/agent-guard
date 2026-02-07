@@ -252,6 +252,37 @@ export interface ComplianceReport {
   completedAt: string | null;
 }
 
+// Data Retention
+export interface RetentionPolicy {
+  id: UUID;
+  orgId: UUID;
+  proxyRequestsDays: number;
+  incidentsDays: number;
+  auditLogsDays: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RetentionPolicyUpdate {
+  proxyRequestsDays?: number;
+  incidentsDays?: number;
+  auditLogsDays?: number;
+}
+
+export interface DataArchive {
+  id: UUID;
+  orgId: UUID;
+  tableName: string;
+  startDate: string;
+  endDate: string;
+  filePath: string;
+  rowCount: number;
+  fileSizeBytes: number;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 // Paginated response wrapper
 export interface PaginatedResponse<T> {
   items: T[];

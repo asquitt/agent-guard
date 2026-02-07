@@ -49,6 +49,7 @@ from app.api import (  # noqa: E402
     organizations,
     proxy,
     proxy_endpoints,
+    retention,
     sso,
     webhooks,
     websocket,
@@ -67,4 +68,5 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(proxy.router, prefix="/api/v1/proxy", tags=["LLM Proxy"])
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
 app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["Compliance"])
+app.include_router(retention.router, prefix="/api/v1/retention", tags=["Retention"])
 app.include_router(websocket.router, tags=["WebSocket"])

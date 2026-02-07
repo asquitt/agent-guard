@@ -10,9 +10,11 @@ Run `python scripts/check_model_imports.py` after any model changes.
 from app.models.alert import Alert, AlertDestination
 from app.models.audit import AuditLog
 from app.models.compliance_report import ComplianceReport
+from app.models.data_archive import DataArchive
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
 from app.models.proxy import ProxyEndpoint, ProxyRequest
+from app.models.retention_policy import RetentionPolicy
 from app.models.sso_config import SSOConfig
 from app.models.stripe_event import StripeEvent
 from app.models.user import ApiKey, Organization, User
@@ -23,6 +25,7 @@ __all__ = [
     "ApiKey",
     "AuditLog",
     "ComplianceReport",
+    "DataArchive",
     "Detector",
     "DetectorRule",
     "Incident",
@@ -30,6 +33,7 @@ __all__ = [
     "Organization",
     "ProxyEndpoint",
     "ProxyRequest",
+    "RetentionPolicy",
     "SSOConfig",
     "StripeEvent",
     "User",

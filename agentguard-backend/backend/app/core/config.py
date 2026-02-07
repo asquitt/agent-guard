@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     SSO_ACS_URL_BASE: str = ""  # e.g. https://agentguard.app/api/v1/auth/saml/acs
     SSO_OIDC_REDIRECT_URI_BASE: str = ""  # e.g. https://agentguard.app/api/v1/auth/oidc/callback
 
+    # Data Retention
+    ARCHIVE_STORAGE_PATH: str = "/app/archives"
+    RETENTION_BATCH_SIZE: int = 500
+    RETENTION_DRY_RUN: bool = False
+
     # Sentry
     SENTRY_DSN: str = ""
 
