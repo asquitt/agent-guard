@@ -59,17 +59,18 @@ async def get_cost_analytics(
     ]
 
     # Daily cost trend
+    date_col = func.date_trunc("day", ProxyRequest.created_at).label("date")
     daily_result = await db.execute(
         select(
-            func.date_trunc("day", ProxyRequest.created_at).label("date"),
+            date_col,
             func.coalesce(func.sum(ProxyRequest.cost_usd), 0.0).label("cost"),
             func.count(ProxyRequest.id).label("requests"),
             func.coalesce(func.sum(ProxyRequest.input_tokens), 0).label("input_tokens"),
             func.coalesce(func.sum(ProxyRequest.output_tokens), 0).label("output_tokens"),
         )
-        .where(*base_filter)
-        .group_by(func.date_trunc("day", ProxyRequest.created_at))
-        .order_by(func.date_trunc("day", ProxyRequest.created_at).asc())
+        .where(ProxyRequest.org_id == org_id, ProxyRequest.created_at >= cutoff)
+        .group_by(date_col)
+        .order_by(date_col.asc())
     )
     daily_costs = [
         {

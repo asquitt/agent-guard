@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db
@@ -143,7 +143,7 @@ async def get_conversation_stats(
     org: Organization = Depends(get_current_org),
 ) -> ConversationStatsResponse:
     """Aggregate conversation statistics."""
-    cutoff = func.now() - func.cast(f"{days} days", type_=func.literal_column("interval"))
+    cutoff = func.now() - text(f"interval '{days} days'")
 
     # Counts by status
     status_q = select(

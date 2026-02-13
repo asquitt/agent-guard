@@ -33,6 +33,7 @@ _TEMPLATES: list[dict[str, object]] = [
         "name": "Customer Service Agent",
         "description": "Policy for customer-facing support agents handling account inquiries.",
         "policy": {
+            "name": "Customer Service Policy",
             "allowed_topics": [
                 "account_balance",
                 "transaction_history",
@@ -71,6 +72,7 @@ _TEMPLATES: list[dict[str, object]] = [
         "name": "Financial Advisor Agent",
         "description": "Policy for agents providing investment and financial planning guidance.",
         "policy": {
+            "name": "Financial Advisor Policy",
             "allowed_topics": [
                 "portfolio_analysis",
                 "market_data",
@@ -120,6 +122,7 @@ _TEMPLATES: list[dict[str, object]] = [
         "name": "Trading Assistant Agent",
         "description": "Policy for agents assisting with trade execution and order management.",
         "policy": {
+            "name": "Trading Assistant Policy",
             "allowed_topics": [
                 "order_placement",
                 "order_status",
@@ -167,6 +170,7 @@ _TEMPLATES: list[dict[str, object]] = [
         "name": "Compliance Review Agent",
         "description": "Policy for agents performing regulatory compliance reviews and monitoring.",
         "policy": {
+            "name": "Compliance Review Policy",
             "allowed_topics": [
                 "regulatory_requirements",
                 "policy_violations",
