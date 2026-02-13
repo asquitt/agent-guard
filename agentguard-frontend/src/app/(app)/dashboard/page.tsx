@@ -112,7 +112,7 @@ export default function DashboardPage() {
           </h2>
           <Link
             href="/dashboard/incidents"
-            className="text-sm font-medium text-primary hover:text-primary/80"
+            className="text-sm font-medium text-primary hover:text-primary"
           >
             View all
           </Link>

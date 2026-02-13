@@ -30,15 +30,15 @@ export function DetectionEfficacySection() {
   return (
     <div className="mb-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Detection Efficacy</h2>
-        <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
+        <h2 className="text-lg font-semibold text-foreground">Detection Efficacy</h2>
+        <div className="flex gap-1 rounded-lg bg-muted p-0.5">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
               className={clsx(
                 'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                days === d ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700',
+                days === d ? 'bg-card text-foreground shadow-sm shadow-black/10' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {d}d
@@ -49,19 +49,19 @@ export function DetectionEfficacySection() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : !data || data.categories.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           No detection data for this period
         </div>
       ) : (
         <>
           {/* Overall FP rate card */}
-          <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+          <div className="mb-4 rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-4">
               <div>
-                <p className="text-xs font-medium text-gray-500">Overall False Positive Rate</p>
+                <p className="text-xs font-medium text-muted-foreground">Overall False Positive Rate</p>
                 <p className={clsx(
                   'text-2xl font-bold',
                   data.overallFalsePositiveRate > 0.3 ? 'text-red-600' :
@@ -71,8 +71,8 @@ export function DetectionEfficacySection() {
                 </p>
               </div>
               <div className="ml-auto text-right">
-                <p className="text-xs font-medium text-gray-500">Total Detections</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs font-medium text-muted-foreground">Total Detections</p>
+                <p className="text-2xl font-bold text-foreground">
                   {data.categories.reduce((sum, c) => sum + c.total, 0)}
                 </p>
               </div>
@@ -80,10 +80,10 @@ export function DetectionEfficacySection() {
           </div>
 
           {/* Per-category table */}
-          <div className="rounded-xl border border-gray-200 bg-white">
+          <div className="rounded-xl border border-border bg-card">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Total</th>
                   <th className="px-4 py-3">Resolved</th>
@@ -92,15 +92,15 @@ export function DetectionEfficacySection() {
                   <th className="px-4 py-3">Avg Resolve Time</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {data.categories.map((cat) => (
-                  <tr key={cat.category} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  <tr key={cat.category} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">
                       {CATEGORY_LABELS[cat.category] ?? cat.category}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{cat.total}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{cat.total}</td>
                     <td className="px-4 py-3 text-sm text-green-600">{cat.resolved}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{cat.dismissed}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{cat.dismissed}</td>
                     <td className="px-4 py-3">
                       <span className={clsx(
                         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
@@ -110,7 +110,7 @@ export function DetectionEfficacySection() {
                         {(cat.falsePositiveRate * 100).toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {cat.meanTimeToResolveHours != null
                         ? `${cat.meanTimeToResolveHours.toFixed(1)}h`
                         : '-'}

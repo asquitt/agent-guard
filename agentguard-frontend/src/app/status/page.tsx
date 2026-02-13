@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dotColor: st
   ok: { label: 'Operational', color: 'text-green-700', dotColor: 'bg-green-500' },
   degraded: { label: 'Degraded', color: 'text-yellow-700', dotColor: 'bg-yellow-500' },
   error: { label: 'Outage', color: 'text-red-700', dotColor: 'bg-red-500' },
-  unknown: { label: 'Unknown', color: 'text-gray-500', dotColor: 'bg-gray-400' },
+  unknown: { label: 'Unknown', color: 'text-muted-foreground', dotColor: 'bg-zinc-500' },
 };
 
 const OVERALL_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -63,17 +63,17 @@ export default function StatusPage() {
   const overallConfig = OVERALL_CONFIG[data?.status ?? 'unhealthy'] ?? OVERALL_CONFIG.unhealthy;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/50">
       <div className="mx-auto max-w-2xl px-4 py-12">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">AgentGuard Status</h1>
-          <p className="mt-1 text-sm text-gray-500">Real-time platform health monitoring</p>
+          <h1 className="text-3xl font-bold text-foreground">AgentGuard Status</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Real-time platform health monitoring</p>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : (
           <>
@@ -83,18 +83,18 @@ export default function StatusPage() {
                 {overallConfig.label}
               </p>
               {lastChecked && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Last checked: {lastChecked.toLocaleTimeString()}
                 </p>
               )}
             </div>
 
             {/* Components */}
-            <div className="rounded-xl border border-gray-200 bg-white">
-              <div className="border-b border-gray-100 px-6 py-4">
-                <h2 className="text-sm font-semibold text-gray-900">Components</h2>
+            <div className="rounded-xl border border-border bg-card">
+              <div className="border-b border-border px-6 py-4">
+                <h2 className="text-sm font-semibold text-foreground">Components</h2>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border">
                 {/* API Server — always up if page loaded */}
                 <ComponentRow
                   name="API Server"
@@ -125,7 +125,7 @@ export default function StatusPage() {
             <div className="mt-6 text-center">
               <button
                 onClick={fetchHealth}
-                className="text-sm text-primary-600 hover:text-primary-500"
+                className="text-sm text-primary hover:text-primary"
               >
                 Refresh now
               </button>
@@ -134,7 +134,7 @@ export default function StatusPage() {
         )}
 
         {/* Footer */}
-        <div className="mt-12 text-center text-xs text-gray-400">
+        <div className="mt-12 text-center text-xs text-muted-foreground/60">
           <p>Checks run automatically every 30 seconds</p>
           <p className="mt-1">
             &copy; {new Date().getFullYear()} AgentGuard &mdash; AI Agent Security for Financial Services
@@ -162,12 +162,12 @@ function ComponentRow({
     <div className="flex items-center justify-between px-6 py-4">
       <div className="flex items-center gap-3">
         <div className={clsx('h-2.5 w-2.5 rounded-full', config.dotColor)} />
-        <span className="text-sm font-medium text-gray-900">{name}</span>
-        {message && <span className="text-xs text-gray-400">{message}</span>}
+        <span className="text-sm font-medium text-foreground">{name}</span>
+        {message && <span className="text-xs text-muted-foreground/60">{message}</span>}
       </div>
       <div className="flex items-center gap-3">
         {responseTimeMs != null && (
-          <span className="text-xs text-gray-400">{responseTimeMs}ms</span>
+          <span className="text-xs text-muted-foreground/60">{responseTimeMs}ms</span>
         )}
         <span className={clsx('text-sm font-medium', config.color)}>{config.label}</span>
       </div>

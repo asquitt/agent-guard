@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
   approved: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
   escalated: 'bg-orange-100 text-orange-700',
-  expired: 'bg-gray-100 text-gray-500',
+  expired: 'bg-muted text-muted-foreground',
 };
 
 export default function ReviewsPage() {
@@ -42,8 +42,8 @@ export default function ReviewsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Review Queue</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Review Queue</h1>
+        <p className="text-sm text-muted-foreground">
           Human-in-the-loop oversight for AI agent decisions
         </p>
       </div>
@@ -68,7 +68,7 @@ export default function ReviewsPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All statuses</option>
           {REVIEW_STATUSES.map((s) => (
@@ -80,7 +80,7 @@ export default function ReviewsPage() {
         <select
           value={filterSeverity}
           onChange={(e) => setFilterSeverity(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All severities</option>
           <option value="critical">Critical</option>
@@ -93,12 +93,12 @@ export default function ReviewsPage() {
       {/* Items list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-sm text-gray-500">No items in the review queue</p>
-          <p className="mt-1 text-xs text-gray-400">
+        <div className="rounded-xl border border-border bg-card py-16 text-center">
+          <p className="text-sm text-muted-foreground">No items in the review queue</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">
             Items appear here when detections require human approval
           </p>
         </div>
@@ -132,9 +132,9 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={clsx('text-2xl font-bold', highlight ? 'text-yellow-600' : color ?? 'text-gray-900')}>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={clsx('text-2xl font-bold', highlight ? 'text-yellow-600' : color ?? 'text-foreground')}>
         {value}
       </p>
     </div>
@@ -173,18 +173,18 @@ function ReviewCard({
   return (
     <div
       className={clsx(
-        'rounded-xl border bg-white p-5',
-        isOverdue ? 'border-red-300' : 'border-gray-200',
+        'rounded-xl border bg-card p-5',
+        isOverdue ? 'border-red-300' : 'border-border',
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-gray-900">{item.title}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
             <span
               className={clsx(
                 'rounded-full px-2 py-0.5 text-xs font-medium',
-                SEVERITY_COLORS[item.severity] ?? 'bg-gray-100 text-gray-600',
+                SEVERITY_COLORS[item.severity] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {item.severity}
@@ -192,7 +192,7 @@ function ReviewCard({
             <span
               className={clsx(
                 'rounded-full px-2 py-0.5 text-xs font-medium',
-                STATUS_COLORS[item.status] ?? 'bg-gray-100 text-gray-600',
+                STATUS_COLORS[item.status] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {item.status}
@@ -204,9 +204,9 @@ function ReviewCard({
             )}
           </div>
           {item.description && (
-            <p className="mt-1 text-sm text-gray-500">{item.description}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
           )}
-          <div className="mt-2 flex gap-4 text-xs text-gray-400">
+          <div className="mt-2 flex gap-4 text-xs text-muted-foreground/60">
             {item.category && <span>Category: {item.category}</span>}
             <span>Created: {new Date(item.createdAt).toLocaleString()}</span>
             {item.escalationDeadline && (
@@ -219,7 +219,7 @@ function ReviewCard({
             )}
           </div>
           {item.decisionReason && (
-            <p className="mt-2 rounded bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            <p className="mt-2 rounded bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
               Reason: {item.decisionReason}
             </p>
           )}
@@ -228,7 +228,7 @@ function ReviewCard({
         {isPending && (
           <button
             onClick={() => setShowActions(!showActions)}
-            className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-500"
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/100"
           >
             Review
           </button>
@@ -236,13 +236,13 @@ function ReviewCard({
       </div>
 
       {showActions && isPending && (
-        <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="mt-4 border-t border-border pt-4">
           <div className="mb-3">
-            <label className="mb-1 block text-xs text-gray-500">Decision Reason (optional)</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Decision Reason (optional)</label>
             <input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="Provide a reason for your decision..."
             />
           </div>
@@ -270,7 +270,7 @@ function ReviewCard({
             </button>
             <button
               onClick={() => setShowActions(false)}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50"
             >
               Cancel
             </button>

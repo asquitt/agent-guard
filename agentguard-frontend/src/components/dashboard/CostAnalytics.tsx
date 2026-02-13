@@ -34,8 +34,8 @@ export function CostAnalyticsSection() {
   return (
     <div className="mt-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Cost Analytics</h2>
-        <div className="flex gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
+        <h2 className="text-lg font-semibold text-foreground">Cost Analytics</h2>
+        <div className="flex gap-1 rounded-lg border border-border bg-card p-0.5">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.days}
@@ -43,8 +43,8 @@ export function CostAnalyticsSection() {
               className={clsx(
                 'rounded-md px-3 py-1 text-xs font-medium transition-colors',
                 days === opt.days
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100',
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:bg-muted',
               )}
             >
               {opt.label}
@@ -93,12 +93,12 @@ function SummaryCard({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <p className="text-sm text-gray-500">{label}</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-sm text-muted-foreground">{label}</p>
       <p
         className={clsx(
           'mt-1 text-2xl font-semibold',
-          highlight ? 'text-primary-600' : 'text-gray-900',
+          highlight ? 'text-primary' : 'text-foreground',
         )}
       >
         {value}
@@ -115,33 +115,33 @@ function CostByModelTable({
   isLoading: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <h3 className="text-sm font-semibold text-gray-900">Cost by Model</h3>
+    <div className="rounded-xl border border-border bg-card">
+      <div className="border-b border-border px-6 py-4">
+        <h3 className="text-sm font-semibold text-foreground">Cost by Model</h3>
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : models.length === 0 ? (
-        <p className="px-6 py-8 text-center text-sm text-gray-400">No proxy requests yet</p>
+        <p className="px-6 py-8 text-center text-sm text-muted-foreground/60">No proxy requests yet</p>
       ) : (
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <th className="px-6 py-2">Model</th>
               <th className="px-6 py-2 text-right">Cost</th>
               <th className="px-6 py-2 text-right">Requests</th>
               <th className="px-6 py-2 text-right">Tokens</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-border">
             {models.map((m) => (
-              <tr key={m.model} className="hover:bg-gray-50">
-                <td className="px-6 py-2 text-sm font-medium text-gray-900">{m.model}</td>
-                <td className="px-6 py-2 text-right text-sm text-gray-700">{formatCost(m.cost)}</td>
-                <td className="px-6 py-2 text-right text-sm text-gray-600">{m.requests}</td>
-                <td className="px-6 py-2 text-right text-sm text-gray-600">
+              <tr key={m.model} className="hover:bg-muted/50">
+                <td className="px-6 py-2 text-sm font-medium text-foreground">{m.model}</td>
+                <td className="px-6 py-2 text-right text-sm text-foreground">{formatCost(m.cost)}</td>
+                <td className="px-6 py-2 text-right text-sm text-muted-foreground">{m.requests}</td>
+                <td className="px-6 py-2 text-right text-sm text-muted-foreground">
                   {formatTokens(m.inputTokens + m.outputTokens)}
                 </td>
               </tr>
@@ -163,16 +163,16 @@ function DailyCostChart({
   const maxCost = Math.max(...dailyCosts.map((d) => d.cost), 0.01);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <h3 className="text-sm font-semibold text-gray-900">Daily Cost Trend</h3>
+    <div className="rounded-xl border border-border bg-card">
+      <div className="border-b border-border px-6 py-4">
+        <h3 className="text-sm font-semibold text-foreground">Daily Cost Trend</h3>
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : dailyCosts.length === 0 ? (
-        <p className="px-6 py-8 text-center text-sm text-gray-400">No cost data yet</p>
+        <p className="px-6 py-8 text-center text-sm text-muted-foreground/60">No cost data yet</p>
       ) : (
         <div className="flex items-end gap-px px-6 py-4" style={{ height: 160 }}>
           {dailyCosts.map((d) => {
@@ -188,11 +188,11 @@ function DailyCostChart({
                 style={{ height: '100%' }}
               >
                 <div
-                  className="w-full min-w-[4px] rounded-t bg-primary-500 transition-colors group-hover:bg-primary-600"
+                  className="w-full min-w-[4px] rounded-t bg-primary/100 transition-colors group-hover:bg-primary"
                   style={{ height: `${Math.max(pct, 2)}%` }}
                 />
                 {/* Tooltip */}
-                <div className="pointer-events-none absolute -top-10 z-10 hidden whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white group-hover:block">
+                <div className="pointer-events-none absolute -top-10 z-10 hidden whitespace-nowrap rounded bg-popover px-2 py-1 text-xs text-white group-hover:block">
                   {dateLabel}: {formatCost(d.cost)}
                 </div>
               </div>

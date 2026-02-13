@@ -66,8 +66,8 @@ export default function AnalyticsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500">Time-series metrics across all your LLM traffic</p>
+        <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
+        <p className="text-sm text-muted-foreground">Time-series metrics across all your LLM traffic</p>
       </div>
 
       {/* Time range selector */}
@@ -79,14 +79,14 @@ export default function AnalyticsPage() {
             className={clsx(
               'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
               i === rangeIdx
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                ? 'bg-primary text-white'
+                : 'bg-muted text-muted-foreground hover:bg-muted',
             )}
           >
             {r.label}
           </button>
         ))}
-        <span className="ml-2 text-xs text-gray-400">
+        <span className="ml-2 text-xs text-muted-foreground/60">
           Granularity: {tsData?.granularity ?? range.granularity}
         </span>
       </div>
@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
               'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
               m.key === activeMetric
                 ? 'bg-indigo-600 text-white'
-                : 'bg-gray-50 text-gray-500 hover:bg-gray-100',
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted',
             )}
           >
             {m.label}
@@ -120,11 +120,11 @@ export default function AnalyticsPage() {
       {/* Chart */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : buckets.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-sm text-gray-500">No data for this time range</p>
+        <div className="rounded-xl border border-border bg-card py-16 text-center">
+          <p className="text-sm text-muted-foreground">No data for this time range</p>
         </div>
       ) : (
         <BarChart buckets={buckets} metricKey={activeMetric} />
@@ -140,9 +140,9 @@ export default function AnalyticsPage() {
 
 function SummaryCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={clsx('text-2xl font-bold', highlight ? 'text-primary-600' : 'text-gray-900')}>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={clsx('text-2xl font-bold', highlight ? 'text-primary' : 'text-foreground')}>
         {value}
       </p>
     </div>
@@ -157,7 +157,7 @@ function BarChart({ buckets, metricKey }: { buckets: TimeSeriesBucket[]; metricK
   const maxVal = Math.max(...values, 1);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6">
+    <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex h-48 items-end gap-px">
         {values.map((v, i) => {
           const pct = (v / maxVal) * 100;
@@ -174,12 +174,12 @@ function BarChart({ buckets, metricKey }: { buckets: TimeSeriesBucket[]; metricK
                   'w-full rounded-t transition-colors',
                   isAnomaly
                     ? 'bg-red-400 hover:bg-red-500'
-                    : 'bg-primary-400 hover:bg-primary-500',
+                    : 'bg-primary/60 hover:bg-primary/100',
                 )}
                 style={{ height: `${Math.max(pct, 1)}%` }}
               />
               {/* Tooltip */}
-              <div className="pointer-events-none absolute -top-10 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-gray-800 px-2 py-1 text-xs text-white whitespace-nowrap group-hover:block">
+              <div className="pointer-events-none absolute -top-10 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-popover px-2 py-1 text-xs text-white whitespace-nowrap group-hover:block">
                 {formatBucketLabel(bucket.bucket)}: {v}
               </div>
             </div>
@@ -187,7 +187,7 @@ function BarChart({ buckets, metricKey }: { buckets: TimeSeriesBucket[]; metricK
         })}
       </div>
       {/* X-axis labels */}
-      <div className="mt-2 flex justify-between text-xs text-gray-400">
+      <div className="mt-2 flex justify-between text-xs text-muted-foreground/60">
         <span>{formatBucketLabel(buckets[0]?.bucket ?? '')}</span>
         {buckets.length > 2 && (
           <span>{formatBucketLabel(buckets[Math.floor(buckets.length / 2)]?.bucket ?? '')}</span>
@@ -207,14 +207,14 @@ function formatBucketLabel(bucket: string): string {
 
 function ProviderTable({ providers }: { providers: ProviderPerformance[] }) {
   return (
-    <div className="mt-8 rounded-xl border border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900">Provider Comparison</h2>
+    <div className="mt-8 rounded-xl border border-border bg-card">
+      <div className="border-b border-border px-6 py-4">
+        <h2 className="text-lg font-semibold text-foreground">Provider Comparison</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+            <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <th className="px-4 py-3">Model</th>
               <th className="px-4 py-3">Requests</th>
               <th className="px-4 py-3">Error Rate</th>
@@ -224,11 +224,11 @@ function ProviderTable({ providers }: { providers: ProviderPerformance[] }) {
               <th className="px-4 py-3">Incidents</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {providers.map((p) => (
-              <tr key={p.model} className="hover:bg-gray-50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.model}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{p.totalRequests.toLocaleString()}</td>
+              <tr key={p.model} className="hover:bg-muted/50">
+                <td className="px-4 py-3 text-sm font-medium text-foreground">{p.model}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{p.totalRequests.toLocaleString()}</td>
                 <td className="px-4 py-3">
                   <span
                     className={clsx(
@@ -239,13 +239,13 @@ function ProviderTable({ providers }: { providers: ProviderPerformance[] }) {
                     {p.errorRate.toFixed(1)}%
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 text-sm text-muted-foreground">
                   {p.avgLatencyMs != null ? `${p.avgLatencyMs.toFixed(0)}ms` : '-'}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 text-sm text-muted-foreground">
                   {p.p95LatencyMs != null ? `${p.p95LatencyMs.toFixed(0)}ms` : '-'}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">${p.totalCostUsd.toFixed(2)}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">${p.totalCostUsd.toFixed(2)}</td>
                 <td className="px-4 py-3">
                   <span
                     className={clsx(

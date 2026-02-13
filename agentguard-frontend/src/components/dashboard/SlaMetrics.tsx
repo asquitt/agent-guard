@@ -12,7 +12,7 @@ const PERIOD_OPTIONS = [
 ];
 
 function latencyColor(ms: number | null): string {
-  if (ms === null) return 'text-gray-400';
+  if (ms === null) return 'text-muted-foreground/60';
   if (ms < 100) return 'text-green-600';
   if (ms < 200) return 'text-yellow-600';
   return 'text-red-600';
@@ -46,8 +46,8 @@ export function SlaMetricsSection() {
   return (
     <div className="mt-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Proxy SLA Metrics</h2>
-        <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+        <h2 className="text-lg font-semibold text-foreground">Proxy SLA Metrics</h2>
+        <div className="flex gap-1 rounded-lg bg-muted p-1">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.days}
@@ -55,8 +55,8 @@ export function SlaMetricsSection() {
               className={clsx(
                 'rounded-md px-3 py-1 text-sm font-medium transition-colors',
                 days === opt.days
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900',
+                  ? 'bg-card text-foreground shadow-sm shadow-black/10'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {opt.label}
@@ -69,25 +69,25 @@ export function SlaMetricsSection() {
         <SlaCard
           label="P95 Latency"
           value={isLoading ? '—' : formatMs(data?.p95LatencyMs ?? null)}
-          colorClass={isLoading ? 'text-gray-400' : latencyColor(data?.p95LatencyMs ?? null)}
+          colorClass={isLoading ? 'text-muted-foreground/60' : latencyColor(data?.p95LatencyMs ?? null)}
           subtitle={data ? `p50: ${formatMs(data.p50LatencyMs)} · p99: ${formatMs(data.p99LatencyMs)}` : undefined}
         />
         <SlaCard
           label="Error Rate"
           value={isLoading ? '—' : `${((data?.errorRate ?? 0) * 100).toFixed(2)}%`}
-          colorClass={isLoading ? 'text-gray-400' : errorRateColor(data?.errorRate ?? 0)}
+          colorClass={isLoading ? 'text-muted-foreground/60' : errorRateColor(data?.errorRate ?? 0)}
           subtitle={data ? `${data.totalRequests.toLocaleString()} total requests` : undefined}
         />
         <SlaCard
           label="Throughput"
           value={isLoading ? '—' : `${Math.round(data?.avgThroughputPerHour ?? 0)}/hr`}
-          colorClass="text-gray-900"
+          colorClass="text-foreground"
           subtitle={`Last ${days} days`}
         />
         <SlaCard
           label="Uptime"
           value={isLoading ? '—' : `${(data?.uptimePct ?? 0).toFixed(2)}%`}
-          colorClass={isLoading ? 'text-gray-400' : uptimeColor(data?.uptimePct ?? 0)}
+          colorClass={isLoading ? 'text-muted-foreground/60' : uptimeColor(data?.uptimePct ?? 0)}
           subtitle={data?.byProvider.length ? `${data.byProvider.length} provider(s)` : undefined}
         />
       </div>
@@ -107,10 +107,10 @@ function SlaCard({
   subtitle?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <p className="text-sm text-gray-500">{label}</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-sm text-muted-foreground">{label}</p>
       <p className={clsx('mt-1 text-2xl font-semibold', colorClass)}>{value}</p>
-      {subtitle && <p className="mt-1 text-xs text-gray-400">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-muted-foreground/60">{subtitle}</p>}
     </div>
   );
 }

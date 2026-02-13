@@ -52,16 +52,16 @@ export default function AlertsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Alert Destinations
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Configure where incident alerts are sent
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80"
         >
           Add destination
         </button>
@@ -69,11 +69,11 @@ export default function AlertsPage() {
 
       {/* Create form */}
       {showCreate && (
-        <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="mb-4 rounded-xl border border-border bg-card p-4">
           <div className="space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-foreground">
                   Name
                 </label>
                 <input
@@ -81,17 +81,17 @@ export default function AlertsPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. #incidents-critical"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-foreground">
                   Type
                 </label>
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  className="rounded-lg border border-border px-3 py-2 text-sm"
                 >
                   <option value="slack">Slack</option>
                   <option value="pagerduty">PagerDuty</option>
@@ -101,7 +101,7 @@ export default function AlertsPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Webhook URL
               </label>
               <input
@@ -109,20 +109,20 @@ export default function AlertsPage() {
                 value={newWebhookUrl}
                 onChange={(e) => setNewWebhookUrl(e.target.value)}
                 placeholder="https://hooks.slack.com/..."
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => createMutation.mutate()}
                 disabled={!newName.trim() || createMutation.isPending}
-                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
               >
                 {createMutation.isPending ? 'Creating...' : 'Create'}
               </button>
               <button
                 onClick={() => setShowCreate(false)}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
@@ -134,11 +134,11 @@ export default function AlertsPage() {
       {/* Destinations list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : destinations.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-sm text-gray-500">No alert destinations configured</p>
+        <div className="rounded-xl border border-border bg-card py-16 text-center">
+          <p className="text-sm text-muted-foreground">No alert destinations configured</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -180,20 +180,20 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
       : null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6">
+    <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-foreground">
               {destination.name}
             </h3>
-            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               {DEST_TYPE_LABELS[destination.destinationType] ??
                 destination.destinationType}
             </span>
           </div>
           {webhookUrl && (
-            <p className="mt-1 text-sm text-gray-500 truncate max-w-md">
+            <p className="mt-1 text-sm text-muted-foreground truncate max-w-md">
               {webhookUrl}
             </p>
           )}
@@ -204,12 +204,12 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
           disabled={toggleMutation.isPending}
           className={clsx(
             'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-            destination.isActive ? 'bg-primary-600' : 'bg-gray-300',
+            destination.isActive ? 'bg-primary' : 'bg-muted',
           )}
         >
           <span
             className={clsx(
-              'inline-block h-4 w-4 rounded-full bg-white transition-transform',
+              'inline-block h-4 w-4 rounded-full bg-card transition-transform',
               destination.isActive ? 'translate-x-6' : 'translate-x-1',
             )}
           />
@@ -220,7 +220,7 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
         <button
           onClick={() => testMutation.mutate()}
           disabled={testMutation.isPending}
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50"
         >
           {testMutation.isPending ? 'Sending...' : 'Send test'}
         </button>
@@ -231,12 +231,12 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
             }
           }}
           disabled={deleteMutation.isPending}
-          className="text-sm text-danger-600 hover:text-danger-500 disabled:opacity-50"
+          className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
         >
           Delete
         </button>
         {testResult && (
-          <span className="text-sm text-gray-500">{testResult}</span>
+          <span className="text-sm text-muted-foreground">{testResult}</span>
         )}
       </div>
     </div>

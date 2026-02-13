@@ -51,7 +51,7 @@ export default function BillingPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary-600" />
       </div>
     );
   }
@@ -64,18 +64,18 @@ export default function BillingPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Billing</h1>
+        <p className="text-sm text-muted-foreground">
           Manage your subscription and monitor usage
         </p>
       </div>
 
       {/* Current Plan + Usage */}
-      <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6">
+      <div className="mb-8 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Current Plan</h2>
-            <p className="mt-1 text-2xl font-bold capitalize text-primary-600">
+            <h2 className="text-lg font-semibold text-foreground">Current Plan</h2>
+            <p className="mt-1 text-2xl font-bold capitalize text-primary">
               {currentTier}
             </p>
             {billing?.subscriptionStatus && (
@@ -88,7 +88,7 @@ export default function BillingPage() {
             <button
               onClick={() => portalMutation.mutate()}
               disabled={portalMutation.isPending}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50"
             >
               {portalMutation.isPending ? 'Loading...' : 'Manage Subscription'}
             </button>
@@ -99,19 +99,19 @@ export default function BillingPage() {
         {usageLimit && (
           <div className="mt-6">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Monthly API Requests</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-muted-foreground">Monthly API Requests</span>
+              <span className="font-medium text-foreground">
                 {usageCount.toLocaleString()} / {usageLimit.toLocaleString()}
               </span>
             </div>
-            <div className="mt-2 h-3 overflow-hidden rounded-full bg-gray-200">
+            <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
               <div
                 className={`h-full rounded-full transition-all ${
                   usagePercent >= 90
                     ? 'bg-red-500'
                     : usagePercent >= 70
                       ? 'bg-yellow-500'
-                      : 'bg-primary-500'
+                      : 'bg-primary/100'
                 }`}
                 style={{ width: `${usagePercent}%` }}
               />
@@ -126,14 +126,14 @@ export default function BillingPage() {
 
         {!usageLimit && (
           <div className="mt-4">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               {usageCount.toLocaleString()} requests this month (unlimited)
             </span>
           </div>
         )}
 
         {billing?.currentPeriodEnd && (
-          <p className="mt-4 text-xs text-gray-400">
+          <p className="mt-4 text-xs text-muted-foreground/60">
             Current period ends{' '}
             {new Date(billing.currentPeriodEnd).toLocaleDateString()}
           </p>
@@ -141,7 +141,7 @@ export default function BillingPage() {
       </div>
 
       {/* Plan Comparison */}
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Plans</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Plans</h2>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {PLANS.map((plan) => {
           const isCurrent = plan.tier === currentTier;
@@ -151,19 +151,19 @@ export default function BillingPage() {
               key={plan.tier}
               className={`rounded-xl border p-6 ${
                 isCurrent
-                  ? 'border-primary-300 bg-primary-50'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-primary/30 bg-primary/10'
+                  : 'border-border bg-card'
               }`}
             >
-              <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{plan.price}</p>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+              <p className="mt-1 text-2xl font-bold text-foreground">{plan.price}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {plan.requests} requests/month
               </p>
 
               <ul className="mt-4 space-y-2">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center text-sm text-gray-600">
+                  <li key={feature} className="flex items-center text-sm text-muted-foreground">
                     <span className="mr-2 text-green-500">&#10003;</span>
                     {feature}
                   </li>
@@ -172,18 +172,18 @@ export default function BillingPage() {
 
               <div className="mt-6">
                 {isCurrent ? (
-                  <span className="block rounded-lg bg-primary-100 px-4 py-2 text-center text-sm font-medium text-primary-700">
+                  <span className="block rounded-lg bg-primary/10 px-4 py-2 text-center text-sm font-medium text-primary">
                     Current Plan
                   </span>
                 ) : plan.tier === 'enterprise' ? (
-                  <span className="block rounded-lg bg-gray-100 px-4 py-2 text-center text-sm font-medium text-gray-600">
+                  <span className="block rounded-lg bg-muted px-4 py-2 text-center text-sm font-medium text-muted-foreground">
                     Contact Sales
                   </span>
                 ) : (
                   <button
                     onClick={() => checkoutMutation.mutate(plan.tier)}
                     disabled={checkoutMutation.isPending}
-                    className="block w-full rounded-lg bg-primary-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                    className="block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
                   >
                     {checkoutMutation.isPending ? 'Loading...' : 'Upgrade'}
                   </button>

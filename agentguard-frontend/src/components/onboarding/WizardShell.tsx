@@ -20,19 +20,19 @@ export default function WizardShell({
   const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-muted/50">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white px-6 py-4">
+      <header className="border-b border-border bg-card px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-primary-600">AgentGuard</span>
-            <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700">
+            <span className="text-xl font-bold text-primary">AgentGuard</span>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               Setup
             </span>
           </div>
           <button
             onClick={onSkip}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             Skip setup
           </button>
@@ -40,15 +40,15 @@ export default function WizardShell({
       </header>
 
       {/* Progress bar */}
-      <div className="bg-white px-6 pb-6">
+      <div className="bg-card px-6 pb-6">
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-center justify-between pt-4 text-xs text-gray-500">
+          <div className="flex items-center justify-between pt-4 text-xs text-muted-foreground">
             <span>Step {currentStep} of {totalSteps}</span>
             <span>{Math.round(progress)}% complete</span>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary-500 transition-all duration-500"
+              className="h-full rounded-full bg-primary/100 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -58,8 +58,8 @@ export default function WizardShell({
       {/* Content */}
       <main className="flex flex-1 flex-col items-center px-6 py-10">
         <div className="w-full max-w-2xl">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          <p className="mt-2 text-sm text-gray-500">{description}</p>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
           <div className="mt-8">{children}</div>
         </div>
       </main>

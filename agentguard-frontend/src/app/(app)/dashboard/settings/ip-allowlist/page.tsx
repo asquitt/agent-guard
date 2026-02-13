@@ -75,24 +75,24 @@ export default function IpAllowlistPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">IP Allowlisting</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">IP Allowlisting</h1>
+        <p className="text-sm text-muted-foreground">
           Restrict proxy access to specific IP addresses or CIDR ranges
         </p>
       </div>
 
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+      <div className="mb-6 rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center gap-3">
           <div
             className={clsx(
               'inline-flex rounded-full px-3 py-1 text-xs font-medium',
-              data?.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500',
+              data?.enabled ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground',
             )}
           >
             {data?.enabled ? 'Active' : 'Disabled (all IPs allowed)'}
           </div>
           {ips.length > 0 && (
-            <span className="text-xs text-gray-500">{ips.length} IP{ips.length !== 1 ? 's' : ''} configured</span>
+            <span className="text-xs text-muted-foreground">{ips.length} IP{ips.length !== 1 ? 's' : ''} configured</span>
           )}
         </div>
 
@@ -109,12 +109,12 @@ export default function IpAllowlistPage() {
             onChange={(e) => { setNewIp(e.target.value); setError(''); }}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
             placeholder="e.g. 192.168.1.0/24 or 10.0.0.5"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <button
             onClick={handleAdd}
             disabled={!newIp.trim() || mutation.isPending}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
           >
             Add
           </button>
@@ -125,10 +125,10 @@ export default function IpAllowlistPage() {
         {/* IP list */}
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : ips.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 py-8 text-center text-sm text-gray-500">
+          <div className="rounded-lg border border-dashed border-border bg-muted/50 py-8 text-center text-sm text-muted-foreground">
             No IPs configured — all addresses can access the proxy
           </div>
         ) : (
@@ -136,9 +136,9 @@ export default function IpAllowlistPage() {
             {ips.map((ip) => (
               <div
                 key={ip}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5"
+                className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-4 py-2.5"
               >
-                <code className="text-sm text-gray-900">{ip}</code>
+                <code className="text-sm text-foreground">{ip}</code>
                 <button
                   onClick={() => handleRemove(ip)}
                   disabled={mutation.isPending}
@@ -152,7 +152,7 @@ export default function IpAllowlistPage() {
               <button
                 onClick={handleClear}
                 disabled={mutation.isPending}
-                className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
               >
                 Clear all &amp; disable allowlist
               </button>

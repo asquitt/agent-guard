@@ -26,8 +26,8 @@ export default function CompletionStep({ incidentId, onFinish }: CompletionStepP
       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
         <span className="text-3xl">&#127881;</span>
       </div>
-      <h2 className="text-xl font-semibold text-gray-900">You&apos;re all set!</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
+      <h2 className="text-xl font-semibold text-foreground">You&apos;re all set!</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         AgentGuard is now monitoring your LLM traffic. Explore the dashboard or configure
         detectors and alerts.
       </p>
@@ -38,13 +38,13 @@ export default function CompletionStep({ incidentId, onFinish }: CompletionStepP
             key={link.href}
             href={link.href}
             onClick={onFinish}
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary-300 hover:bg-primary-50"
+            className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/10"
           >
             <div>
-              <p className="text-sm font-medium text-gray-900">{link.label}</p>
-              <p className="text-xs text-gray-500">{link.desc}</p>
+              <p className="text-sm font-medium text-foreground">{link.label}</p>
+              <p className="text-xs text-muted-foreground">{link.desc}</p>
             </div>
-            <span className="text-gray-400">&rarr;</span>
+            <span className="text-muted-foreground/60">&rarr;</span>
           </Link>
         ))}
       </div>

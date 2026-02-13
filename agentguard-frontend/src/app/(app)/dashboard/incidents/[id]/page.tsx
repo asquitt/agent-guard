@@ -43,14 +43,14 @@ export default function IncidentDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (!incident) {
     return (
-      <div className="py-20 text-center text-gray-500">Incident not found</div>
+      <div className="py-20 text-center text-muted-foreground">Incident not found</div>
     );
   }
 
@@ -62,7 +62,7 @@ export default function IncidentDetailPage() {
       {/* Back link */}
       <button
         onClick={() => router.back()}
-        className="mb-4 text-sm text-gray-500 hover:text-gray-700"
+        className="mb-4 text-sm text-muted-foreground hover:text-foreground"
       >
         ← Back to incidents
       </button>
@@ -70,12 +70,12 @@ export default function IncidentDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{incident.title}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{incident.title}</h1>
           <div className="mt-2 flex items-center gap-3">
             <span
               className={clsx(
                 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                SEVERITY_COLORS[incident.severity] ?? 'bg-gray-100 text-gray-600',
+                SEVERITY_COLORS[incident.severity] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {incident.severity}
@@ -83,12 +83,12 @@ export default function IncidentDetailPage() {
             <span
               className={clsx(
                 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                STATUS_COLORS[incident.status] ?? 'bg-gray-100 text-gray-600',
+                STATUS_COLORS[incident.status] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {incident.status}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               {incident.category.replace('_', ' ')}
             </span>
           </div>
@@ -100,7 +100,7 @@ export default function IncidentDetailPage() {
             <button
               onClick={() => statusMutation.mutate('acknowledged')}
               disabled={statusMutation.isPending}
-              className="rounded-lg bg-warning-600 px-4 py-2 text-sm font-medium text-white hover:bg-warning-500 disabled:opacity-50"
+              className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-400 disabled:opacity-50"
             >
               Acknowledge
             </button>
@@ -109,7 +109,7 @@ export default function IncidentDetailPage() {
             <button
               onClick={() => statusMutation.mutate('resolved')}
               disabled={statusMutation.isPending}
-              className="rounded-lg bg-success-600 px-4 py-2 text-sm font-medium text-white hover:bg-success-500 disabled:opacity-50"
+              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-500/100 disabled:opacity-50"
             >
               Resolve
             </button>
@@ -118,7 +118,7 @@ export default function IncidentDetailPage() {
             <button
               onClick={() => statusMutation.mutate('dismissed')}
               disabled={statusMutation.isPending}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50"
             >
               Dismiss
             </button>
@@ -127,7 +127,7 @@ export default function IncidentDetailPage() {
       </div>
 
       {/* Metadata grid */}
-      <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-gray-200 bg-white p-6 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-6 lg:grid-cols-4">
         <MetaItem label="Created" value={new Date(incident.createdAt).toLocaleString()} />
         <MetaItem
           label="Resolved"
@@ -149,20 +149,20 @@ export default function IncidentDetailPage() {
 
       {/* Description */}
       {incident.description && (
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-2 text-sm font-medium text-gray-900">
+        <div className="mb-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-2 text-sm font-medium text-foreground">
             Description
           </h2>
-          <p className="whitespace-pre-wrap text-sm text-gray-600">
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             {incident.description}
           </p>
         </div>
       )}
 
       {/* Action timeline */}
-      <div className="rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div className="rounded-xl border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">
             Activity ({incident.actions.length})
           </h2>
           <AddActionButton
@@ -177,11 +177,11 @@ export default function IncidentDetailPage() {
         </div>
 
         {incident.actions.length === 0 ? (
-          <div className="py-8 text-center text-sm text-gray-500">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             No actions yet
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-border">
             {incident.actions.map((action) => (
               <ActionRow key={action.id} action={action} />
             ))}
@@ -195,8 +195,8 @@ export default function IncidentDetailPage() {
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase text-gray-500">{label}</p>
-      <p className="mt-1 text-sm text-gray-900">{value}</p>
+      <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -210,14 +210,14 @@ function ActionRow({ action }: { action: IncidentAction }) {
   return (
     <div className="px-6 py-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">
+        <span className="text-sm font-medium text-foreground">
           {action.actionType.replace('_', ' ')}
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-muted-foreground">
           {new Date(action.createdAt).toLocaleString()}
         </span>
       </div>
-      {note && <p className="mt-1 text-sm text-gray-600">{note}</p>}
+      {note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
     </div>
   );
 }
@@ -243,7 +243,7 @@ function AddActionButton({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50"
       >
         Add action
       </button>
@@ -255,7 +255,7 @@ function AddActionButton({
       <select
         value={actionType}
         onChange={(e) => setActionType(e.target.value)}
-        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+        className="rounded-lg border border-border px-2 py-1.5 text-sm"
       >
         <option value="investigate">Investigate</option>
         <option value="escalate">Escalate</option>
@@ -266,18 +266,18 @@ function AddActionButton({
         placeholder="Note..."
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+        className="rounded-lg border border-border px-2 py-1.5 text-sm"
       />
       <button
         onClick={handleSubmit}
         disabled={isPending}
-        className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
       >
         Add
       </button>
       <button
         onClick={() => setOpen(false)}
-        className="text-sm text-gray-500 hover:text-gray-700"
+        className="text-sm text-muted-foreground hover:text-foreground"
       >
         Cancel
       </button>

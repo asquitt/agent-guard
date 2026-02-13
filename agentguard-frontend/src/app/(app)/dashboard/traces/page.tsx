@@ -12,9 +12,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function statusColor(code: number | null): string {
-  if (code == null) return 'text-gray-500 bg-gray-50';
+  if (code == null) return 'text-muted-foreground bg-muted/50';
   const prefix = String(Math.floor(code / 100));
-  return STATUS_COLORS[prefix] ?? 'text-gray-500 bg-gray-50';
+  return STATUS_COLORS[prefix] ?? 'text-muted-foreground bg-muted/50';
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -22,7 +22,7 @@ const SEVERITY_COLORS: Record<string, string> = {
   high: 'bg-orange-100 text-orange-800',
   medium: 'bg-yellow-100 text-yellow-800',
   low: 'bg-blue-100 text-blue-800',
-  info: 'bg-gray-100 text-gray-700',
+  info: 'bg-muted text-foreground',
 };
 
 export default function TracesPage() {
@@ -66,12 +66,12 @@ export default function TracesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Request Traces</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Request Traces</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Inspect proxy requests, latency, costs, and linked incidents.
           </p>
         </div>
-        <span className="text-sm text-gray-400">{total} total</span>
+        <span className="text-sm text-muted-foreground/60">{total} total</span>
       </div>
 
       {/* Filters */}
@@ -79,7 +79,7 @@ export default function TracesPage() {
         <input
           type="text"
           placeholder="Search path…"
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm"
           onChange={(e) =>
             setFilters((f) => ({ ...f, q: e.target.value || undefined, skip: 0 }))
           }
@@ -87,13 +87,13 @@ export default function TracesPage() {
         <input
           type="text"
           placeholder="Model"
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm"
           onChange={(e) =>
             setFilters((f) => ({ ...f, model: e.target.value || undefined, skip: 0 }))
           }
         />
         <select
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm"
           onChange={(e) => {
             const v = e.target.value;
             setFilters((f) => ({
@@ -110,49 +110,49 @@ export default function TracesPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Time
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Method
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Path
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Model
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Latency
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Tokens
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Cost
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-muted-foreground">
                 Incidents
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground/60">
                   Loading…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground/60">
                   No traces found.
                 </td>
               </tr>
@@ -160,19 +160,19 @@ export default function TracesPage() {
               items.map((t) => (
                 <tr
                   key={t.id}
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-muted/50"
                   onClick={() => openDetail(t.id)}
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
+                  <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                     {new Date(t.createdAt).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-xs font-mono font-medium text-gray-700">
+                  <td className="px-4 py-3 text-xs font-mono font-medium text-foreground">
                     {t.method}
                   </td>
-                  <td className="max-w-[200px] truncate px-4 py-3 text-xs text-gray-700">
+                  <td className="max-w-[200px] truncate px-4 py-3 text-xs text-foreground">
                     {t.path}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{t.model ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{t.model ?? '—'}</td>
                   <td className="px-4 py-3">
                     <span
                       className={clsx(
@@ -183,15 +183,15 @@ export default function TracesPage() {
                       {t.statusCode ?? '—'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
                     {t.latencyMs != null ? `${t.latencyMs}ms` : '—'}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
                     {t.inputTokens != null || t.outputTokens != null
                       ? `${t.inputTokens ?? 0}/${t.outputTokens ?? 0}`
                       : '—'}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
                     {t.costUsd != null ? `$${t.costUsd.toFixed(4)}` : '—'}
                   </td>
                   <td className="px-4 py-3">
@@ -200,7 +200,7 @@ export default function TracesPage() {
                         {t.incidentCount}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400">0</span>
+                      <span className="text-xs text-muted-foreground/60">0</span>
                     )}
                   </td>
                 </tr>
@@ -225,7 +225,7 @@ export default function TracesPage() {
           >
             Previous
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-muted-foreground">
             {(filters.skip ?? 0) + 1}–
             {Math.min((filters.skip ?? 0) + (filters.limit ?? 50), total)} of {total}
           </span>
@@ -247,12 +247,12 @@ export default function TracesPage() {
       {/* Detail slide-over */}
       {(selected || detailLoading) && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-          <div className="w-full max-w-2xl overflow-y-auto bg-white p-6 shadow-xl">
+          <div className="w-full max-w-2xl overflow-y-auto bg-card p-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Trace Detail</h2>
+              <h2 className="text-lg font-semibold text-foreground">Trace Detail</h2>
               <button
                 onClick={() => setSelected(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted-foreground/60 hover:text-muted-foreground"
               >
                 ✕
               </button>
@@ -260,18 +260,18 @@ export default function TracesPage() {
 
             {detailLoading ? (
               <div className="flex items-center justify-center py-16">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : selected ? (
               <div className="mt-4 space-y-6">
                 {/* Meta */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Method</span>
+                    <span className="text-muted-foreground">Method</span>
                     <p className="font-mono font-medium">{selected.method}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Status</span>
+                    <span className="text-muted-foreground">Status</span>
                     <p>
                       <span
                         className={clsx(
@@ -284,29 +284,29 @@ export default function TracesPage() {
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Path</span>
+                    <span className="text-muted-foreground">Path</span>
                     <p className="font-mono text-xs break-all">{selected.path}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Model</span>
+                    <span className="text-muted-foreground">Model</span>
                     <p>{selected.model ?? '—'}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Latency</span>
+                    <span className="text-muted-foreground">Latency</span>
                     <p>{selected.latencyMs != null ? `${selected.latencyMs}ms` : '—'}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Cost</span>
+                    <span className="text-muted-foreground">Cost</span>
                     <p>{selected.costUsd != null ? `$${selected.costUsd.toFixed(4)}` : '—'}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Tokens (in/out)</span>
+                    <span className="text-muted-foreground">Tokens (in/out)</span>
                     <p>
                       {selected.inputTokens ?? 0} / {selected.outputTokens ?? 0}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Time</span>
+                    <span className="text-muted-foreground">Time</span>
                     <p>{new Date(selected.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
@@ -314,8 +314,8 @@ export default function TracesPage() {
                 {/* Request body */}
                 {selected.requestBody && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Request Body</h3>
-                    <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">
+                    <h3 className="text-sm font-medium text-foreground">Request Body</h3>
+                    <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-muted/50 p-3 text-xs">
                       {formatJson(selected.requestBody)}
                     </pre>
                   </div>
@@ -324,8 +324,8 @@ export default function TracesPage() {
                 {/* Response body */}
                 {selected.responseBody && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Response Body</h3>
-                    <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-gray-50 p-3 text-xs">
+                    <h3 className="text-sm font-medium text-foreground">Response Body</h3>
+                    <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-muted/50 p-3 text-xs">
                       {formatJson(selected.responseBody)}
                     </pre>
                   </div>
@@ -334,27 +334,27 @@ export default function TracesPage() {
                 {/* Linked incidents */}
                 {selected.incidents.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">
+                    <h3 className="text-sm font-medium text-foreground">
                       Linked Incidents ({selected.incidents.length})
                     </h3>
                     <div className="mt-2 space-y-2">
                       {selected.incidents.map((inc) => (
                         <div
                           key={inc.id}
-                          className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2"
+                          className="flex items-center justify-between rounded-lg border border-border px-4 py-2"
                         >
                           <div className="flex items-center gap-2">
                             <span
                               className={clsx(
                                 'rounded-full px-2 py-0.5 text-xs font-medium',
-                                SEVERITY_COLORS[inc.severity] ?? 'bg-gray-100 text-gray-700',
+                                SEVERITY_COLORS[inc.severity] ?? 'bg-muted text-foreground',
                               )}
                             >
                               {inc.severity}
                             </span>
-                            <span className="text-sm text-gray-700">{inc.title}</span>
+                            <span className="text-sm text-foreground">{inc.title}</span>
                           </div>
-                          <span className="text-xs text-gray-400">{inc.category}</span>
+                          <span className="text-xs text-muted-foreground/60">{inc.category}</span>
                         </div>
                       ))}
                     </div>

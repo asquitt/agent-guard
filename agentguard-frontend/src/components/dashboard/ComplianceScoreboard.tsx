@@ -46,10 +46,10 @@ export function ComplianceScoreboard() {
     <div className="mb-8">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Framework Scoreboard</h2>
-          <p className="text-xs text-gray-500">Violations by regulatory framework and requirement</p>
+          <h2 className="text-lg font-semibold text-foreground">Framework Scoreboard</h2>
+          <p className="text-xs text-muted-foreground">Violations by regulatory framework and requirement</p>
         </div>
-        <div className="flex gap-1 rounded-lg border border-gray-200 bg-white p-0.5">
+        <div className="flex gap-1 rounded-lg border border-border bg-card p-0.5">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.days}
@@ -57,8 +57,8 @@ export function ComplianceScoreboard() {
               className={clsx(
                 'rounded-md px-3 py-1 text-xs font-medium transition-colors',
                 days === opt.days
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100',
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:bg-muted',
               )}
             >
               {opt.label}
@@ -69,12 +69,12 @@ export function ComplianceScoreboard() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : frameworks.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center">
-          <p className="text-sm text-gray-500">No compliance violations detected</p>
-          <p className="mt-1 text-xs text-gray-400">
+        <div className="rounded-xl border border-border bg-card px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">No compliance violations detected</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">
             Violations will appear here as compliance incidents are created
           </p>
         </div>
@@ -103,8 +103,8 @@ function FrameworkCard({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const borderColor = FRAMEWORK_COLORS[framework.name] ?? 'border-gray-200 bg-gray-50';
-  const textColor = FRAMEWORK_TEXT[framework.name] ?? 'text-gray-700';
+  const borderColor = FRAMEWORK_COLORS[framework.name] ?? 'border-border bg-muted/50';
+  const textColor = FRAMEWORK_TEXT[framework.name] ?? 'text-foreground';
 
   return (
     <div
@@ -117,16 +117,16 @@ function FrameworkCard({
           {framework.totalViolations}
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-gray-500">
+      <p className="mt-0.5 text-xs text-muted-foreground">
         {framework.requirements.length} requirement{framework.requirements.length !== 1 ? 's' : ''} violated
       </p>
 
       {isExpanded && framework.requirements.length > 0 && (
-        <div className="mt-3 space-y-1.5 border-t border-gray-200 pt-3">
+        <div className="mt-3 space-y-1.5 border-t border-border pt-3">
           {framework.requirements.map((req) => (
             <div key={req.name} className="flex items-center justify-between">
-              <span className="text-xs text-gray-600">{req.name}</span>
-              <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-700">
+              <span className="text-xs text-muted-foreground">{req.name}</span>
+              <span className="ml-2 rounded-full bg-card px-2 py-0.5 text-xs font-medium text-foreground">
                 {req.violationCount}
               </span>
             </div>

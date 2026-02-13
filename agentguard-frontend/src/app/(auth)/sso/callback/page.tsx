@@ -30,13 +30,13 @@ function SSOCallbackContent() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4">
         <div className="w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold text-gray-900">SSO Login Failed</h1>
-          <p className="mt-4 text-sm text-danger-600">{error}</p>
+          <h1 className="text-2xl font-bold text-foreground">SSO Login Failed</h1>
+          <p className="mt-4 text-sm text-red-400">{error}</p>
           <a
             href="/login"
-            className="mt-6 inline-block rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+            className="mt-6 inline-block rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80"
           >
             Back to Login
           </a>
@@ -46,10 +46,10 @@ function SSOCallbackContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-muted/50">
       <div className="text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
-        <p className="mt-4 text-sm text-gray-500">Completing sign in...</p>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="mt-4 text-sm text-muted-foreground">Completing sign in...</p>
       </div>
     </div>
   );
@@ -59,10 +59,10 @@ export default function SSOCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex min-h-screen items-center justify-center bg-muted/50">
           <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
-            <p className="mt-4 text-sm text-gray-500">Loading...</p>
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-4 text-sm text-muted-foreground">Loading...</p>
           </div>
         </div>
       }

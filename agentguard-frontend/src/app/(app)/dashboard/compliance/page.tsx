@@ -35,18 +35,18 @@ export default function CompliancePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Compliance</h1>
-        <p className="text-sm text-gray-500">Framework scoreboard, audit logs, and compliance reports</p>
+        <h1 className="text-2xl font-bold text-foreground">Compliance</h1>
+        <p className="text-sm text-muted-foreground">Framework scoreboard, audit logs, and compliance reports</p>
       </div>
 
       <ComplianceScoreboard />
 
-      <div className="mb-6 flex gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="mb-6 flex gap-1 rounded-lg bg-muted p-1">
         <button
           onClick={() => setTab('audit')}
           className={clsx(
             'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-            tab === 'audit' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900',
+            tab === 'audit' ? 'bg-card text-foreground shadow-sm shadow-black/10' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           Audit Log
@@ -55,7 +55,7 @@ export default function CompliancePage() {
           onClick={() => setTab('reports')}
           className={clsx(
             'rounded-md px-4 py-2 text-sm font-medium transition-colors',
-            tab === 'reports' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900',
+            tab === 'reports' ? 'bg-card text-foreground shadow-sm shadow-black/10' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           Reports
@@ -92,7 +92,7 @@ function AuditLogTab() {
         <select
           value={filters.action ?? ''}
           onChange={(e) => updateFilter('action', e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All actions</option>
           <option value="auth.login">Login</option>
@@ -111,7 +111,7 @@ function AuditLogTab() {
         <select
           value={filters.resourceType ?? ''}
           onChange={(e) => updateFilter('resourceType', e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All resources</option>
           <option value="user">User</option>
@@ -126,13 +126,13 @@ function AuditLogTab() {
         <button
           onClick={() => verifyMutation.mutate()}
           disabled={verifyMutation.isPending}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
         >
           {verifyMutation.isPending ? 'Verifying...' : 'Verify Integrity'}
         </button>
         <a
           href={getCefExportUrl()}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
         >
           Export CEF
         </a>
@@ -152,18 +152,18 @@ function AuditLogTab() {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-border bg-card">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-500">No audit logs found</div>
+          <div className="py-16 text-center text-sm text-muted-foreground">No audit logs found</div>
         ) : (
           <>
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-3">Timestamp</th>
                   <th className="px-4 py-3">Action</th>
                   <th className="px-4 py-3">Resource</th>
@@ -171,7 +171,7 @@ function AuditLogTab() {
                   <th className="px-4 py-3">User ID</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {logs.map((log) => (
                   <AuditLogRow key={log.id} log={log} />
                 ))}
@@ -179,21 +179,21 @@ function AuditLogTab() {
             </table>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+              <div className="flex items-center justify-between border-t border-border px-4 py-3">
                 <button
                   disabled={page === 0}
                   onClick={() => setFilters((f) => ({ ...f, skip: Math.max(0, (f.skip ?? 0) - PAGE_SIZE) }))}
-                  className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   Page {page + 1} of {totalPages}
                 </span>
                 <button
                   disabled={page >= totalPages - 1}
                   onClick={() => setFilters((f) => ({ ...f, skip: (f.skip ?? 0) + PAGE_SIZE }))}
-                  className="rounded-lg px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >
                   Next
                 </button>
@@ -208,17 +208,17 @@ function AuditLogTab() {
 
 function AuditLogRow({ log }: { log: AuditLogEntry }) {
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3 text-sm text-gray-500">
+    <tr className="hover:bg-muted/50">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {new Date(log.createdAt).toLocaleString()}
       </td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-900">{log.action}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm font-medium text-foreground">{log.action}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {log.resourceType}
-        {log.resourceId && <span className="ml-1 text-gray-400">{log.resourceId.slice(0, 8)}...</span>}
+        {log.resourceId && <span className="ml-1 text-muted-foreground/60">{log.resourceId.slice(0, 8)}...</span>}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">{log.ipAddress ?? '-'}</td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-muted-foreground">{log.ipAddress ?? '-'}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {log.userId ? `${log.userId.slice(0, 8)}...` : '-'}
       </td>
     </tr>
@@ -251,15 +251,15 @@ function ReportsTab() {
 
   return (
     <div>
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-medium text-gray-900">Generate Report</h3>
+      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+        <h3 className="mb-4 text-sm font-medium text-foreground">Generate Report</h3>
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Report Type</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Report Type</label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-border px-3 py-2 text-sm"
             >
               <optgroup label="General">
                 {REPORT_TYPES.filter((rt) => rt.group === 'General').map((rt) => (
@@ -274,44 +274,44 @@ function ReportsTab() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">From</label>
+            <label className="mb-1 block text-xs text-muted-foreground">From</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-border px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">To</label>
+            <label className="mb-1 block text-xs text-muted-foreground">To</label>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-border px-3 py-2 text-sm"
             />
           </div>
           <button
             onClick={handleGenerate}
             disabled={!dateFrom || !dateTo || createMutation.isPending}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
           >
             {createMutation.isPending ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-border bg-card">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : reports.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-500">No reports generated yet</div>
+          <div className="py-16 text-center text-sm text-muted-foreground">No reports generated yet</div>
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Period</th>
                 <th className="px-4 py-3">Status</th>
@@ -320,7 +320,7 @@ function ReportsTab() {
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {reports.map((report) => (
                 <ReportRow key={report.id} report={report} />
               ))}
@@ -336,9 +336,9 @@ function ReportRow({ report }: { report: ComplianceReport }) {
   const typeLabel = REPORT_TYPES.find((rt) => rt.value === report.reportType)?.label ?? report.reportType;
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3 text-sm font-medium text-gray-900">{typeLabel}</td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+    <tr className="hover:bg-muted/50">
+      <td className="px-4 py-3 text-sm font-medium text-foreground">{typeLabel}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {new Date(report.dateFrom).toLocaleDateString()} - {new Date(report.dateTo).toLocaleDateString()}
       </td>
       <td className="px-4 py-3">
@@ -354,24 +354,24 @@ function ReportRow({ report }: { report: ComplianceReport }) {
           {report.status}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {report.fileSizeBytes ? `${(report.fileSizeBytes / 1024).toFixed(1)} KB` : '-'}
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {new Date(report.createdAt).toLocaleString()}
       </td>
       <td className="px-4 py-3">
         {report.status === 'completed' ? (
           <a
             href={getReportDownloadUrl(report.id)}
-            className="text-sm font-medium text-primary-600 hover:text-primary-500"
+            className="text-sm font-medium text-primary hover:text-primary"
           >
             Download
           </a>
         ) : report.status === 'failed' ? (
           <span className="text-sm text-red-500">{report.errorMessage}</span>
         ) : (
-          <span className="text-sm text-gray-400">Processing...</span>
+          <span className="text-sm text-muted-foreground/60">Processing...</span>
         )}
       </td>
     </tr>

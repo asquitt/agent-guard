@@ -75,21 +75,21 @@ export default function IntegrationStep({ apiKey, endpointId, onNext }: Integrat
 
   return (
     <div>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Point your OpenAI or Anthropic SDK at AgentGuard&apos;s proxy URL. All traffic will be
         automatically scanned for PII, compliance violations, and anomalies.
       </p>
 
       {/* Language tabs */}
-      <div className="mt-6 flex gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="mt-6 flex gap-1 rounded-lg bg-muted p-1">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setLang(tab.id)}
             className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               lang === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-card text-foreground shadow-sm shadow-black/10'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -98,21 +98,21 @@ export default function IntegrationStep({ apiKey, endpointId, onNext }: Integrat
       </div>
 
       {/* Code block */}
-      <div className="relative mt-3 rounded-lg bg-gray-900 p-4">
+      <div className="relative mt-3 rounded-lg bg-zinc-900 p-4">
         <button
           onClick={handleCopy}
-          className="absolute right-3 top-3 rounded-md bg-gray-700 px-2.5 py-1 text-xs text-gray-300 hover:bg-gray-600"
+          className="absolute right-3 top-3 rounded-md bg-zinc-700 px-2.5 py-1 text-xs text-zinc-300 hover:bg-muted"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
-        <pre className="overflow-x-auto text-xs leading-relaxed text-gray-300">
+        <pre className="overflow-x-auto text-xs leading-relaxed text-zinc-300">
           <code>{snippet}</code>
         </pre>
       </div>
 
       <button
         onClick={onNext}
-        className="mt-6 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+        className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80"
       >
         Continue to test
       </button>

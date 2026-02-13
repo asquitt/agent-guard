@@ -154,9 +154,9 @@ export default function SSOSettingsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <p className="text-sm text-gray-500">Admin access required to manage SSO settings.</p>
-        <Link href="/dashboard/settings" className="mt-4 inline-block text-sm text-primary-600 hover:text-primary-700">
+      <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-muted-foreground">Admin access required to manage SSO settings.</p>
+        <Link href="/dashboard/settings" className="mt-4 inline-block text-sm text-primary hover:text-primary">
           Back to Settings
         </Link>
       </div>
@@ -164,17 +164,17 @@ export default function SSOSettingsPage() {
   }
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Loading SSO configuration...</div>;
+    return <div className="text-sm text-muted-foreground">Loading SSO configuration...</div>;
   }
 
   return (
     <div>
       <div className="mb-6">
-        <Link href="/dashboard/settings" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/dashboard/settings" className="text-sm text-muted-foreground hover:text-foreground">
           &larr; Settings
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Single Sign-On</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">Single Sign-On</h1>
+        <p className="text-sm text-muted-foreground">
           Configure SAML 2.0 or OIDC for enterprise authentication
         </p>
       </div>
@@ -183,7 +183,7 @@ export default function SSOSettingsPage() {
         <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>
       )}
       {error && (
-        <div className="mb-4 rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-600">{error}</div>
+        <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>
       )}
 
       {/* Provider tabs */}
@@ -191,7 +191,7 @@ export default function SSOSettingsPage() {
         <button
           onClick={() => setTab('saml')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${
-            tab === 'saml' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            tab === 'saml' ? 'bg-primary text-white' : 'bg-muted text-foreground hover:bg-muted'
           }`}
         >
           SAML 2.0
@@ -199,7 +199,7 @@ export default function SSOSettingsPage() {
         <button
           onClick={() => setTab('oidc')}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${
-            tab === 'oidc' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            tab === 'oidc' ? 'bg-primary text-white' : 'bg-muted text-foreground hover:bg-muted'
           }`}
         >
           OpenID Connect
@@ -208,15 +208,15 @@ export default function SSOSettingsPage() {
 
       {/* SAML config */}
       {tab === 'saml' && (
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">SAML 2.0 Configuration</h2>
+        <div className="space-y-4 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">SAML 2.0 Configuration</h2>
           <FormField label="IdP Entity ID" value={samlEntityId} onChange={setSamlEntityId} placeholder="https://idp.example.com/metadata" />
           <FormField label="IdP SSO URL" value={samlSsoUrl} onChange={setSamlSsoUrl} placeholder="https://idp.example.com/sso/saml" />
           <FormField label="IdP X.509 Certificate" value={samlX509Cert} onChange={setSamlX509Cert} placeholder="Paste PEM certificate..." multiline />
           <FormField label="IdP Metadata XML (optional)" value={samlMetadataXml} onChange={setSamlMetadataXml} placeholder="Paste metadata XML to auto-fill above fields..." multiline />
-          <div className="rounded-lg bg-gray-50 p-3">
-            <p className="text-xs font-medium text-gray-600">SP Metadata URL</p>
-            <code className="text-xs text-gray-500">
+          <div className="rounded-lg bg-muted/50 p-3">
+            <p className="text-xs font-medium text-muted-foreground">SP Metadata URL</p>
+            <code className="text-xs text-muted-foreground">
               {`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/auth/sso/saml/metadata/${organization?.slug ?? 'your-org'}`}
             </code>
           </div>
@@ -225,8 +225,8 @@ export default function SSOSettingsPage() {
 
       {/* OIDC config */}
       {tab === 'oidc' && (
-        <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">OpenID Connect Configuration</h2>
+        <div className="space-y-4 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">OpenID Connect Configuration</h2>
           <FormField label="Issuer URL" value={oidcIssuer} onChange={setOidcIssuer} placeholder="https://accounts.google.com" />
           <FormField label="Client ID" value={oidcClientId} onChange={setOidcClientId} placeholder="your-client-id" />
           <FormField label="Client Secret" value={oidcClientSecret} onChange={setOidcClientSecret} placeholder={config?.oidcClientSecretSet ? '(unchanged — enter new value to update)' : 'your-client-secret'} type="password" />
@@ -236,15 +236,15 @@ export default function SSOSettingsPage() {
 
       {/* Actions */}
       <div className="mt-6 flex flex-wrap gap-3">
-        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50">
           {saving ? 'Saving...' : config ? 'Update Configuration' : 'Save Configuration'}
         </button>
         {config && (
           <>
-            <button onClick={handleTest} disabled={testing} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+            <button onClick={handleTest} disabled={testing} className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50">
               {testing ? 'Testing...' : 'Test Connection'}
             </button>
-            <button onClick={handleDelete} className="rounded-lg border border-danger-300 bg-white px-4 py-2 text-sm font-medium text-danger-600 hover:bg-danger-50">
+            <button onClick={handleDelete} className="rounded-lg border border-danger-300 bg-card px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10">
               Remove SSO
             </button>
           </>
@@ -253,22 +253,22 @@ export default function SSOSettingsPage() {
 
       {/* SSO Enforcement */}
       {config && (
-        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
+        <div className="mt-8 rounded-xl border border-border bg-card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Enforce SSO</h3>
-              <p className="mt-1 text-xs text-gray-500">
+              <h3 className="text-sm font-semibold text-foreground">Enforce SSO</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
                 When enabled, password login is disabled for all users in this organization.
               </p>
             </div>
             <button
               onClick={handleEnforcementToggle}
               className={`relative h-6 w-11 rounded-full transition-colors ${
-                enforced ? 'bg-primary-600' : 'bg-gray-300'
+                enforced ? 'bg-primary' : 'bg-muted'
               }`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform ${
                   enforced ? 'left-[22px]' : 'left-0.5'
                 }`}
               />
@@ -297,14 +297,14 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-foreground">{label}</label>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={4}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       ) : (
         <input
@@ -312,7 +312,7 @@ function FormField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       )}
     </div>

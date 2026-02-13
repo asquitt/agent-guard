@@ -68,13 +68,13 @@ export default function ProxyEndpointStep({ onNext }: ProxyEndpointStepProps) {
             onClick={() => setSelected(provider.id)}
             className={`rounded-xl border-2 p-5 text-left transition-colors ${
               selected === provider.id
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                ? 'border-primary bg-primary/10'
+                : 'border-border bg-card hover:border-border'
             }`}
           >
-            <p className="text-sm font-semibold text-gray-900">{provider.name}</p>
-            <p className="mt-1 text-xs text-gray-500">{provider.desc}</p>
-            <p className="mt-2 truncate text-xs font-mono text-gray-400">{provider.url}</p>
+            <p className="text-sm font-semibold text-foreground">{provider.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{provider.desc}</p>
+            <p className="mt-2 truncate text-xs font-mono text-muted-foreground/60">{provider.url}</p>
           </button>
         ))}
       </div>
@@ -88,7 +88,7 @@ export default function ProxyEndpointStep({ onNext }: ProxyEndpointStepProps) {
       <button
         onClick={handleCreate}
         disabled={!selected || mutation.isPending}
-        className="mt-6 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+        className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
       >
         {mutation.isPending ? 'Creating...' : 'Create endpoint'}
       </button>

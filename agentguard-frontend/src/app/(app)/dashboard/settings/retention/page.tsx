@@ -80,27 +80,27 @@ export default function RetentionSettingsPage() {
       <div className="mb-6">
         <Link
           href="/dashboard/settings"
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
           &larr; Settings
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">
           Data Retention
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Configure how long data is kept in the active database before
           archiving
         </p>
       </div>
 
       {/* Policy Form */}
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Retention Policy
         </h2>
 
         {policyLoading && (
-          <p className="text-sm text-gray-400">Loading policy...</p>
+          <p className="text-sm text-muted-foreground/60">Loading policy...</p>
         )}
         {policyError && (
           <p className="text-sm text-red-600">Failed to load policy</p>
@@ -131,23 +131,23 @@ export default function RetentionSettingsPage() {
               ] as const
             ).map((item) => (
               <div key={item.key}>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-foreground">
                   {item.label}
                 </label>
-                <p className="mb-1 text-xs text-gray-400">{item.desc}</p>
+                <p className="mb-1 text-xs text-muted-foreground/60">{item.desc}</p>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
                     min={0}
                     max={3650}
-                    className="w-28 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-28 rounded-lg border border-border px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     value={getValue(item.key, item.key)}
                     onChange={(e) =>
                       setForm({ ...form, [item.key]: parseInt(e.target.value) || 0 })
                     }
                   />
-                  <span className="text-sm text-gray-500">days</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-sm text-muted-foreground">days</span>
+                  <span className="text-xs text-muted-foreground/60">
                     (recommended: {item.rec})
                   </span>
                 </div>
@@ -171,7 +171,7 @@ export default function RetentionSettingsPage() {
                 disabled={
                   updateMutation.isPending || Object.keys(form).length === 0
                 }
-                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
               >
                 {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
@@ -179,7 +179,7 @@ export default function RetentionSettingsPage() {
                 <button
                   type="button"
                   onClick={() => setForm({})}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                  className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50"
                 >
                   Reset
                 </button>
@@ -207,9 +207,9 @@ export default function RetentionSettingsPage() {
       </div>
 
       {/* Archives Table */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Archives</h2>
+          <h2 className="text-lg font-semibold text-foreground">Archives</h2>
           <div className="flex gap-2">
             {[undefined, 'proxy_requests', 'incidents', 'audit_logs'].map(
               (t) => (
@@ -218,8 +218,8 @@ export default function RetentionSettingsPage() {
                   onClick={() => setTableFilter(t)}
                   className={`rounded-lg px-3 py-1 text-xs font-medium ${
                     tableFilter === t
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-muted text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   {t ? TABLE_LABELS[t] : 'All'}
@@ -230,13 +230,13 @@ export default function RetentionSettingsPage() {
         </div>
 
         {archivesLoading && (
-          <p className="py-8 text-center text-sm text-gray-400">
+          <p className="py-8 text-center text-sm text-muted-foreground/60">
             Loading archives...
           </p>
         )}
 
         {archivesData && archivesData.items.length === 0 && (
-          <div className="py-12 text-center text-gray-400">
+          <div className="py-12 text-center text-muted-foreground/60">
             <p className="text-lg">No archives yet</p>
             <p className="mt-1 text-sm">
               Archives are created automatically based on your retention policy
@@ -248,7 +248,7 @@ export default function RetentionSettingsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-xs font-medium uppercase text-gray-500">
+                <tr className="border-b border-border text-xs font-medium uppercase text-muted-foreground">
                   <th className="pb-2 pr-4">Type</th>
                   <th className="pb-2 pr-4">Date Range</th>
                   <th className="pb-2 pr-4">Records</th>
@@ -261,19 +261,19 @@ export default function RetentionSettingsPage() {
                 {archivesData.items.map((a) => (
                   <tr
                     key={a.id}
-                    className="border-b border-gray-50 last:border-0"
+                    className="border-b border-border last:border-0"
                   >
-                    <td className="py-2 pr-4 font-medium text-gray-900">
+                    <td className="py-2 pr-4 font-medium text-foreground">
                       {TABLE_LABELS[a.tableName] ?? a.tableName}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">
+                    <td className="py-2 pr-4 text-muted-foreground">
                       {new Date(a.startDate).toLocaleDateString()} &ndash;{' '}
                       {new Date(a.endDate).toLocaleDateString()}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">
+                    <td className="py-2 pr-4 text-muted-foreground">
                       {a.rowCount.toLocaleString()}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">
+                    <td className="py-2 pr-4 text-muted-foreground">
                       {formatBytes(a.fileSizeBytes)}
                     </td>
                     <td className="py-2 pr-4">
@@ -289,14 +289,14 @@ export default function RetentionSettingsPage() {
                         {a.status}
                       </span>
                     </td>
-                    <td className="py-2 text-gray-500">
+                    <td className="py-2 text-muted-foreground">
                       {new Date(a.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-muted-foreground/60">
               {archivesData.total} total archive(s)
             </p>
           </div>

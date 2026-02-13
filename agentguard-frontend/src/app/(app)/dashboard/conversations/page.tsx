@@ -20,7 +20,7 @@ const RISK_COLORS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-blue-100 text-blue-700',
-  completed: 'bg-gray-100 text-gray-600',
+  completed: 'bg-muted text-muted-foreground',
   escalated: 'bg-red-100 text-red-700',
   flagged: 'bg-yellow-100 text-yellow-700',
 };
@@ -31,10 +31,10 @@ function RiskBar({ score }: { score: number }) {
     pct >= 80 ? 'bg-red-500' : pct >= 60 ? 'bg-orange-500' : pct >= 30 ? 'bg-yellow-500' : 'bg-green-500';
   return (
     <div className="flex items-center gap-2">
-      <div className="h-2 w-24 rounded-full bg-gray-200">
+      <div className="h-2 w-24 rounded-full bg-muted">
         <div className={clsx('h-2 rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs text-gray-600">{pct.toFixed(1)}</span>
+      <span className="text-xs text-muted-foreground">{pct.toFixed(1)}</span>
     </div>
   );
 }
@@ -43,7 +43,7 @@ function ConversationReplay({ detail }: { detail: ConversationDetail }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">
+        <h3 className="text-sm font-semibold text-foreground">
           Conversation Replay — {detail.turns.length} turns
         </h3>
         <RiskBar score={detail.riskScore} />
@@ -57,13 +57,13 @@ function ConversationReplay({ detail }: { detail: ConversationDetail }) {
               turn.role === 'user'
                 ? 'border-blue-200 bg-blue-50'
                 : turn.role === 'assistant'
-                  ? 'border-gray-200 bg-white'
+                  ? 'border-border bg-card'
                   : 'border-purple-200 bg-purple-50',
             )}
           >
             <div className="mb-1 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium uppercase text-gray-500">
+                <span className="text-xs font-medium uppercase text-muted-foreground">
                   #{turn.turnNumber} {turn.role}
                 </span>
                 {turn.detections.length > 0 && (
@@ -83,13 +83,13 @@ function ConversationReplay({ detail }: { detail: ConversationDetail }) {
                     {turn.riskDelta > 0 ? '+' : ''}{turn.riskDelta.toFixed(1)}
                   </span>
                 )}
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted-foreground/60">
                   cumulative: {turn.cumulativeRisk.toFixed(1)}
                 </span>
               </div>
             </div>
             {turn.contentPreview && (
-              <p className="text-xs text-gray-700">{turn.contentPreview}</p>
+              <p className="text-xs text-foreground">{turn.contentPreview}</p>
             )}
             {turn.detections.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
@@ -154,8 +154,8 @@ export default function ConversationsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Conversation Analysis</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Conversation Analysis</h1>
+        <p className="text-sm text-muted-foreground">
           Track multi-turn sessions, detect escalation patterns, and monitor conversation risk
         </p>
       </div>
@@ -163,25 +163,25 @@ export default function ConversationsPage() {
       {/* Stats */}
       {!statsLoading && stats && (
         <div className="mb-6 grid grid-cols-5 gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.totalConversations}</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-2xl font-bold text-foreground">{stats.totalConversations}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Active</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Active</p>
             <p className="text-2xl font-bold text-blue-600">{stats.activeCount}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Escalated</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Escalated</p>
             <p className="text-2xl font-bold text-red-600">{stats.escalatedCount}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Avg Risk</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.avgRiskScore}</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Avg Risk</p>
+            <p className="text-2xl font-bold text-foreground">{stats.avgRiskScore}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Avg Turns</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.avgTurns}</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Avg Turns</p>
+            <p className="text-2xl font-bold text-foreground">{stats.avgTurns}</p>
           </div>
         </div>
       )}
@@ -191,7 +191,7 @@ export default function ConversationsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -202,7 +202,7 @@ export default function ConversationsPage() {
         <select
           value={riskFilter}
           onChange={(e) => setRiskFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All Risk Levels</option>
           <option value="critical">Critical</option>
@@ -217,11 +217,11 @@ export default function ConversationsPage() {
         <div className="space-y-3">
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-              <p className="text-sm text-gray-500">No conversations found</p>
+            <div className="rounded-xl border border-border bg-card p-8 text-center">
+              <p className="text-sm text-muted-foreground">No conversations found</p>
             </div>
           ) : (
             items.map((conv: Conversation) => (
@@ -229,14 +229,14 @@ export default function ConversationsPage() {
                 key={conv.id}
                 onClick={() => setSelectedId(conv.id)}
                 className={clsx(
-                  'w-full rounded-xl border bg-white p-4 text-left transition-colors',
+                  'w-full rounded-xl border bg-card p-4 text-left transition-colors',
                   selectedId === conv.id
-                    ? 'border-primary-300 ring-1 ring-primary-200'
-                    : 'border-gray-200 hover:border-gray-300',
+                    ? 'border-primary/30 ring-1 ring-primary/20'
+                    : 'border-border hover:border-border',
                 )}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-mono text-gray-400">
+                  <span className="text-xs font-mono text-muted-foreground/60">
                     {conv.sessionId.slice(0, 16)}...
                   </span>
                   <div className="flex gap-1.5">
@@ -250,9 +250,9 @@ export default function ConversationsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <RiskBar score={conv.riskScore} />
-                  <span className="text-xs text-gray-500">{conv.turnCount} turns</span>
+                  <span className="text-xs text-muted-foreground">{conv.turnCount} turns</span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-gray-400">
+                <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground/60">
                   <span>{new Date(conv.createdAt).toLocaleString()}</span>
                   <span>{conv.totalTokens.toLocaleString()} tokens</span>
                 </div>
@@ -264,9 +264,9 @@ export default function ConversationsPage() {
         {/* Detail panel */}
         <div>
           {selectedId && detail ? (
-            <div className="sticky top-4 space-y-4 rounded-xl border border-gray-200 bg-white p-6">
+            <div className="sticky top-4 space-y-4 rounded-xl border border-border bg-card p-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-900">Session Detail</h2>
+                <h2 className="text-sm font-semibold text-foreground">Session Detail</h2>
                 <div className="flex gap-2">
                   {detail.status === 'active' && (
                     <>
@@ -284,7 +284,7 @@ export default function ConversationsPage() {
                       </button>
                       <button
                         onClick={() => statusMutation.mutate({ id: detail.id, status: 'completed' })}
-                        className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200"
+                        className="rounded bg-muted px-2 py-1 text-xs text-foreground hover:bg-muted"
                       >
                         Complete
                       </button>
@@ -296,16 +296,16 @@ export default function ConversationsPage() {
               {/* Summary */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-xs text-gray-500">Risk Score</p>
-                  <p className="text-lg font-bold text-gray-900">{detail.riskScore.toFixed(1)}</p>
+                  <p className="text-xs text-muted-foreground">Risk Score</p>
+                  <p className="text-lg font-bold text-foreground">{detail.riskScore.toFixed(1)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Turns</p>
-                  <p className="text-lg font-bold text-gray-900">{detail.turnCount}</p>
+                  <p className="text-xs text-muted-foreground">Turns</p>
+                  <p className="text-lg font-bold text-foreground">{detail.turnCount}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Tokens</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs text-muted-foreground">Tokens</p>
+                  <p className="text-lg font-bold text-foreground">
                     {detail.totalTokens.toLocaleString()}
                   </p>
                 </div>
@@ -315,8 +315,8 @@ export default function ConversationsPage() {
               <ConversationReplay detail={detail} />
             </div>
           ) : (
-            <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-white py-24">
-              <p className="text-sm text-gray-400">Select a conversation to view details</p>
+            <div className="flex items-center justify-center rounded-xl border border-border bg-card py-24">
+              <p className="text-sm text-muted-foreground/60">Select a conversation to view details</p>
             </div>
           )}
         </div>

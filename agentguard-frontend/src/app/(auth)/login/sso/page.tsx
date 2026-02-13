@@ -25,19 +25,19 @@ export default function SSOLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">AgentGuard</h1>
-          <p className="mt-2 text-gray-600">Sign in with SSO</p>
+          <h1 className="text-3xl font-bold text-foreground">AgentGuard</h1>
+          <p className="mt-2 text-muted-foreground">Sign in with SSO</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm"
+          className="rounded-xl border border-border bg-card p-8 shadow-sm shadow-black/10"
         >
           {error && (
-            <div className="mb-4 rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-600">
+            <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -46,7 +46,7 @@ export default function SSOLoginPage() {
             <div>
               <label
                 htmlFor="orgSlug"
-                className="mb-1 block text-sm font-medium text-gray-700"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 Organization slug
               </label>
@@ -56,10 +56,10 @@ export default function SSOLoginPage() {
                 required
                 value={orgSlug}
                 onChange={(e) => setOrgSlug(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="acme-corp"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Enter the slug your admin provided during setup
               </p>
             </div>
@@ -68,15 +68,15 @@ export default function SSOLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+            className="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
           >
             {loading ? 'Redirecting...' : 'Continue with SSO'}
           </button>
 
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             <Link
               href="/login"
-              className="font-medium text-primary-600 hover:text-primary-700"
+              className="font-medium text-primary hover:text-primary"
             >
               Sign in with password instead
             </Link>

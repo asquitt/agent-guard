@@ -43,22 +43,22 @@ export default function AgentPoliciesPage() {
       <div className="mb-6">
         <button
           onClick={() => router.push('/dashboard/agents')}
-          className="mb-2 text-xs text-primary-600 hover:text-primary-500"
+          className="mb-2 text-xs text-primary hover:text-primary"
         >
           &larr; Back to Agents
         </button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               Behavior Policies {agent ? `— ${agent.name}` : ''}
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Define what this agent can and cannot do
             </p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100"
           >
             New Policy
           </button>
@@ -85,12 +85,12 @@ export default function AgentPoliciesPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : policies.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-sm text-gray-500">No policies defined yet</p>
-          <p className="mt-1 text-xs text-gray-400">
+        <div className="rounded-xl border border-border bg-card py-16 text-center">
+          <p className="text-sm text-muted-foreground">No policies defined yet</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">
             Create a policy or start from a template to govern agent behavior
           </p>
         </div>
@@ -130,20 +130,20 @@ function PolicyCard({
   return (
     <div
       onClick={onSelect}
-      className="cursor-pointer rounded-xl border border-gray-200 bg-white p-6 hover:border-primary-200 hover:shadow-sm transition-all"
+      className="cursor-pointer rounded-xl border border-border bg-card p-6 hover:border-primary/20 hover:shadow-sm shadow-black/10 transition-all"
     >
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900">{policy.name}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{policy.name}</h3>
             <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-600">
               v{policy.version}
             </span>
           </div>
           {policy.description && (
-            <p className="mt-1 text-sm text-gray-500">{policy.description}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{policy.description}</p>
           )}
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-muted-foreground/60">
             {ruleCount} rule{ruleCount !== 1 ? 's' : ''} · Created{' '}
             {new Date(policy.createdAt).toLocaleDateString()}
           </p>
@@ -192,12 +192,12 @@ function PolicyCard({
 
 function PolicyDetail({ policy, onClose }: { policy: AgentPolicy; onClose: () => void }) {
   return (
-    <div className="mb-6 rounded-xl border border-primary-200 bg-white p-6">
+    <div className="mb-6 rounded-xl border border-primary/20 bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">
-          {policy.name} <span className="text-gray-400">v{policy.version}</span>
+        <h3 className="text-sm font-semibold text-foreground">
+          {policy.name} <span className="text-muted-foreground/60">v{policy.version}</span>
         </h3>
-        <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
+        <button onClick={onClose} className="text-xs text-muted-foreground/60 hover:text-muted-foreground">Close</button>
       </div>
 
       <div className="space-y-4">
@@ -209,7 +209,7 @@ function PolicyDetail({ policy, onClose }: { policy: AgentPolicy; onClose: () =>
         )}
         {policy.maxTransactionAmount && (
           <div>
-            <p className="mb-1 text-xs font-medium uppercase text-gray-500">Transaction Limit</p>
+            <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Transaction Limit</p>
             <span className="inline-flex rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-700">
               {policy.maxTransactionAmount.currency} {policy.maxTransactionAmount.amount.toLocaleString()}
             </span>
@@ -217,7 +217,7 @@ function PolicyDetail({ policy, onClose }: { policy: AgentPolicy; onClose: () =>
         )}
         {policy.requiredDisclosures.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-medium uppercase text-gray-500">Required Disclosures</p>
+            <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Required Disclosures</p>
             <ul className="space-y-1">
               {policy.requiredDisclosures.map((d, i) => (
                 <li key={i} className="rounded bg-purple-50 px-3 py-2 text-xs text-purple-700">{d}</li>
@@ -233,10 +233,10 @@ function PolicyDetail({ policy, onClose }: { policy: AgentPolicy; onClose: () =>
         )}
         {policy.customRules.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-medium uppercase text-gray-500">Custom Rules</p>
+            <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Custom Rules</p>
             <ul className="space-y-1">
               {policy.customRules.map((r, i) => (
-                <li key={i} className="rounded bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                <li key={i} className="rounded bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                   <span className="font-medium">{r.rule}:</span> {r.description}
                 </li>
               ))}
@@ -257,12 +257,12 @@ function RuleSection({ label, items, color }: { label: string; items: string[]; 
   };
   return (
     <div>
-      <p className="mb-1 text-xs font-medium uppercase text-gray-500">{label}</p>
+      <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">{label}</p>
       <div className="flex flex-wrap gap-1">
         {items.map((item) => (
           <span
             key={item}
-            className={clsx('rounded px-2 py-1 text-xs', colorMap[color] ?? 'bg-gray-50 text-gray-600')}
+            className={clsx('rounded px-2 py-1 text-xs', colorMap[color] ?? 'bg-muted/50 text-muted-foreground')}
           >
             {item}
           </span>
@@ -342,22 +342,22 @@ function CreatePolicyForm({
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+    <div className="mb-6 rounded-xl border border-border bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">New Behavior Policy</h3>
-        <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
+        <h3 className="text-sm font-semibold text-foreground">New Behavior Policy</h3>
+        <button onClick={onClose} className="text-xs text-muted-foreground/60 hover:text-muted-foreground">Close</button>
       </div>
 
       {templates && templates.length > 0 && (
         <div className="mb-4">
-          <p className="mb-2 text-xs font-medium text-gray-500">Start from a template:</p>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Start from a template:</p>
           <div className="flex flex-wrap gap-2">
             {templates.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => applyTemplate(t)}
-                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50"
               >
                 {t.name}
               </button>
@@ -369,20 +369,20 @@ function CreatePolicyForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Policy Name *</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Policy Name *</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="Customer Service Policy"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Description</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Description</label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="What does this policy enforce?"
             />
           </div>
@@ -390,20 +390,20 @@ function CreatePolicyForm({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Allowed Topics (comma-separated)</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Allowed Topics (comma-separated)</label>
             <input
               value={allowedTopics}
               onChange={(e) => setAllowedTopics(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="account_balance, product_info, faq"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Forbidden Topics (comma-separated)</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Forbidden Topics (comma-separated)</label>
             <input
               value={forbiddenTopics}
               onChange={(e) => setForbiddenTopics(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="investment_advice, legal_opinions"
             />
           </div>
@@ -411,21 +411,21 @@ function CreatePolicyForm({
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Max Transaction Amount</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Max Transaction Amount</label>
             <input
               value={maxAmount}
               onChange={(e) => setMaxAmount(e.target.value)}
               type="number"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="10000"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Currency</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Currency</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
             >
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
@@ -433,33 +433,33 @@ function CreatePolicyForm({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Approved Tools (comma-separated)</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Approved Tools (comma-separated)</label>
             <input
               value={tools}
               onChange={(e) => setTools(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="lookup_account, search_faq"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Approved Data Sources (comma-separated)</label>
+          <label className="mb-1 block text-xs text-muted-foreground">Approved Data Sources (comma-separated)</label>
           <input
             value={dataSources}
             onChange={(e) => setDataSources(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
             placeholder="customer_account_api, product_catalog"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Required Disclosures (one per line)</label>
+          <label className="mb-1 block text-xs text-muted-foreground">Required Disclosures (one per line)</label>
           <textarea
             value={disclosures}
             onChange={(e) => setDisclosures(e.target.value)}
             rows={3}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
             placeholder="I am an AI assistant and cannot provide financial advice."
           />
         </div>
@@ -468,14 +468,14 @@ function CreatePolicyForm({
           <button
             type="submit"
             disabled={!name.trim() || mutation.isPending}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
           >
             {mutation.isPending ? 'Creating...' : 'Create Policy'}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
           >
             Cancel
           </button>

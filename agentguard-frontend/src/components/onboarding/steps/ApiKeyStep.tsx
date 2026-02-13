@@ -27,7 +27,7 @@ export default function ApiKeyStep({ onNext }: ApiKeyStepProps) {
   if (!key) {
     return (
       <div className="text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Generate an API key to authenticate your requests through the proxy.
         </p>
         {mutation.isError && (
@@ -38,7 +38,7 @@ export default function ApiKeyStep({ onNext }: ApiKeyStepProps) {
         <button
           onClick={() => mutation.mutate()}
           disabled={mutation.isPending}
-          className="mt-6 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+          className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80 disabled:opacity-50"
         >
           {mutation.isPending ? 'Generating...' : 'Generate API Key'}
         </button>
@@ -54,11 +54,11 @@ export default function ApiKeyStep({ onNext }: ApiKeyStepProps) {
         </p>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-gray-900 p-4">
+      <div className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-900 p-4">
         <code className="flex-1 truncate text-sm text-green-400">{key}</code>
         <button
           onClick={handleCopy}
-          className="shrink-0 rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600"
+          className="shrink-0 rounded-md bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-muted"
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -66,7 +66,7 @@ export default function ApiKeyStep({ onNext }: ApiKeyStepProps) {
 
       <button
         onClick={() => onNext(key)}
-        className="mt-6 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+        className="mt-6 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80"
       >
         Continue
       </button>

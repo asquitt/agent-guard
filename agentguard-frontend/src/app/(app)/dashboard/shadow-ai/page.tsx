@@ -45,8 +45,8 @@ export default function ShadowAIPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Shadow AI Discovery</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Shadow AI Discovery</h1>
+        <p className="text-sm text-muted-foreground">
           Discover and manage unauthorized AI service usage across your organization
         </p>
       </div>
@@ -65,21 +65,21 @@ export default function ShadowAIPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-foreground">
                 AI Traffic Coverage: {summary.coveragePct}%
               </p>
-              <p className="mt-1 text-xs text-gray-600">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {summary.totalMonitoredRequests.toLocaleString()} monitored requests ·{' '}
                 {summary.totalUnmonitoredRequests.toLocaleString()} unmonitored requests
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">{summary.totalDiscovered}</p>
-              <p className="text-xs text-gray-500">services discovered</p>
+              <p className="text-2xl font-bold text-foreground">{summary.totalDiscovered}</p>
+              <p className="text-xs text-muted-foreground">services discovered</p>
             </div>
           </div>
           {/* Coverage bar */}
-          <div className="mt-3 h-2 w-full rounded-full bg-gray-200">
+          <div className="mt-3 h-2 w-full rounded-full bg-muted">
             <div
               className={clsx(
                 'h-2 rounded-full transition-all',
@@ -110,13 +110,13 @@ export default function ShadowAIPage() {
 
       {/* Provider breakdown */}
       {summary && summary.byProvider.length > 0 && (
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">By Provider</h2>
+        <div className="mb-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">By Provider</h2>
           <div className="flex flex-wrap gap-3">
             {summary.byProvider.map((p) => (
-              <div key={p.provider} className="rounded-lg border border-gray-100 px-4 py-2">
-                <p className="text-sm font-medium text-gray-900">{p.provider}</p>
-                <p className="text-xs text-gray-500">
+              <div key={p.provider} className="rounded-lg border border-border px-4 py-2">
+                <p className="text-sm font-medium text-foreground">{p.provider}</p>
+                <p className="text-xs text-muted-foreground">
                   {p.services} service{p.services !== 1 ? 's' : ''} · {p.requests.toLocaleString()} requests
                 </p>
               </div>
@@ -130,7 +130,7 @@ export default function ShadowAIPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All statuses</option>
           <option value="discovered">Discovered</option>
@@ -141,7 +141,7 @@ export default function ShadowAIPage() {
         <select
           value={filterRisk}
           onChange={(e) => setFilterRisk(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All risk levels</option>
           <option value="critical">Critical</option>
@@ -154,20 +154,20 @@ export default function ShadowAIPage() {
       {/* Discoveries table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
-          <p className="text-sm text-gray-500">No AI services discovered yet</p>
-          <p className="mt-1 text-xs text-gray-400">
+        <div className="rounded-xl border border-border bg-card py-16 text-center">
+          <p className="text-sm text-muted-foreground">No AI services discovered yet</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">
             Configure network proxy integration to start discovering shadow AI usage
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white">
+        <div className="rounded-xl border border-border bg-card">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3">Provider / Endpoint</th>
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Risk</th>
@@ -177,7 +177,7 @@ export default function ShadowAIPage() {
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {items.map((d) => (
                 <DiscoveryRow
                   key={d.id}
@@ -208,9 +208,9 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={clsx('text-2xl font-bold', highlight ? 'text-yellow-600' : color ?? 'text-gray-900')}>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={clsx('text-2xl font-bold', highlight ? 'text-yellow-600' : color ?? 'text-foreground')}>
         {value}
       </p>
     </div>
@@ -230,17 +230,17 @@ function DiscoveryRow({
   });
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-muted/50">
       <td className="px-4 py-3">
-        <p className="text-sm font-medium text-gray-900">{discovery.provider}</p>
-        <p className="text-xs text-gray-500 truncate max-w-xs">{discovery.endpoint}</p>
+        <p className="text-sm font-medium text-foreground">{discovery.provider}</p>
+        <p className="text-xs text-muted-foreground truncate max-w-xs">{discovery.endpoint}</p>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">{discovery.department ?? '-'}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">{discovery.department ?? '-'}</td>
       <td className="px-4 py-3">
         <span
           className={clsx(
             'rounded-full px-2 py-0.5 text-xs font-medium',
-            RISK_COLORS[discovery.riskLevel] ?? 'bg-gray-100 text-gray-600',
+            RISK_COLORS[discovery.riskLevel] ?? 'bg-muted text-muted-foreground',
           )}
         >
           {discovery.riskLevel}
@@ -250,16 +250,16 @@ function DiscoveryRow({
         <span
           className={clsx(
             'rounded-full px-2 py-0.5 text-xs font-medium',
-            STATUS_COLORS[discovery.status] ?? 'bg-gray-100 text-gray-600',
+            STATUS_COLORS[discovery.status] ?? 'bg-muted text-muted-foreground',
           )}
         >
           {discovery.status}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {discovery.requestCount.toLocaleString()}
       </td>
-      <td className="px-4 py-3 text-xs text-gray-500">
+      <td className="px-4 py-3 text-xs text-muted-foreground">
         {new Date(discovery.lastSeenAt).toLocaleDateString()}
       </td>
       <td className="px-4 py-3">
@@ -295,7 +295,7 @@ function DiscoveryRow({
             <button
               onClick={() => mutation.mutate('monitored')}
               disabled={mutation.isPending}
-              className="text-xs font-medium text-primary-600 hover:text-primary-500"
+              className="text-xs font-medium text-primary hover:text-primary"
             >
               Monitor
             </button>

@@ -71,15 +71,15 @@ export default function ThreatIntelPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Threat Intelligence</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Threat Intelligence</h1>
+          <p className="text-sm text-muted-foreground">
             Attack patterns, emerging threats, and detection indicators
           </p>
         </div>
         <button
           onClick={() => seedMutation.mutate()}
           disabled={seedMutation.isPending}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
         >
           {seedMutation.isPending ? 'Seeding...' : 'Seed Platform Indicators'}
         </button>
@@ -88,21 +88,21 @@ export default function ThreatIntelPage() {
       {/* Summary cards */}
       {summary && (
         <div className="mb-6 grid grid-cols-4 gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Total Indicators</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.totalIndicators}</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total Indicators</p>
+            <p className="text-2xl font-bold text-foreground">{summary.totalIndicators}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Active</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Active</p>
             <p className="text-2xl font-bold text-green-600">{summary.activeIndicators}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Total Hits</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total Hits</p>
             <p className="text-2xl font-bold text-red-600">{summary.totalHits.toLocaleString()}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-xs text-gray-500">Threat Types</p>
-            <p className="text-2xl font-bold text-gray-900">{summary.byType.length}</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Threat Types</p>
+            <p className="text-2xl font-bold text-foreground">{summary.byType.length}</p>
           </div>
         </div>
       )}
@@ -110,22 +110,22 @@ export default function ThreatIntelPage() {
       {/* Type breakdown + top indicators */}
       {summary && (
         <div className="mb-6 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">By Type</h2>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">By Type</h2>
             <div className="space-y-2">
               {summary.byType.map((t) => (
                 <div key={t.type} className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">{TYPE_LABELS[t.type] ?? t.type}</span>
-                  <span className="text-xs font-medium text-gray-900">{t.count}</span>
+                  <span className="text-xs text-muted-foreground">{TYPE_LABELS[t.type] ?? t.type}</span>
+                  <span className="text-xs font-medium text-foreground">{t.count}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">Top Indicators by Hits</h2>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Top Indicators by Hits</h2>
             <div className="space-y-2">
               {summary.topIndicators.length === 0 ? (
-                <p className="text-xs text-gray-400">No hits recorded yet</p>
+                <p className="text-xs text-muted-foreground/60">No hits recorded yet</p>
               ) : (
                 summary.topIndicators.map((t, i) => (
                   <div key={i} className="flex items-center justify-between">
@@ -133,9 +133,9 @@ export default function ThreatIntelPage() {
                       <span className={clsx('rounded px-1.5 py-0.5 text-xs', SEVERITY_COLORS[t.severity])}>
                         {t.severity}
                       </span>
-                      <span className="text-xs text-gray-700">{t.name}</span>
+                      <span className="text-xs text-foreground">{t.name}</span>
                     </div>
-                    <span className="text-xs font-medium text-gray-900">{t.hits}</span>
+                    <span className="text-xs font-medium text-foreground">{t.hits}</span>
                   </div>
                 ))
               )}
@@ -149,7 +149,7 @@ export default function ThreatIntelPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All Types</option>
           <option value="injection_pattern">Injection</option>
@@ -163,7 +163,7 @@ export default function ThreatIntelPage() {
         <select
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All Severities</option>
           <option value="critical">Critical</option>
@@ -176,17 +176,17 @@ export default function ThreatIntelPage() {
       {/* Indicators table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <p className="text-sm text-gray-500">No indicators found. Click &quot;Seed Platform Indicators&quot; to get started.</p>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">No indicators found. Click &quot;Seed Platform Indicators&quot; to get started.</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white">
+        <div className="rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Severity</th>
@@ -198,11 +198,11 @@ export default function ThreatIntelPage() {
             </thead>
             <tbody>
               {items.map((ind: ThreatIndicator) => (
-                <tr key={ind.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={ind.id} className="border-b border-border hover:bg-muted/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{ind.name}</p>
+                    <p className="font-medium text-foreground">{ind.name}</p>
                     {ind.description && (
-                      <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">{ind.description}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{ind.description}</p>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -215,13 +215,13 @@ export default function ThreatIntelPage() {
                       {ind.severity}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {(ind.confidence * 100).toFixed(0)}%
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
+                  <td className="px-4 py-3 font-medium text-foreground">
                     {ind.hitCount.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{ind.source}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{ind.source}</td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() =>
@@ -229,12 +229,12 @@ export default function ThreatIntelPage() {
                       }
                       className={clsx(
                         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                        ind.isActive ? 'bg-primary-600' : 'bg-gray-300',
+                        ind.isActive ? 'bg-primary' : 'bg-muted',
                       )}
                     >
                       <span
                         className={clsx(
-                          'inline-block h-3 w-3 rounded-full bg-white transition-transform',
+                          'inline-block h-3 w-3 rounded-full bg-card transition-transform',
                           ind.isActive ? 'translate-x-5' : 'translate-x-1',
                         )}
                       />

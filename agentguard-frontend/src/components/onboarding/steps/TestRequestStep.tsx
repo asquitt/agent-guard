@@ -75,11 +75,11 @@ export default function TestRequestStep({ apiKey, endpointId, onNext }: TestRequ
   if (state === 'sending') {
     return (
       <div className="flex flex-col items-center py-10">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-        <p className="mt-4 text-sm text-gray-600">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary-600" />
+        <p className="mt-4 text-sm text-muted-foreground">
           Sending test request with PII data...
         </p>
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-muted-foreground/60">
           AgentGuard will detect the PII and create an incident
         </p>
       </div>
@@ -92,8 +92,8 @@ export default function TestRequestStep({ apiKey, endpointId, onNext }: TestRequ
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
           <span className="text-2xl">&#10003;</span>
         </div>
-        <p className="mt-4 text-sm font-medium text-gray-900">Test complete!</p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-4 text-sm font-medium text-foreground">Test complete!</p>
+        <p className="mt-1 text-xs text-muted-foreground">
           Check the incidents page to see detected PII.
         </p>
       </div>
@@ -102,14 +102,14 @@ export default function TestRequestStep({ apiKey, endpointId, onNext }: TestRequ
 
   return (
     <div>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted-foreground">
         Send a test request containing PII data through the proxy. AgentGuard will detect the
         sensitive information and create an incident.
       </p>
 
-      <div className="mt-4 rounded-lg bg-gray-50 p-4">
-        <p className="text-xs font-medium text-gray-500">Test payload</p>
-        <p className="mt-1 text-sm text-gray-700">
+      <div className="mt-4 rounded-lg bg-muted/50 p-4">
+        <p className="text-xs font-medium text-muted-foreground">Test payload</p>
+        <p className="mt-1 text-sm text-foreground">
           &quot;My SSN is 123-45-6789 and my email is test@example.com&quot;
         </p>
       </div>
@@ -126,13 +126,13 @@ export default function TestRequestStep({ apiKey, endpointId, onNext }: TestRequ
       <div className="mt-6 flex gap-3">
         <button
           onClick={handleTest}
-          className="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+          className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-primary/80"
         >
           Send test request
         </button>
         <button
           onClick={() => onNext(null)}
-          className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-lg border border-border px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50"
         >
           Skip this step
         </button>

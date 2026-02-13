@@ -18,7 +18,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
+  draft: 'bg-muted text-muted-foreground',
   testing: 'bg-blue-100 text-blue-700',
   production: 'bg-green-100 text-green-700',
   deprecated: 'bg-red-100 text-red-600',
@@ -53,12 +53,12 @@ export default function AgentsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Agent Registry</h1>
-          <p className="text-sm text-gray-500">Register and govern your AI agents</p>
+          <h1 className="text-2xl font-bold text-foreground">Agent Registry</h1>
+          <p className="text-sm text-muted-foreground">Register and govern your AI agents</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100"
         >
           Register Agent
         </button>
@@ -79,7 +79,7 @@ export default function AgentsPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All statuses</option>
           {STATUSES.map((s) => (
@@ -89,7 +89,7 @@ export default function AgentsPage() {
         <select
           value={filterRisk}
           onChange={(e) => setFilterRisk(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All risk tiers</option>
           {RISK_TIERS.map((r) => (
@@ -119,19 +119,19 @@ export default function AgentsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-border bg-card">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : agents.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-500">
+          <div className="py-16 text-center text-sm text-muted-foreground">
             No agents registered yet. Click &ldquo;Register Agent&rdquo; to get started.
           </div>
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Risk Tier</th>
@@ -141,7 +141,7 @@ export default function AgentsPage() {
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {agents.map((agent) => (
                 <AgentRow
                   key={agent.id}
@@ -160,9 +160,9 @@ export default function AgentsPage() {
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={clsx('text-2xl font-bold', color ?? 'text-gray-900')}>{value}</p>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={clsx('text-2xl font-bold', color ?? 'text-foreground')}>{value}</p>
     </div>
   );
 }
@@ -188,11 +188,11 @@ function AgentRow({
   });
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-muted/50">
       <td className="px-4 py-3">
-        <div className="text-sm font-medium text-gray-900">{agent.name}</div>
+        <div className="text-sm font-medium text-foreground">{agent.name}</div>
         {agent.description && (
-          <div className="text-xs text-gray-500 truncate max-w-xs">{agent.description}</div>
+          <div className="text-xs text-muted-foreground truncate max-w-xs">{agent.description}</div>
         )}
       </td>
       <td className="px-4 py-3">
@@ -201,7 +201,7 @@ function AgentRow({
             <select
               value={editStatus}
               onChange={(e) => setEditStatus(e.target.value)}
-              className="rounded border border-gray-300 px-2 py-1 text-xs"
+              className="rounded border border-border px-2 py-1 text-xs"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -209,11 +209,11 @@ function AgentRow({
             </select>
             <button
               onClick={() => updateMutation.mutate({ status: editStatus })}
-              className="text-xs text-primary-600 hover:text-primary-500"
+              className="text-xs text-primary hover:text-primary"
             >
               Save
             </button>
-            <button onClick={() => setEditing(false)} className="text-xs text-gray-400">
+            <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground/60">
               Cancel
             </button>
           </div>
@@ -222,7 +222,7 @@ function AgentRow({
             onClick={() => setEditing(true)}
             className={clsx(
               'inline-flex cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium',
-              STATUS_COLORS[agent.status] ?? 'bg-gray-100 text-gray-600',
+              STATUS_COLORS[agent.status] ?? 'bg-muted text-muted-foreground',
             )}
           >
             {agent.status}
@@ -233,13 +233,13 @@ function AgentRow({
         <span
           className={clsx(
             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-            RISK_COLORS[agent.riskTier] ?? 'bg-gray-100 text-gray-600',
+            RISK_COLORS[agent.riskTier] ?? 'bg-muted text-muted-foreground',
           )}
         >
           {agent.riskTier}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-muted-foreground">
         {agent.provider ?? '-'}{agent.model ? ` / ${agent.model}` : ''}
       </td>
       <td className="px-4 py-3">
@@ -251,16 +251,16 @@ function AgentRow({
               </span>
             ))
           ) : (
-            <span className="text-xs text-gray-400">None</span>
+            <span className="text-xs text-muted-foreground/60">None</span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">{agent.owner ?? '-'}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">{agent.owner ?? '-'}</td>
       <td className="px-4 py-3">
         <div className="flex gap-3">
           <Link
             href={`/dashboard/agents/${agent.id}/policies`}
-            className="text-xs font-medium text-primary-600 hover:text-primary-500"
+            className="text-xs font-medium text-primary hover:text-primary"
           >
             Policies
           </Link>
@@ -311,49 +311,49 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
   }
 
   return (
-    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+    <div className="mb-6 rounded-xl border border-border bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">Register New Agent</h3>
-        <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
+        <h3 className="text-sm font-semibold text-foreground">Register New Agent</h3>
+        <button onClick={onClose} className="text-xs text-muted-foreground/60 hover:text-muted-foreground">Close</button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Name *</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Name *</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="Customer Service Agent"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Owner</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Owner</label>
             <input
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="Engineering team"
             />
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Description</label>
+          <label className="mb-1 block text-xs text-muted-foreground">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
             rows={2}
             placeholder="What does this agent do?"
           />
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Risk Tier</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Risk Tier</label>
             <select
               value={riskTier}
               onChange={(e) => setRiskTier(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
             >
               {RISK_TIERS.map((r) => (
                 <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -361,26 +361,26 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Provider</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Provider</label>
             <input
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="openai"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">Model</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Model</label>
             <input
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm"
               placeholder="gpt-4o"
             />
           </div>
         </div>
         <div>
-          <label className="mb-2 block text-xs text-gray-500">Compliance Frameworks</label>
+          <label className="mb-2 block text-xs text-muted-foreground">Compliance Frameworks</label>
           <div className="flex flex-wrap gap-2">
             {FRAMEWORKS.map((f) => (
               <button
@@ -391,7 +391,7 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                   'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                   selectedFrameworks.includes(f)
                     ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                    : 'bg-muted text-muted-foreground hover:bg-muted',
                 )}
               >
                 {f}
@@ -403,14 +403,14 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           <button
             type="submit"
             disabled={!name.trim() || mutation.isPending}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/100 disabled:opacity-50"
           >
             {mutation.isPending ? 'Registering...' : 'Register Agent'}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
           >
             Cancel
           </button>
