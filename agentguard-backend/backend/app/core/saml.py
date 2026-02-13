@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any
-from xml.etree import ElementTree
+from defusedxml.ElementTree import ParseError, fromstring
 
 from app.core.config import settings
 from app.models.sso_config import SSOConfig
@@ -59,8 +59,8 @@ def parse_saml_metadata_xml(xml_str: str) -> dict[str, str]:
     result: dict[str, str] = {"entity_id": "", "sso_url": "", "x509_cert": ""}
 
     try:
-        root = ElementTree.fromstring(xml_str)  # noqa: S314
-    except ElementTree.ParseError:
+        root = fromstring(xml_str)
+    except ParseError:
         logger.warning("Failed to parse SAML metadata XML")
         return result
 
