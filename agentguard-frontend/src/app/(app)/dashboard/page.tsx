@@ -68,8 +68,8 @@ export default function DashboardPage() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Welcome back, {user?.name ?? 'User'}
         </p>
       </div>
@@ -105,14 +105,14 @@ export default function DashboardPage() {
       <DetectionEfficacySection />
 
       {/* Recent incidents */}
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div className="mt-8 rounded-xl border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">
             Recent Incidents
           </h2>
           <Link
             href="/dashboard/incidents"
-            className="text-sm font-medium text-primary-600 hover:text-primary-700"
+            className="text-sm font-medium text-primary hover:text-primary/80"
           >
             View all
           </Link>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : metrics?.recentIncidents.length ? (
           <IncidentTable incidents={metrics.recentIncidents} />
@@ -142,12 +142,12 @@ function MetricCard({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <p className="text-sm text-gray-500">{label}</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-sm text-muted-foreground">{label}</p>
       <p
         className={clsx(
           'mt-1 text-2xl font-semibold',
-          highlight ? 'text-danger-600' : 'text-gray-900',
+          highlight ? 'text-red-400' : 'text-foreground',
         )}
       >
         {value}
@@ -164,12 +164,12 @@ function SeverityBreakdownCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <p className="mb-2 text-sm text-gray-500">By Severity</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="mb-2 text-sm text-muted-foreground">By Severity</p>
       {isLoading ? (
-        <p className="text-lg text-gray-400">—</p>
+        <p className="text-lg text-muted-foreground/50">—</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">No data</p>
+        <p className="text-sm text-muted-foreground/50">No data</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => (
@@ -177,7 +177,7 @@ function SeverityBreakdownCard({
               key={item.severity}
               className={clsx(
                 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                SEVERITY_COLORS[item.severity] ?? 'bg-gray-100 text-gray-600',
+                SEVERITY_COLORS[item.severity] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {item.severity} {item.count}
@@ -197,12 +197,12 @@ function StatusBreakdownCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <p className="mb-2 text-sm text-gray-500">By Status</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="mb-2 text-sm text-muted-foreground">By Status</p>
       {isLoading ? (
-        <p className="text-lg text-gray-400">—</p>
+        <p className="text-lg text-muted-foreground/50">—</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">No data</p>
+        <p className="text-sm text-muted-foreground/50">No data</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => (
@@ -210,7 +210,7 @@ function StatusBreakdownCard({
               key={item.status}
               className={clsx(
                 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                STATUS_COLORS[item.status] ?? 'bg-gray-100 text-gray-600',
+                STATUS_COLORS[item.status] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {item.status} {item.count}
@@ -230,7 +230,7 @@ function IncidentTable({
   return (
     <table className="w-full">
       <thead>
-        <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+        <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
           <th className="px-6 py-3">Title</th>
           <th className="px-6 py-3">Category</th>
           <th className="px-6 py-3">Severity</th>
@@ -238,25 +238,25 @@ function IncidentTable({
           <th className="px-6 py-3">Created</th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-gray-100">
+      <tbody className="divide-y divide-border">
         {incidents.map((inc) => (
-          <tr key={inc.id} className="hover:bg-gray-50">
-            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+          <tr key={inc.id} className="hover:bg-muted/50">
+            <td className="px-6 py-3 text-sm font-medium text-foreground">
               <Link
                 href={`/dashboard/incidents/${inc.id}`}
-                className="hover:text-primary-600"
+                className="hover:text-primary"
               >
                 {inc.title}
               </Link>
             </td>
-            <td className="px-6 py-3 text-sm text-gray-600">
+            <td className="px-6 py-3 text-sm text-muted-foreground">
               {inc.category.replace('_', ' ')}
             </td>
             <td className="px-6 py-3">
               <span
                 className={clsx(
                   'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                  SEVERITY_COLORS[inc.severity] ?? 'bg-gray-100 text-gray-600',
+                  SEVERITY_COLORS[inc.severity] ?? 'bg-muted text-muted-foreground',
                 )}
               >
                 {inc.severity}
@@ -266,13 +266,13 @@ function IncidentTable({
               <span
                 className={clsx(
                   'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                  STATUS_COLORS[inc.status] ?? 'bg-gray-100 text-gray-600',
+                  STATUS_COLORS[inc.status] ?? 'bg-muted text-muted-foreground',
                 )}
               >
                 {inc.status}
               </span>
             </td>
-            <td className="px-6 py-3 text-sm text-gray-500">
+            <td className="px-6 py-3 text-sm text-muted-foreground">
               {new Date(inc.createdAt).toLocaleString()}
             </td>
           </tr>
@@ -285,8 +285,8 @@ function IncidentTable({
 function EmptyState() {
   return (
     <div className="px-6 py-12 text-center">
-      <p className="text-sm text-gray-500">No incidents yet</p>
-      <p className="mt-1 text-xs text-gray-400">
+      <p className="text-sm text-muted-foreground">No incidents yet</p>
+      <p className="mt-1 text-xs text-muted-foreground/60">
         Incidents will appear here as your LLM traffic is analyzed
       </p>
     </div>

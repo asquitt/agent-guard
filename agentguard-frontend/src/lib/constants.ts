@@ -1,24 +1,24 @@
 /** Shared UI constants for AgentGuard dashboard. */
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-danger-50 text-danger-600',
-  high: 'bg-red-50 text-red-600',
-  medium: 'bg-warning-50 text-warning-600',
-  low: 'bg-blue-50 text-blue-600',
-  info: 'bg-gray-100 text-gray-600',
+  critical: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
+  high: 'bg-orange-500/10 text-orange-400 ring-1 ring-inset ring-orange-500/20',
+  medium: 'bg-yellow-500/10 text-yellow-400 ring-1 ring-inset ring-yellow-500/20',
+  low: 'bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20',
+  info: 'bg-blue-500/10 text-blue-400 ring-1 ring-inset ring-blue-500/20',
 };
 
 export const SEVERITY_COLORS_BORDERED: Record<string, string> = {
-  critical: 'bg-danger-50 text-danger-600 border-danger-200',
-  high: 'bg-red-50 text-red-600 border-red-200',
-  medium: 'bg-warning-50 text-warning-600 border-warning-200',
-  low: 'bg-blue-50 text-blue-600 border-blue-200',
-  info: 'bg-gray-50 text-gray-600 border-gray-200',
+  critical: 'bg-red-500/10 text-red-400 border-red-500/20',
+  high: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  low: 'bg-green-500/10 text-green-400 border-green-500/20',
+  info: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  open: 'bg-danger-50 text-danger-600',
-  acknowledged: 'bg-warning-50 text-warning-600',
-  resolved: 'bg-success-50 text-success-600',
-  dismissed: 'bg-gray-100 text-gray-500',
+  open: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
+  acknowledged: 'bg-yellow-500/10 text-yellow-400 ring-1 ring-inset ring-yellow-500/20',
+  resolved: 'bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20',
+  dismissed: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
 };

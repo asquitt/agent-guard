@@ -40,19 +40,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">AgentGuard</h1>
-          <p className="mt-2 text-gray-600">Sign in to your account</p>
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            AG
+          </div>
+          <h1 className="text-3xl font-bold text-foreground">AgentGuard</h1>
+          <p className="mt-2 text-muted-foreground">Sign in to your account</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm"
+          className="rounded-xl border border-border bg-card p-8"
         >
           {error && (
-            <div className="mb-4 rounded-lg bg-danger-50 px-4 py-3 text-sm text-danger-600">
+            <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -61,7 +64,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-1 block text-sm font-medium text-gray-700"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 Email
               </label>
@@ -71,7 +74,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="you@company.com"
               />
             </div>
@@ -79,7 +82,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-1 block text-sm font-medium text-gray-700"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 Password
               </label>
@@ -89,7 +92,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="••••••••"
               />
             </div>
@@ -98,25 +101,25 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+            className="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
-              className="font-medium text-primary-600 hover:text-primary-700"
+              className="font-medium text-primary hover:text-primary/80"
             >
               Create one
             </Link>
           </p>
 
-          <div className="mt-4 border-t border-gray-200 pt-4 text-center">
+          <div className="mt-4 border-t border-border pt-4 text-center">
             <Link
               href="/login/sso"
-              className="text-sm font-medium text-gray-600 hover:text-gray-800"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               Sign in with SSO
             </Link>
