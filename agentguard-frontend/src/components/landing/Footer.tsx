@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Logo from '@/components/ui/Logo';
 
 const COLUMNS = [
   {
@@ -6,27 +7,27 @@ const COLUMNS = [
     links: [
       { label: 'Features', href: '#features' },
       { label: 'Pricing', href: '#pricing' },
-      { label: 'Documentation', href: '#' },
-      { label: 'Changelog', href: '#' },
-      { label: 'Status', href: '#' },
+      { label: 'Documentation', href: '/docs' },
+      { label: 'Changelog', href: '/changelog' },
+      { label: 'Status', href: '/status' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'About', href: '#' },
-      { label: 'Blog', href: '#' },
-      { label: 'Careers', href: '#' },
+      { label: 'About', href: '/about' },
+      { label: 'Blog', href: '/blog' },
+      { label: 'Careers', href: '/careers' },
       { label: 'Contact', href: 'mailto:hello@agentguard.dev' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Terms of Service', href: '#' },
-      { label: 'Security', href: '#' },
-      { label: 'SOC 2', href: '#' },
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+      { label: 'Security', href: '/security' },
+      { label: 'SOC 2', href: '/security#soc2' },
     ],
   },
 ];
@@ -39,9 +40,7 @@ export default function Footer() {
           {/* Logo column */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-                AG
-              </div>
+              <Logo className="h-7 w-7" />
               <span className="text-sm font-semibold text-foreground">
                 AgentGuard
               </span>
@@ -60,16 +59,31 @@ export default function Footer() {
                 {col.title}
               </h4>
               <ul className="mt-3 space-y-2">
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  const isExternal =
+                    link.href.startsWith('mailto:') ||
+                    link.href.startsWith('#');
+
+                  return (
+                    <li key={link.label}>
+                      {isExternal ? (
+                        <a
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

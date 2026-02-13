@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Logo from '@/components/ui/Logo';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -87,9 +88,7 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center border-b border-border px-5">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-            AG
-          </div>
+          <Logo className="h-7 w-7" />
           <span className="text-sm font-semibold text-foreground">AgentGuard</span>
         </Link>
       </div>

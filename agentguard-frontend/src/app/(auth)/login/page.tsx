@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/lib/api/client';
+import Logo from '@/components/ui/Logo';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -43,9 +44,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-            AG
-          </div>
+          <Logo className="mx-auto mb-4 h-10 w-10" />
           <h1 className="text-3xl font-bold text-foreground">AgentGuard</h1>
           <p className="mt-2 text-muted-foreground">Sign in to your account</p>
         </div>
