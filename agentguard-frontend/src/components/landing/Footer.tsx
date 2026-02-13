@@ -1,0 +1,84 @@
+import Link from 'next/link';
+
+const COLUMNS = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Features', href: '#features' },
+      { label: 'Pricing', href: '#pricing' },
+      { label: 'Documentation', href: '#' },
+      { label: 'Changelog', href: '#' },
+      { label: 'Status', href: '#' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', href: '#' },
+      { label: 'Blog', href: '#' },
+      { label: 'Careers', href: '#' },
+      { label: 'Contact', href: 'mailto:hello@agentguard.dev' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacy Policy', href: '#' },
+      { label: 'Terms of Service', href: '#' },
+      { label: 'Security', href: '#' },
+      { label: 'SOC 2', href: '#' },
+    ],
+  },
+];
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-border px-6 py-12">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          {/* Logo column */}
+          <div className="col-span-2 md:col-span-1">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
+                AG
+              </div>
+              <span className="text-sm font-semibold text-foreground">
+                AgentGuard
+              </span>
+            </Link>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              AI Agent Incident Response
+              <br />
+              for Financial Services.
+            </p>
+          </div>
+
+          {/* Link columns */}
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <h4 className="text-sm font-semibold text-foreground">
+                {col.title}
+              </h4>
+              <ul className="mt-3 space-y-2">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
+          &copy; {new Date().getFullYear()} AgentGuard. All rights reserved.
+        </div>
+      </div>
+    </footer>
+  );
+}

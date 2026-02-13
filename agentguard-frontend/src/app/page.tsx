@@ -1,24 +1,35 @@
-export default function Home() {
+import type { Metadata } from 'next';
+
+import LandingNav from '@/components/landing/LandingNav';
+import HeroSection from '@/components/landing/HeroSection';
+import TrustBar from '@/components/landing/TrustBar';
+import FeaturesGrid from '@/components/landing/FeaturesGrid';
+import HowItWorks from '@/components/landing/HowItWorks';
+import DashboardPreview from '@/components/landing/DashboardPreview';
+import ComplianceSection from '@/components/landing/ComplianceSection';
+import PricingSection from '@/components/landing/PricingSection';
+import CtaSection from '@/components/landing/CtaSection';
+import Footer from '@/components/landing/Footer';
+
+export const metadata: Metadata = {
+  title: 'AgentGuard - AI Agent Incident Response for Financial Services',
+  description:
+    'Real-time detection, compliance monitoring, and automated incident response for AI agents in regulated financial environments.',
+};
+
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold mb-4">AgentGuard</h1>
-      <p className="text-xl text-muted-foreground mb-8">
-        AI Agent Incident Response for Financial Services
-      </p>
-      <div className="flex gap-4">
-        <a
-          href="/login"
-          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/80"
-        >
-          Login
-        </a>
-        <a
-          href="/register"
-          className="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10"
-        >
-          Register
-        </a>
-      </div>
+    <main className="min-h-screen bg-background">
+      <LandingNav />
+      <HeroSection />
+      <TrustBar />
+      <FeaturesGrid />
+      <HowItWorks />
+      <DashboardPreview />
+      <ComplianceSection />
+      <PricingSection />
+      <CtaSection />
+      <Footer />
     </main>
   );
 }
