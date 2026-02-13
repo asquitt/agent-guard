@@ -1,19 +1,53 @@
 # AgentGuard
 
-AI Agent Incident Response Platform for Financial Services.
+AI agent security platform for financial services. Real-time detection, incident response, and compliance automation for LLM-powered applications.
 
-## Overview
+## What It Does
 
-AgentGuard provides real-time detection and response for AI agent failures in financial services environments. It acts as an LLM proxy, intercepting all AI traffic to detect hallucinations, PII leaks, compliance violations, and other anomalies.
+AgentGuard sits between your application and LLM providers as a transparent proxy. Every request and response is analyzed by 10 detection algorithms that catch hallucinations, PII leaks, prompt injection, compliance violations, and more — before they reach your users.
+
+```
+Your App  ──▶  AgentGuard Proxy  ──▶  LLM Provider
+                    │                  (OpenAI, Anthropic,
+                    ▼                   Gemini, Bedrock,
+              Detection Engine          Azure OpenAI)
+                    │
+       ┌────────────┼────────────┐
+       ▼            ▼            ▼
+   Incidents     Alerts      Audit Log
+```
+
+## Detection Categories
+
+| Category | Mode | Description |
+|----------|------|-------------|
+| PII Leak | Sync | Personal data exposure in LLM outputs |
+| Prompt Injection | Sync | Direct/indirect injection and jailbreak attempts |
+| Prompt Extraction | Sync | System prompt leakage detection |
+| Compliance | Sync | SOX, PCI-DSS, FFIEC, NYDFS-500, DORA, EU AI Act violations |
+| Tool/Function Call | Sync | Function signature and parameter validation |
+| MCP Security | Sync | Model Context Protocol threat detection |
+| Hallucination | Async | Factual inconsistency with financial benchmarks |
+| Cost Anomaly | Async | Unusual token consumption patterns |
+| Loop Detection | Async | Repeated outputs indicating stuck agents |
+| Toxicity | Async | Bias and harmful content detection |
+
+**Sync** detectors run in-request and can block/redact before the response reaches your app. **Async** detectors run post-response via Celery for computationally expensive analysis.
 
 ## Features
 
-- **LLM Proxy**: Intercept and monitor all LLM API calls
-- **Real-time Detection**: Identify hallucinations, PII leaks, compliance violations
-- **Incident Management**: Track and manage detected issues
-- **Alerting**: Integrate with Slack, PagerDuty, email, webhooks
-- **Compliance**: Built for SOX, PCI-DSS, FFIEC requirements
-- **Audit Trail**: Complete logging for regulatory compliance
+- **LLM Proxy** — Drop-in replacement for OpenAI/Anthropic APIs with 6 provider backends
+- **Real-time Detection** — 10 algorithms across sync and async pipelines
+- **Incident Management** — Track, triage, and resolve detected issues
+- **Alerting** — Slack, PagerDuty, email, and webhook integrations
+- **Agent Governance** — Agent registry, behavior policies, human-in-the-loop review queues
+- **Compliance Automation** — Framework mapping, automated reports, immutable audit trail
+- **Threat Intelligence** — Attack pattern feeds, adversarial red teaming (25 test prompts)
+- **Shadow AI Discovery** — Detect unauthorized AI usage across your organization
+- **Multi-turn Analysis** — Conversation-level tracking across agent sessions
+- **SSO** — SAML 2.0 and OAuth2/OIDC for enterprise identity providers
+- **SDKs** — Python (async) and Node.js client libraries
+- **API Playground** — Built-in testing UI for proxy endpoints
 
 ## Quick Start
 
@@ -23,59 +57,113 @@ AgentGuard provides real-time detection and response for AI agent failures in fi
 - Node.js 18+
 - Python 3.11+
 
-### Development Setup
+### 1. Start Backend
 
 ```bash
-# Start backend services
+cd agentguard-backend
 docker compose up -d
+```
 
-# Install frontend dependencies
+Wait for healthy: `curl http://localhost:8001/health`
+
+### 2. Start Frontend
+
+```bash
 cd agentguard-frontend
 npm install
 npm run dev
 ```
 
-### Access
+### 3. Access
 
-- Frontend: http://localhost:3000
-- API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:3000 |
+| API | http://localhost:8001 |
+| API Docs (dev) | http://localhost:8001/docs |
+
+### 4. Create an Account
+
+```bash
+curl http://localhost:8001/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"YourPassword1!","full_name":"Your Name","org_name":"Your Org"}'
+```
+
+### 5. Send Your First Proxied Request
+
+```bash
+# Create an API key in the dashboard, then:
+curl http://localhost:8001/api/v1/proxy/v1/chat/completions \
+  -H "Authorization: Bearer ag_live_<your_key>" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}]}'
+```
 
 ## Architecture
 
+### Backend — FastAPI + Celery + PostgreSQL + Redis
+
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Your App   │────▶│  AgentGuard  │────▶│  LLM APIs   │
-│             │◀────│    Proxy     │◀────│ (OpenAI,    │
-└─────────────┘     └──────────────┘     │  Anthropic) │
-                           │             └─────────────┘
-                           ▼
-                    ┌──────────────┐
-                    │  Detection   │
-                    │   Engine     │
-                    └──────────────┘
-                           │
-              ┌────────────┼────────────┐
-              ▼            ▼            ▼
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │Incidents │ │  Alerts  │ │  Audit   │
-        └──────────┘ └──────────┘ └──────────┘
+agentguard-backend/backend/app/
+├── api/              # 26 API routers
+├── models/           # 20 SQLAlchemy models
+├── services/         # Business logic
+│   ├── detection/    # 10 detection algorithms + registry
+│   └── providers/    # 6 LLM provider adapters
+├── tasks/            # Celery background jobs
+├── core/             # Config, auth, security middleware
+├── schemas/          # Pydantic request/response models
+└── utils/            # Utilities
 ```
 
-## Tech Stack
+### Frontend — Next.js 14 + TypeScript + TanStack Query
 
-### Backend
-- FastAPI (Python 3.11)
-- PostgreSQL 15
-- Redis 7
-- Celery (background tasks)
-- SQLAlchemy 2.0
+```
+agentguard-frontend/src/
+├── app/              # 29 routes (Next.js App Router)
+├── components/       # Layout, UI, dashboard, incidents
+├── hooks/            # TanStack Query hooks, auth, WebSocket
+├── lib/              # API clients, constants, providers
+└── types/            # TypeScript interfaces
+```
 
-### Frontend
-- Next.js 14
-- TypeScript
-- TanStack Query
-- Tailwind CSS
+### Services
+
+| Service | Host Port | Container Port |
+|---------|-----------|----------------|
+| API (FastAPI) | 8001 | 8000 |
+| PostgreSQL | 5433 | 5432 |
+| Redis | 6381 | 6379 |
+| Celery Worker | — | — |
+| Celery Beat | — | — |
+| Frontend (Next.js) | 3000 | 3000 |
+
+## SDKs
+
+### Python
+
+```python
+from agentguard import AgentGuardClient
+
+client = AgentGuardClient(api_key="ag_live_...")
+response = await client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello"}]
+)
+```
+
+### Node.js
+
+```typescript
+import { AgentGuard } from 'agentguard';
+
+const client = new AgentGuard({ apiKey: 'ag_live_...' });
+const response = await client.chat.completions.create({
+  model: 'gpt-4',
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+```
 
 ## Development
 
@@ -86,17 +174,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-### Running Tests
-
-```bash
-# Backend
-cd agentguard-backend/backend
-pytest
-
-# Frontend
-cd agentguard-frontend
-npm run test
-```
+Hooks run automatically on commit: black, isort, flake8, pyright, file size limits, private key detection.
 
 ### Database Migrations
 
@@ -105,6 +183,57 @@ cd agentguard-backend/backend
 alembic revision --autogenerate -m "description"
 alembic upgrade head
 ```
+
+### Running Tests
+
+```bash
+# Backend (targeted — don't run full suite)
+cd agentguard-backend/backend
+pytest tests/test_detectors.py -v
+
+# Frontend
+cd agentguard-frontend
+npm run test
+```
+
+### Load Testing
+
+```bash
+cd load-tests
+pip install -r requirements.txt
+locust -f locustfile.py --host=http://localhost:8001 --headless -u 10 -r 2 -t 60s
+```
+
+### Security Audit
+
+```bash
+cd security-audit
+pip install -r requirements.txt
+./run_audit.sh
+# Report: security-audit/reports/audit-report-YYYY-MM-DD.md
+```
+
+## Security
+
+- **Tenant isolation** — Every query filtered by `org_id`. No cross-organization data leakage.
+- **Encryption** — AES-256-GCM field-level encryption, HMAC-SHA256 API key hashing, bcrypt passwords
+- **Auth hardening** — Account lockout (10 attempts/30 min), JWT token versioning, rate-limited auth endpoints
+- **Security headers** — CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Permissions-Policy
+- **Non-root container** — API runs as unprivileged user
+- **Audit trail** — Immutable, hash-chained audit logging for all admin actions
+- **Pre-commit scanning** — Private key detection, type checking, linting
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [API Reference](docs/api-reference.md) | OpenAPI endpoint documentation |
+| [Integration Guide](docs/integration-guide.md) | SDK usage and proxy setup |
+| [Quick Start](docs/quickstart.md) | Getting started guide |
+| [Production Plan](docs/PRODUCTION_PLAN.md) | AWS/Kubernetes deployment strategy |
+| [Launch Checklist](docs/launch-checklist.md) | Pre-release validation |
+| [Runbook](docs/runbook.md) | Operational procedures |
+| [Enhancements](docs/ENHANCEMENTS.md) | Feature roadmap (32/32 complete) |
 
 ## License
 
