@@ -11,10 +11,12 @@ import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { useToast } from '@/hooks/useToast';
 import { useListKeyNav } from '@/hooks/useListKeyNav';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useTableDensity, DENSITY_CLASSES } from '@/hooks/useTableDensity';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DensityToggle } from '@/components/ui/DensityToggle';
 import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { timeAgo } from '@/lib/format';
 
@@ -47,6 +49,8 @@ function IncidentsContent() {
     setFilters: (next: Partial<IncidentFilters>) => void;
     resetFilters: () => void;
   };
+  const { isCompact } = useTableDensity();
+  const dc = isCompact ? DENSITY_CLASSES.compact : DENSITY_CLASSES.comfortable;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const sortField = (filters.sort as SortField) || 'createdAt';
   const sortDir = (filters.dir as SortDir) || 'desc';
@@ -178,6 +182,7 @@ function IncidentsContent() {
         </div>
 
         <div className="flex items-center gap-2">
+          <DensityToggle />
           <button
             onClick={exportCsv}
             disabled={incidents.length === 0}
@@ -296,8 +301,8 @@ function IncidentsContent() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3">
+                <tr className={clsx('border-b border-border text-left font-medium uppercase tracking-wider text-muted-foreground', dc.header)}>
+                  <th className={dc.header}>
                     <input
                       type="checkbox"
                       checked={selected.size === incidents.length && incidents.length > 0}
@@ -305,11 +310,11 @@ function IncidentsContent() {
                       className="rounded border-border"
                     />
                   </th>
-                  <SortableHeader field="title" label="Title" current={sortField} dir={sortDir} onSort={toggleSort} />
-                  <SortableHeader field="category" label="Category" current={sortField} dir={sortDir} onSort={toggleSort} />
-                  <SortableHeader field="severity" label="Severity" current={sortField} dir={sortDir} onSort={toggleSort} />
-                  <SortableHeader field="status" label="Status" current={sortField} dir={sortDir} onSort={toggleSort} />
-                  <SortableHeader field="createdAt" label="Created" current={sortField} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader field="title" label="Title" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                  <SortableHeader field="category" label="Category" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                  <SortableHeader field="severity" label="Severity" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                  <SortableHeader field="status" label="Status" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                  <SortableHeader field="createdAt" label="Created" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -317,6 +322,7 @@ function IncidentsContent() {
                   <IncidentRow
                     key={inc.id}
                     incident={inc}
+                    cellClass={dc.cell}
                     selected={selected.has(inc.id)}
                     focused={i === focusedIndex}
                     onToggle={() => toggleSelect(inc.id)}
@@ -362,18 +368,20 @@ function IncidentsContent() {
 
 function IncidentRow({
   incident,
+  cellClass,
   selected,
   focused,
   onToggle,
 }: {
   incident: Incident;
+  cellClass: string;
   selected: boolean;
   focused: boolean;
   onToggle: () => void;
 }) {
   return (
     <tr className={clsx('hover:bg-muted/50', selected && 'bg-primary/10', focused && 'ring-2 ring-inset ring-primary/50 bg-primary/5')}>
-      <td className="px-4 py-3">
+      <td className={cellClass}>
         <input
           type="checkbox"
           checked={selected}
@@ -381,7 +389,7 @@ function IncidentRow({
           className="rounded border-border"
         />
       </td>
-      <td className="px-4 py-3 text-sm font-medium text-foreground">
+      <td className={clsx(cellClass, 'font-medium text-foreground')}>
         <Link
           href={`/dashboard/incidents/${incident.id}`}
           className="hover:text-primary"
@@ -389,10 +397,10 @@ function IncidentRow({
           {incident.title}
         </Link>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className={clsx(cellClass, 'text-muted-foreground')}>
         {incident.category.replace('_', ' ')}
       </td>
-      <td className="px-4 py-3">
+      <td className={cellClass}>
         <span
           className={clsx(
             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
@@ -402,7 +410,7 @@ function IncidentRow({
           {incident.severity}
         </span>
       </td>
-      <td className="px-4 py-3">
+      <td className={cellClass}>
         <span
           className={clsx(
             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
@@ -412,7 +420,7 @@ function IncidentRow({
           {incident.status}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground" title={new Date(incident.createdAt).toLocaleString()}>
+      <td className={clsx(cellClass, 'text-muted-foreground')} title={new Date(incident.createdAt).toLocaleString()}>
         {timeAgo(incident.createdAt)}
       </td>
     </tr>
@@ -425,16 +433,18 @@ function SortableHeader({
   current,
   dir,
   onSort,
+  headerClass,
 }: {
   field: SortField;
   label: string;
   current: SortField;
   dir: SortDir;
   onSort: (f: SortField) => void;
+  headerClass?: string;
 }) {
   const isActive = current === field;
   return (
-    <th className="px-4 py-3" aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+    <th className={headerClass ?? 'px-4 py-3'} aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
       <button
         onClick={() => onSort(field)}
         aria-label={`Sort by ${label}${isActive ? (dir === 'asc' ? ', ascending' : ', descending') : ''}`}
