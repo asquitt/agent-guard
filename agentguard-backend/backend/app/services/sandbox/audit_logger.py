@@ -115,3 +115,64 @@ def log_sandbox_action_sync(
         )
         db.add(log_entry)
         db.commit()
+
+
+async def verify_chain(
+    db: AsyncSession,
+    org_id: UUID,
+    sandbox_id: UUID,
+) -> dict[str, object]:
+    """Verify the hash chain integrity for a sandbox's audit logs.
+
+    Returns {valid: bool, total_entries: int, broken_at: int | None, message: str}.
+    """
+    from app.models.sandbox_execution import SandboxExecution
+
+    # Get execution IDs for this sandbox
+    exec_result = await db.execute(
+        select(SandboxExecution.id).where(SandboxExecution.sandbox_id == sandbox_id)
+    )
+    exec_ids = [row[0] for row in exec_result.fetchall()]
+    if not exec_ids:
+        return {"valid": True, "total_entries": 0, "broken_at": None, "message": "No entries"}
+
+    # Fetch all audit logs in chronological order
+    result = await db.execute(
+        select(SandboxAuditLog)
+        .where(
+            SandboxAuditLog.org_id == org_id,
+            SandboxAuditLog.execution_id.in_(exec_ids),
+        )
+        .order_by(SandboxAuditLog.created_at.asc())
+    )
+    entries = list(result.scalars().all())
+    if not entries:
+        return {"valid": True, "total_entries": 0, "broken_at": None, "message": "No entries"}
+
+    prev_hash = ""
+    for i, entry in enumerate(entries):
+        entry_data = {
+            "org_id": str(entry.org_id),
+            "execution_id": str(entry.execution_id),
+            "action_type": entry.action_type,
+            "action_detail": entry.action_detail,
+            "allowed": entry.allowed,
+            "capability_matched": entry.capability_matched,
+            "timestamp": entry.timestamp.isoformat() if entry.timestamp else "",
+        }
+        expected_hash = _compute_entry_hash(prev_hash, entry_data)
+        if entry.entry_hash != expected_hash:
+            return {
+                "valid": False,
+                "total_entries": len(entries),
+                "broken_at": i,
+                "message": f"Hash mismatch at entry {i}",
+            }
+        prev_hash = entry.entry_hash
+
+    return {
+        "valid": True,
+        "total_entries": len(entries),
+        "broken_at": None,
+        "message": f"All {len(entries)} entries verified",
+    }

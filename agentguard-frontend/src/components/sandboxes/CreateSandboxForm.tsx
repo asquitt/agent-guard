@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { createSandbox } from '@/lib/api/sandboxes';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { createSandbox, listTemplates } from '@/lib/api/sandboxes';
+import type { SandboxTemplate } from '@/lib/api/sandboxes';
 
 const CAPABILITY_TYPES = [
   { value: 'file:read', label: 'File Read' },
@@ -39,7 +40,18 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
   const [capTarget, setCapTarget] = useState('');
   const [caps, setCaps] = useState<{ type: string; target: string }[]>([]);
 
+  const { data: templates } = useQuery({ queryKey: ['sandbox-templates'], queryFn: listTemplates });
   const mutation = useMutation({ mutationFn: createSandbox, onSuccess });
+
+  function applyTemplate(t: SandboxTemplate) {
+    setImage(t.image);
+    setCaps(t.capabilities.map((c) => ({ type: c.type, target: c.target })));
+    setMemoryMb(t.resourceLimits.memory_mb);
+    setMaxTokens(t.resourceLimits.max_tokens);
+    setTimeoutSeconds(t.resourceLimits.timeout_seconds);
+    setDenyAllEgress(t.networkPolicy.deny_all_egress);
+    setAllowedHosts(t.networkPolicy.allowed_hosts.join('\n'));
+  }
 
   function addEnvVar() {
     if (!envKey.trim()) return;
@@ -80,6 +92,20 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
     <div className="rounded-xl border border-border bg-card p-6">
       <h3 className="mb-4 text-sm font-semibold text-foreground">Create Sandbox</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Template Selector */}
+        {templates && templates.length > 0 && (
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Start from Template</label>
+            <div className="flex flex-wrap gap-2">
+              {templates.map((t) => (
+                <button key={t.id} type="button" onClick={() => applyTemplate(t)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50">
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Basic Info */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

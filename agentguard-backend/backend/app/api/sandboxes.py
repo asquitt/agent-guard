@@ -2,17 +2,23 @@
 
 # pyright: reportGeneralTypeIssues=false, reportCallIssue=false
 
+import csv
+import io
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db
 from app.models.user import Organization
 from app.schemas.sandbox import (
     CapabilityAddRequest,
+    ChainVerificationResponse,
     SandboxAuditLogListResponse,
     SandboxAuditLogResponse,
+    SandboxCloneRequest,
     SandboxCreateRequest,
     SandboxExecutionCreateRequest,
     SandboxExecutionListResponse,
@@ -20,6 +26,7 @@ from app.schemas.sandbox import (
     SandboxListResponse,
     SandboxResponse,
     SandboxStats,
+    SandboxTemplateResponse,
     SandboxUpdateRequest,
 )
 from app.services.sandbox import sandbox_service
@@ -83,6 +90,30 @@ async def create_sandbox(
     )
     await db.commit()
     return SandboxResponse.model_validate(sandbox)
+
+
+# ---------------------------------------------------------------------------
+# Templates (MUST be before /{sandbox_id} to avoid path conflicts)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/templates", response_model=list[SandboxTemplateResponse])
+async def list_templates() -> list[SandboxTemplateResponse]:
+    """List available sandbox templates for quick creation."""
+    from app.services.sandbox.templates import TEMPLATES
+
+    return [
+        SandboxTemplateResponse(
+            id=t.id,
+            name=t.name,
+            description=t.description,
+            image=t.image,
+            capabilities=t.capabilities,
+            resource_limits=t.resource_limits,
+            network_policy=t.network_policy,
+        )
+        for t in TEMPLATES
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -343,3 +374,57 @@ async def get_sandbox_audit(
         items=[SandboxAuditLogResponse.model_validate(a) for a in items],
         total=total,
     )
+
+
+@router.post("/{sandbox_id}/clone", response_model=SandboxResponse, status_code=status.HTTP_201_CREATED)
+async def clone_sandbox(
+    sandbox_id: UUID,
+    body: SandboxCloneRequest,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxResponse:
+    """Clone an existing sandbox with a new name."""
+    sandbox = await sandbox_service.clone_sandbox(db, org.id, sandbox_id, body.name)
+    if not sandbox:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
+    await db.commit()
+    return SandboxResponse.model_validate(sandbox)
+
+
+@router.get("/{sandbox_id}/audit/export")
+async def export_audit_logs(
+    sandbox_id: UUID,
+    fmt: str = Query(default="json", alias="format", pattern="^(json|csv)$"),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> StreamingResponse:
+    """Export sandbox audit logs as CSV or JSON for compliance."""
+    items, _ = await sandbox_service.list_audit_logs(
+        db, org.id, sandbox_id=sandbox_id, limit=10000
+    )
+    rows = [SandboxAuditLogResponse.model_validate(a) for a in items]
+
+    if fmt == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["id", "executionId", "actionType", "allowed", "capabilityMatched", "entryHash", "timestamp", "actionDetail"])
+        for r in rows:
+            writer.writerow([str(r.id), str(r.execution_id), r.action_type, r.allowed, r.capability_matched or "", r.entry_hash or "", r.timestamp.isoformat(), json.dumps(r.action_detail)])
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=audit-{sandbox_id}.csv"})
+
+    data = [r.model_dump(mode="json", by_alias=True) for r in rows]
+    return StreamingResponse(io.BytesIO(json.dumps(data, indent=2, default=str).encode()), media_type="application/json", headers={"Content-Disposition": f"attachment; filename=audit-{sandbox_id}.json"})
+
+
+@router.get("/{sandbox_id}/audit/verify", response_model=ChainVerificationResponse)
+async def verify_audit_chain(
+    sandbox_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> ChainVerificationResponse:
+    """Verify the hash chain integrity of a sandbox's audit logs."""
+    from app.services.sandbox.audit_logger import verify_chain
+
+    result = await verify_chain(db, org.id, sandbox_id)
+    return ChainVerificationResponse(**result)

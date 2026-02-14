@@ -171,6 +171,62 @@ export async function getExecutionIncidents(
   );
 }
 
+// Templates
+
+export interface SandboxTemplate {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  capabilities: { type: string; target: string }[];
+  resourceLimits: { cpu_shares: number; memory_mb: number; max_tokens: number; timeout_seconds: number };
+  networkPolicy: { allowed_hosts: string[]; allowed_ports: number[]; deny_all_egress: boolean };
+}
+
+export async function listTemplates(): Promise<SandboxTemplate[]> {
+  return apiFetch<SandboxTemplate[]>('/sandboxes/templates');
+}
+
+// Clone
+
+export async function cloneSandbox(
+  sandboxId: string,
+  name: string,
+): Promise<SandboxData> {
+  return apiFetch<SandboxData>(`/sandboxes/${sandboxId}/clone`, {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+}
+
+// Audit Export & Verify
+
+export async function exportAuditLogs(
+  sandboxId: string,
+  format: 'json' | 'csv' = 'json',
+): Promise<Blob> {
+  const res = await fetch(`/api/v1/sandboxes/${sandboxId}/audit/export?format=${format}`, {
+    headers: {
+      Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('accessToken') ?? '' : ''}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
+}
+
+export interface ChainVerification {
+  valid: boolean;
+  totalEntries: number;
+  brokenAt: number | null;
+  message: string;
+}
+
+export async function verifyAuditChain(
+  sandboxId: string,
+): Promise<ChainVerification> {
+  return apiFetch<ChainVerification>(`/sandboxes/${sandboxId}/audit/verify`);
+}
+
 // Stats
 
 export async function getSandboxStats(): Promise<SandboxStats> {

@@ -148,6 +148,34 @@ async def destroy_sandbox(db: AsyncSession, org_id: UUID, sandbox_id: UUID) -> b
     return True
 
 
+async def clone_sandbox(
+    db: AsyncSession,
+    org_id: UUID,
+    sandbox_id: UUID,
+    new_name: str,
+) -> Sandbox | None:
+    """Clone an existing sandbox with a new name.
+
+    Copies configuration, capabilities, resource limits, network policy, and env.
+    """
+    source = await get_sandbox(db, org_id, sandbox_id)
+    if not source:
+        return None
+    return await create_sandbox(
+        db=db,
+        org_id=org_id,
+        name=new_name,
+        description=f"Cloned from {source.name}",
+        agent_id=source.agent_id,
+        image=source.image,
+        capabilities=list(source.capabilities or []),
+        resource_limits=dict(source.resource_limits or {}),
+        network_policy=dict(source.network_policy or {}),
+        environment=dict(source.environment or {}),
+        metadata=dict(source.metadata_ or {}),
+    )
+
+
 async def add_capability(
     db: AsyncSession,
     org_id: UUID,

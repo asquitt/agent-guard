@@ -168,6 +168,37 @@ class CapabilityAddRequest(BaseModel):
         return v
 
 
+class SandboxTemplateResponse(BaseModel):
+    """Sandbox template definition."""
+
+    id: str
+    name: str
+    description: str
+    image: str
+    capabilities: list[dict[str, str]]
+    resource_limits: dict[str, int] = Field(serialization_alias="resourceLimits")
+    network_policy: dict[str, object] = Field(serialization_alias="networkPolicy")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class SandboxCloneRequest(BaseModel):
+    """Request to clone a sandbox."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ChainVerificationResponse(BaseModel):
+    """Result of hash chain verification."""
+
+    valid: bool
+    total_entries: int = Field(serialization_alias="totalEntries")
+    broken_at: int | None = Field(None, serialization_alias="brokenAt")
+    message: str
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class SandboxStats(BaseModel):
     """Aggregate sandbox metrics for dashboard."""
 

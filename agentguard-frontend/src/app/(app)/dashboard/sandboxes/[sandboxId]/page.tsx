@@ -10,7 +10,11 @@ import {
   listExecutions,
   getSandboxAuditLogs,
   startExecution,
+  cloneSandbox,
+  exportAuditLogs,
+  verifyAuditChain,
 } from '@/lib/api/sandboxes';
+import type { ChainVerification } from '@/lib/api/sandboxes';
 import CapabilityManager from '@/components/sandboxes/CapabilityManager';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,6 +33,7 @@ export default function SandboxDetailPage() {
   const sandboxId = params.sandboxId as string;
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [chainResult, setChainResult] = useState<ChainVerification | null>(null);
 
   const { data: sandbox, isLoading } = useQuery({
     queryKey: ['sandboxes', sandboxId],
@@ -49,6 +54,11 @@ export default function SandboxDetailPage() {
 
   const execMutation = useMutation({
     mutationFn: () => startExecution(sandboxId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sandboxes'] }),
+  });
+
+  const cloneMutation = useMutation({
+    mutationFn: (name: string) => cloneSandbox(sandboxId, name),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sandboxes'] }),
   });
 
@@ -87,6 +97,13 @@ export default function SandboxDetailPage() {
           <span className={clsx('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', STATUS_COLORS[sandbox.status] ?? STATUS_COLORS.pending)}>
             {sandbox.status}
           </span>
+          <button
+            onClick={() => cloneMutation.mutate(`${sandbox.name}-clone`)}
+            disabled={cloneMutation.isPending}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50"
+          >
+            {cloneMutation.isPending ? 'Cloning...' : 'Clone'}
+          </button>
           {sandbox.status !== 'running' && (
             <button onClick={() => execMutation.mutate()} disabled={execMutation.isPending} className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
               {execMutation.isPending ? 'Starting...' : 'Start Execution'}
@@ -232,6 +249,14 @@ export default function SandboxDetailPage() {
 
       {/* Audit Tab */}
       {activeTab === 'audit' && (
+        <>
+        <div className="flex items-center gap-2">
+          {(['csv', 'json'] as const).map((fmt) => (
+            <button key={fmt} onClick={async () => { const b = await exportAuditLogs(sandboxId, fmt); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `audit-${sandboxId.slice(0, 8)}.${fmt}`; a.click(); }} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50">Export {fmt.toUpperCase()}</button>
+          ))}
+          <button onClick={async () => setChainResult(await verifyAuditChain(sandboxId))} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50">Verify Chain</button>
+          {chainResult && <span className={clsx('text-xs font-medium', chainResult.valid ? 'text-green-400' : 'text-red-400')}>{chainResult.message}</span>}
+        </div>
         <div className="rounded-xl border border-border bg-card">
           {auditLogs?.items?.length ? (
             <table className="w-full">
@@ -266,6 +291,7 @@ export default function SandboxDetailPage() {
             <div className="p-8 text-center text-muted-foreground">No audit log entries yet.</div>
           )}
         </div>
+        </>
       )}
     </div>
   );
