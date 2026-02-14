@@ -11,6 +11,7 @@ import type { IncidentAction } from '@/types';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
 import { QueryError } from '@/components/ui/QueryError';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -70,9 +71,29 @@ export default function IncidentDetailPage() {
 
   const canResolve = incident.status === 'open' || incident.status === 'acknowledged';
   const canAcknowledge = incident.status === 'open';
+  const [pendingAction, setPendingAction] = useState<'resolved' | 'dismissed' | null>(null);
 
   return (
     <div>
+      {/* Confirm dialog for resolve/dismiss */}
+      <ConfirmDialog
+        open={pendingAction !== null}
+        title={pendingAction === 'resolved' ? 'Resolve Incident' : 'Dismiss Incident'}
+        description={
+          pendingAction === 'resolved'
+            ? 'Mark this incident as resolved? This indicates the issue has been addressed.'
+            : 'Dismiss this incident? This marks it as a false positive or non-actionable.'
+        }
+        confirmLabel={pendingAction === 'resolved' ? 'Resolve' : 'Dismiss'}
+        variant={pendingAction === 'dismissed' ? 'danger' : 'default'}
+        loading={statusMutation.isPending}
+        onConfirm={() => {
+          if (pendingAction) statusMutation.mutate(pendingAction);
+          setPendingAction(null);
+        }}
+        onCancel={() => setPendingAction(null)}
+      />
+
       {/* Back link */}
       <button
         onClick={() => router.back()}
@@ -121,7 +142,7 @@ export default function IncidentDetailPage() {
           )}
           {canResolve && (
             <button
-              onClick={() => statusMutation.mutate('resolved')}
+              onClick={() => setPendingAction('resolved')}
               disabled={statusMutation.isPending}
               className="rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-500/100 disabled:opacity-50"
             >
@@ -130,7 +151,7 @@ export default function IncidentDetailPage() {
           )}
           {canResolve && (
             <button
-              onClick={() => statusMutation.mutate('dismissed')}
+              onClick={() => setPendingAction('dismissed')}
               disabled={statusMutation.isPending}
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-50"
             >

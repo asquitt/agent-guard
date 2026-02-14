@@ -10,6 +10,7 @@ import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { timeAgo } from '@/lib/format';
 
@@ -27,6 +28,7 @@ export default function IncidentsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [bulkAction, setBulkAction] = useState<'resolved' | 'dismissed' | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['incidents', filters],
@@ -131,6 +133,21 @@ export default function IncidentsPage() {
 
   return (
     <div>
+      {/* Bulk action confirm dialog */}
+      <ConfirmDialog
+        open={bulkAction !== null}
+        title={bulkAction === 'resolved' ? 'Resolve Incidents' : 'Dismiss Incidents'}
+        description={`${bulkAction === 'resolved' ? 'Resolve' : 'Dismiss'} ${selected.size} selected incident${selected.size !== 1 ? 's' : ''}?`}
+        confirmLabel={bulkAction === 'resolved' ? 'Resolve' : 'Dismiss'}
+        variant={bulkAction === 'dismissed' ? 'danger' : 'default'}
+        loading={bulkMutation.isPending}
+        onConfirm={() => {
+          if (bulkAction) bulkMutation.mutate({ ids: Array.from(selected), status: bulkAction });
+          setBulkAction(null);
+        }}
+        onCancel={() => setBulkAction(null)}
+      />
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Incidents</h1>
@@ -153,23 +170,13 @@ export default function IncidentsPage() {
               {selected.size} selected
             </span>
             <button
-              onClick={() =>
-                bulkMutation.mutate({
-                  ids: Array.from(selected),
-                  status: 'resolved',
-                })
-              }
+              onClick={() => setBulkAction('resolved')}
               className="rounded-lg bg-green-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500/100"
             >
               Resolve
             </button>
             <button
-              onClick={() =>
-                bulkMutation.mutate({
-                  ids: Array.from(selected),
-                  status: 'dismissed',
-                })
-              }
+              onClick={() => setBulkAction('dismissed')}
               className="rounded-lg bg-muted px-3 py-1.5 text-sm font-medium text-white hover:bg-muted/80"
             >
               Dismiss

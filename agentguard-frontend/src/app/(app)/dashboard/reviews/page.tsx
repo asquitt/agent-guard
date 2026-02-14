@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import { listReviews, getReviewStats, decideReview, escalateReview } from '@/lib/api';
 import type { ReviewItem } from '@/lib/api';
 import { SEVERITY_COLORS, REVIEW_STATUS_COLORS } from '@/lib/constants';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const REVIEW_STATUSES = ['pending', 'approved', 'rejected', 'escalated', 'expired'] as const;
 
@@ -142,6 +143,7 @@ function ReviewCard({
 }) {
   const [reason, setReason] = useState('');
   const [showActions, setShowActions] = useState(false);
+  const [confirmReject, setConfirmReject] = useState(false);
 
   const approveMutation = useMutation({
     mutationFn: () => decideReview(item.id, 'approved', reason || undefined),
@@ -227,6 +229,20 @@ function ReviewCard({
         )}
       </div>
 
+      <ConfirmDialog
+        open={confirmReject}
+        title="Reject Review"
+        description="Reject this review item? This action cannot be undone."
+        confirmLabel="Reject"
+        variant="danger"
+        loading={rejectMutation.isPending}
+        onConfirm={() => {
+          rejectMutation.mutate();
+          setConfirmReject(false);
+        }}
+        onCancel={() => setConfirmReject(false)}
+      />
+
       {showActions && isPending && (
         <div className="mt-4 border-t border-border pt-4">
           <div className="mb-3">
@@ -247,7 +263,7 @@ function ReviewCard({
               {approveMutation.isPending ? 'Approving...' : 'Approve'}
             </button>
             <button
-              onClick={() => rejectMutation.mutate()}
+              onClick={() => setConfirmReject(true)}
               disabled={rejectMutation.isPending}
               className="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-500 disabled:opacity-50"
             >
