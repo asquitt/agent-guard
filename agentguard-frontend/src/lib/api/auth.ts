@@ -55,3 +55,20 @@ export async function getMeApi(): Promise<MeResponse> {
 export async function logoutApi(): Promise<void> {
   await apiFetch<void>('/auth/logout', { method: 'POST' });
 }
+
+export async function forgotPasswordApi(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPasswordApi(
+  token: string,
+  newPassword: string,
+): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+}

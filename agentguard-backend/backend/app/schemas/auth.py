@@ -83,6 +83,20 @@ class ChangePasswordRequest(BaseModel):
         return _validate_password_strength(v)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
+
 class MeResponse(BaseModel):
     user: UserResponse
     organization: OrgResponse

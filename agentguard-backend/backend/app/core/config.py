@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     MAX_FAILED_LOGIN_ATTEMPTS: int = 10
     ACCOUNT_LOCKOUT_MINUTES: int = 30
     PASSWORD_MIN_LENGTH: int = 12
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]

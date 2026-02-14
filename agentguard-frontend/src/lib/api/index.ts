@@ -9,6 +9,8 @@ export {
   refreshTokenApi,
   getMeApi,
   logoutApi,
+  forgotPasswordApi,
+  resetPasswordApi,
 } from './auth';
 export {
   getBillingStatus,

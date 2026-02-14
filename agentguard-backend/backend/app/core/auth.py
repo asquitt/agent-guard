@@ -41,3 +41,31 @@ def create_refresh_token(subject: str, token_version: int = 0) -> str:
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {"exp": expire, "sub": str(subject), "type": "refresh", "ver": token_version}
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_password_reset_token(user_id: str) -> str:
+    """Create a short-lived JWT for password reset (15 min default)."""
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES,
+    )
+    to_encode = {"exp": expire, "sub": user_id, "type": "password_reset"}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_password_reset_token(token: str) -> str:
+    """Decode a password-reset token. Returns user_id or raises ValueError."""
+    from jose import JWTError
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError as e:
+        raise ValueError(f"Invalid or expired reset token: {e}")
+
+    if payload.get("type") != "password_reset":
+        raise ValueError("Invalid token type: expected password_reset")
+
+    user_id: str | None = payload.get("sub")
+    if not user_id:
+        raise ValueError("Invalid reset token: missing subject")
+
+    return user_id

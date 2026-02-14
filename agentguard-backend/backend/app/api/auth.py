@@ -13,11 +13,13 @@ from app.core.exceptions import AuthenticationError, ValidationError
 from app.models.user import Organization, User
 from app.schemas.auth import (
     ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
     OrgResponse,
     RefreshRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserResponse,
 )
@@ -182,6 +184,86 @@ async def change_password(
     # Return new tokens with updated version
     token_ver: int = current_user.token_version or 0  # type: ignore[assignment]
     access, refresh = auth_service.create_token_pair(UUID(str(current_user.id)), token_version=token_ver)
+    return TokenResponse(access_token=access, refresh_token=refresh)
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+@limiter.limit("3/minute")
+async def forgot_password(
+    request: Request,
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Request a password reset link.
+
+    Always returns 200 to prevent email enumeration.
+    In production, this would send an email with the reset link.
+    """
+    import logging
+
+    from app.core.auth import create_password_reset_token
+
+    logger = logging.getLogger(__name__)
+
+    user = await auth_service.get_user_by_email(db, body.email)
+    if user is not None and user.is_active:
+        token = create_password_reset_token(str(user.id))
+        # In production: send email with reset link containing this token
+        # For now, log the token (visible in server logs for dev/testing)
+        logger.info(
+            "Password reset requested for user_id=%s — token=%s (expires in %d min)",
+            user.id,
+            token[:20] + "...",
+            15,
+        )
+        await write_audit(
+            db, UUID(str(user.org_id)), UUID(str(user.id)),
+            "auth.password_reset_requested", "user", UUID(str(user.id)),
+            ip_address=get_client_ip(request),
+        )
+        await db.commit()
+
+    # Always return success to prevent email enumeration
+    return {"message": "If an account exists with that email, a password reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK, response_model=TokenResponse)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Reset password using a valid reset token."""
+    from app.core.auth import decode_password_reset_token
+
+    try:
+        user_id = decode_password_reset_token(body.token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    await auth_service.change_password(db, user, body.new_password)
+    await write_audit(
+        db, UUID(str(user.org_id)), UUID(str(user.id)),
+        "auth.password_reset_completed", "user", UUID(str(user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+
+    # Return new tokens so user is auto-logged in after reset
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
     return TokenResponse(access_token=access, refresh_token=refresh)
 
 
