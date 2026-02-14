@@ -135,6 +135,7 @@ export default function ApiKeysPage() {
             action={{ label: 'Create Key', onClick: () => setShowCreate(true) }}
           />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -157,6 +158,7 @@ export default function ApiKeysPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

@@ -122,6 +122,7 @@ export default function AgentsPage() {
             action={{ label: 'Register Agent', onClick: () => setShowCreate(true) }}
           />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -145,6 +146,7 @@ export default function AgentsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

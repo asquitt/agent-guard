@@ -51,3 +51,29 @@ export function formatNumber(n: number): string {
 export function formatUsd(amount: number, decimals: number = 2): string {
   return `$${amount.toFixed(decimals)}`;
 }
+
+/**
+ * Format a date as short date (e.g. "Feb 14, 2026").
+ */
+export function formatDate(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Format a date as short datetime (e.g. "Feb 14, 2026 2:30 PM").
+ */
+export function formatDateTime(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
