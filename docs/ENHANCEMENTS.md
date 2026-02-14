@@ -655,6 +655,106 @@ Based on analysis of 15 competitors (Lakera, CalypsoAI/F5, Cisco AI Defense, Art
 
 ---
 
+## Category 9: Sandboxed Execution Runtime (Differentiator)
+
+### 9.1 Capability-Based Permission System [P0] ✅ DONE
+**Gap:** No AI security platform enforces runtime permissions on agent actions. Sandbox platforms (E2B, Modal, Daytona) isolate code but have zero detection/response capability. Security platforms (Lakera, Arthur AI) detect threats but cannot stop execution.
+
+**Enhancement:**
+- Default-deny capability model: agents can only access files, APIs, and network endpoints explicitly granted
+- Capability types: file:read, file:write, network:http, network:dns, api:call, tool:execute, secret:access
+- Wildcard target matching (e.g., `*.openai.com`)
+- Time-bound capabilities with automatic expiration
+- Capability evaluation engine with audit logging of every grant/deny decision
+
+**Why it matters:** Financial regulators require demonstrable containment of AI agents. Capability-based permissions provide cryptographic proof of least-privilege enforcement.
+
+---
+
+### 9.2 Resource Limits & Enforcement [P0] ✅ DONE
+**Gap:** No competitor enforces resource budgets on AI agent executions at runtime.
+
+**Enhancement:**
+- Per-execution resource limits: CPU shares, memory (MB), token budget, timeout (seconds)
+- Real-time resource monitoring via Docker stats API
+- Automatic termination on limit violation with audit trail
+- Periodic monitoring task (10s interval) for running executions
+- Resource usage tracking: cpu_seconds, memory_peak_mb, tokens_used, network_bytes
+
+**Why it matters:** Runaway agents can burn through API budgets in minutes. Resource limits prevent cost overruns and provide regulatory evidence of AI risk controls.
+
+---
+
+### 9.3 Network Policy Enforcement [P0] ✅ DONE
+**Gap:** Sandbox platforms provide network isolation but no policy-based egress control tied to security detection.
+
+**Enhancement:**
+- Whitelist-only egress: agents can only reach explicitly allowed hosts and ports
+- Isolated Docker networks per sandbox execution
+- DNS filtering for domain-based policies
+- Denied network attempts logged to audit trail
+- Integration with detection pipeline: BLOCK triggers sandbox termination
+
+**Why it matters:** PCI-DSS and DORA require network segmentation. Demonstrating that AI agents can only reach approved endpoints is a compliance requirement, not a feature.
+
+---
+
+### 9.4 Ephemeral Execution Environments [P0] ✅ DONE
+**Gap:** No AI security platform provides per-task isolated environments that are created and destroyed automatically.
+
+**Enhancement:**
+- Docker-based ephemeral containers created per execution, destroyed after
+- Container lifecycle management: create, start, stop, terminate, destroy
+- Docker SDK integration with simulation mode for development
+- Execution status tracking: pending → provisioning → running → terminated
+- Support for custom container images per sandbox
+
+**Why it matters:** Ephemeral environments eliminate persistent attack surfaces. Each agent task starts clean with no residual state from previous executions — critical for financial services audit requirements.
+
+---
+
+### 9.5 Sandbox Audit Logging [P0] ✅ DONE
+**Gap:** No competitor provides hash-chained, tamper-evident audit logging of every action an AI agent takes at runtime.
+
+**Enhancement:**
+- Immutable audit trail for every action: API calls, file access, network requests, tool invocations
+- SHA-256 hash chain for tamper detection (same pattern as core audit service)
+- Allowed/denied status with matched capability reference
+- Action detail JSONB for rich forensic data
+- Async and sync logging variants (FastAPI + Celery)
+
+**Why it matters:** SOX Section 302, FFIEC IT Handbook, and EU AI Act Article 13 require documented evidence of AI system behavior. Hash-chained audit logs provide cryptographic proof of the complete action history.
+
+---
+
+### 9.6 Detection Pipeline Integration [P0] ✅ DONE
+**Gap:** Detection and containment exist as separate products in every competitor. No platform unifies detect + contain + respond in a single system.
+
+**Enhancement:**
+- Detection BLOCK triggers automatic sandbox termination
+- Proxy token tracking with sandbox budget enforcement (X-Sandbox-Id header)
+- Auto-terminate on token budget exceeded with incident creation
+- Resource monitoring Celery task checks memory, timeout, and token violations
+- Real-time WebSocket events for sandbox status changes
+
+**Why it matters:** This is the core differentiator. When AgentGuard detects a threat, it can immediately contain the agent — not just log an alert. No competitor can do this because detection and containment are separate products.
+
+---
+
+### 9.7 Sandbox Management Dashboard [P0] ✅ DONE
+**Gap:** No AI security platform provides a unified dashboard for managing sandboxed agent executions alongside detection and incident response.
+
+**Enhancement:**
+- Sandbox list page with stats cards, status filters, create form, and pagination
+- Sandbox detail view with tabs: Overview, Capabilities, Executions, Audit Log
+- Execution detail page with resource usage gauges, stop/terminate controls, and audit timeline
+- Capability decisions visualized (allowed/denied counts)
+- Real-time polling for active executions
+
+**Why it matters:** Operations teams need visibility into sandboxed agent behavior alongside security detection. A unified dashboard eliminates the context-switching between security and runtime monitoring tools.
+
+---
+
 ## Competitive Positioning Summary
 
 ### Where We Win Against Each Competitor

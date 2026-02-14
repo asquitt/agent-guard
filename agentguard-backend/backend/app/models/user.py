@@ -37,6 +37,7 @@ class Organization(TimestampMixin, Base):
     conversations = relationship("Conversation", back_populates="organization")
     threat_indicators = relationship("ThreatIndicator", back_populates="organization")
     red_team_runs = relationship("RedTeamRun", back_populates="organization")
+    sandboxes = relationship("Sandbox", back_populates="organization")
 
 
 class User(TimestampMixin, Base):

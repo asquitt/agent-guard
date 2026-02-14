@@ -105,11 +105,46 @@ async def run_sync_detectors(
             logger.exception("Sync detector %s failed for org %s", category, org_id)
             continue
 
+    # Sandbox containment: terminate sandbox execution on BLOCK
+    if highest_action == DetectionAction.BLOCK:
+        await _terminate_sandbox_on_block(db, org_id, results)
+
     return PipelineDecision(
         action=highest_action,
         results=results,
         modified_response=modified_body,
     )
+
+
+async def _terminate_sandbox_on_block(
+    db: AsyncSession,
+    org_id: UUID,
+    results: list[DetectionResult],
+) -> None:
+    """Terminate any sandbox execution linked to a BLOCK detection.
+
+    When a detector triggers BLOCK for a sandboxed execution, the sandbox
+    is immediately terminated and the event is audit-logged.
+    """
+    for result in results:
+        if result.sandbox_execution_id and result.action == DetectionAction.BLOCK:
+            try:
+                from app.services.sandbox.sandbox_service import terminate_execution
+
+                execution = await terminate_execution(
+                    db, org_id, result.sandbox_execution_id,
+                    reason=f"detection_block:{result.category}",
+                )
+                if execution:
+                    logger.info(
+                        "Sandbox execution %s terminated by %s detection (BLOCK)",
+                        result.sandbox_execution_id, result.category,
+                    )
+            except Exception:
+                logger.exception(
+                    "Failed to terminate sandbox %s on BLOCK",
+                    result.sandbox_execution_id,
+                )
 
 
 async def queue_async_detectors(

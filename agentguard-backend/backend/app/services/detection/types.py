@@ -29,6 +29,7 @@ class DetectionResult:
     title: str
     description: str = ""
     details: dict[str, object] = field(default_factory=dict)
+    sandbox_execution_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)

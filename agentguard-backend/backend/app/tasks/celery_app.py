@@ -17,6 +17,7 @@ celery_app = Celery(
         "app.tasks.billing",
         "app.tasks.compliance",
         "app.tasks.retention",
+        "app.tasks.sandbox_tasks",
     ],
 )
 
@@ -46,5 +47,9 @@ celery_app.conf.beat_schedule = {
     "run-retention": {
         "task": "app.tasks.retention.run_retention",
         "schedule": crontab(hour=3, minute=30),
+    },
+    "monitor-sandbox-resources": {
+        "task": "app.tasks.sandbox_tasks.monitor_sandbox_resources",
+        "schedule": 10.0,  # every 10 seconds
     },
 }

@@ -40,6 +40,9 @@ class Permission(str, enum.Enum):
     BILLING_WRITE = "billing:write"
     # Proxy endpoints
     PROXY_WRITE = "proxy:write"
+    # Sandboxes
+    SANDBOXES_READ = "sandboxes:read"
+    SANDBOXES_WRITE = "sandboxes:write"
 
 
 # Role → permissions mapping
@@ -52,6 +55,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
         Permission.AGENTS_READ.value,
         Permission.COMPLIANCE_READ.value,
         Permission.ALERTS_READ.value, Permission.ALERTS_WRITE.value,
+        Permission.SANDBOXES_READ.value, Permission.SANDBOXES_WRITE.value,
     ]),
     UserRole.COMPLIANCE_OFFICER.value: frozenset([
         Permission.INCIDENTS_READ.value,
@@ -67,6 +71,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
         Permission.AGENTS_READ.value, Permission.AGENTS_WRITE.value,
         Permission.API_KEYS_READ.value, Permission.API_KEYS_WRITE.value,
         Permission.PROXY_WRITE.value,
+        Permission.SANDBOXES_READ.value, Permission.SANDBOXES_WRITE.value,
     ]),
     UserRole.MEMBER.value: frozenset([
         Permission.INCIDENTS_READ.value, Permission.INCIDENTS_WRITE.value,
@@ -175,3 +180,32 @@ class SubscriptionStatus(str, enum.Enum):
     CANCELED = "canceled"
     TRIALING = "trialing"
     INCOMPLETE = "incomplete"
+
+
+class SandboxStatus(str, enum.Enum):
+    PENDING = "pending"
+    PROVISIONING = "provisioning"
+    RUNNING = "running"
+    PAUSED = "paused"
+    TERMINATED = "terminated"
+    FAILED = "failed"
+
+
+class CapabilityType(str, enum.Enum):
+    FILE_READ = "file:read"
+    FILE_WRITE = "file:write"
+    NETWORK_HTTP = "network:http"
+    NETWORK_DNS = "network:dns"
+    API_CALL = "api:call"
+    TOOL_EXECUTE = "tool:execute"
+    SECRET_ACCESS = "secret:access"
+
+
+class SandboxActionType(str, enum.Enum):
+    API_CALL = "api_call"
+    FILE_ACCESS = "file_access"
+    NETWORK_REQUEST = "network_request"
+    TOOL_INVOCATION = "tool_invocation"
+    RESOURCE_EXCEEDED = "resource_exceeded"
+    CAPABILITY_DENIED = "capability_denied"
+    SANDBOX_LIFECYCLE = "sandbox_lifecycle"

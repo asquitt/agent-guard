@@ -232,6 +232,14 @@ async def _handle_non_streaming(
 
     # Run detection pipeline on successful responses
     if response.status_code == 200:
+        # Track sandbox token usage if sandboxed
+        sandbox_exec_id = proxy_req.metadata_.get("sandbox_execution_id") if hasattr(proxy_req, "metadata_") and isinstance(getattr(proxy_req, "metadata_", None), dict) else None
+        if sandbox_exec_id and (input_tokens or output_tokens):
+            try:
+                await _track_sandbox_tokens(db, org_id, sandbox_exec_id, (input_tokens or 0) + (output_tokens or 0))
+            except Exception:
+                logger.warning("Failed to track sandbox tokens for %s", sandbox_exec_id)
+
         timeout_s = settings.SYNC_DETECTION_TIMEOUT_MS / 1000.0
 
         if settings.DEGRADED_MODE_ENABLED and timeout_s > 0:
@@ -450,3 +458,43 @@ async def proxy_anthropic_messages(
     return await _proxy_request(
         request, db, org, x_agentguard_endpoint_id, "anthropic", path_override="/v1/messages",
     )
+
+
+async def _track_sandbox_tokens(
+    db: AsyncSession, org_id: UUID, sandbox_exec_id: str, tokens: int
+) -> None:
+    """Track token usage against a sandbox execution's resource budget."""
+    from sqlalchemy import select
+    from app.models.sandbox_execution import SandboxExecution
+    from app.models.sandbox import Sandbox
+
+    exec_uuid = UUID(sandbox_exec_id)
+    result = await db.execute(
+        select(SandboxExecution).where(
+            SandboxExecution.id == exec_uuid,
+            SandboxExecution.org_id == org_id,
+        )
+    )
+    execution = result.scalar_one_or_none()
+    if not execution:
+        return
+
+    # Update token usage
+    usage = execution.resource_usage or {}
+    usage["tokens_used"] = usage.get("tokens_used", 0) + tokens
+    execution.resource_usage = usage
+    await db.flush()
+
+    # Check if token budget exceeded
+    sandbox_result = await db.execute(
+        select(Sandbox).where(Sandbox.id == execution.sandbox_id)
+    )
+    sandbox = sandbox_result.scalar_one_or_none()
+    if sandbox:
+        limits = sandbox.resource_limits or {}
+        max_tokens = limits.get("max_tokens", 10000)
+        if usage["tokens_used"] > max_tokens:
+            from app.services.sandbox.sandbox_service import terminate_execution
+            await terminate_execution(
+                db, org_id, exec_uuid, reason="token_budget_exceeded"
+            )

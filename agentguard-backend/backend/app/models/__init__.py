@@ -24,6 +24,9 @@ from app.models.shadow_ai import ShadowAIDiscovery
 from app.models.sso_config import SSOConfig
 from app.models.threat_intel import ThreatIndicator
 from app.models.stripe_event import StripeEvent
+from app.models.sandbox import Sandbox
+from app.models.sandbox_audit_log import SandboxAuditLog
+from app.models.sandbox_execution import SandboxExecution
 from app.models.user import ApiKey, Organization, User
 
 __all__ = [
@@ -48,6 +51,9 @@ __all__ = [
     "RedTeamRun",
     "RetentionPolicy",
     "ReviewItem",
+    "Sandbox",
+    "SandboxAuditLog",
+    "SandboxExecution",
     "ShadowAIDiscovery",
     "SSOConfig",
     "StripeEvent",

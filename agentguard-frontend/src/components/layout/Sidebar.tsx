@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Shield,
   Target,
+  Box,
   FlaskConical,
   Key,
   CreditCard,
@@ -52,6 +53,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Detectors', href: '/dashboard/detectors', icon: Search },
       { label: 'Reviews', href: '/dashboard/reviews', icon: Eye },
       { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
+      { label: 'Sandboxes', href: '/dashboard/sandboxes', icon: Box },
     ],
   },
   {

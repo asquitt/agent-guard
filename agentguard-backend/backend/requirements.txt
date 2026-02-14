@@ -34,6 +34,9 @@ structlog==24.1.0
 # Rate limiting
 slowapi==0.1.9
 
+# Docker SDK (sandbox runtime)
+docker==7.1.0
+
 # Billing
 stripe==8.6.0
 

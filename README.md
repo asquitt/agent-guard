@@ -1,10 +1,10 @@
 # AgentGuard
 
-AI agent security platform for financial services. Real-time detection, incident response, and compliance automation for LLM-powered applications.
+AI agent security platform for financial services. The only platform that unifies **detection**, **containment**, and **response** for LLM-powered applications.
 
 ## What It Does
 
-AgentGuard sits between your application and LLM providers as a transparent proxy. Every request and response is analyzed by 10 detection algorithms that catch hallucinations, PII leaks, prompt injection, compliance violations, and more — before they reach your users.
+AgentGuard sits between your application and LLM providers as a transparent proxy. Every request and response is analyzed by 10 detection algorithms. When threats are detected, agents running in sandboxed environments are **immediately contained** — not just logged.
 
 ```
 Your App  ──▶  AgentGuard Proxy  ──▶  LLM Provider
@@ -14,8 +14,22 @@ Your App  ──▶  AgentGuard Proxy  ──▶  LLM Provider
                     │
        ┌────────────┼────────────┐
        ▼            ▼            ▼
-   Incidents     Alerts      Audit Log
+   Incidents   Containment   Audit Log
+       │            │
+       ▼            ▼
+    Alerts     Sandbox Kill
 ```
+
+### Detect + Contain + Respond
+
+No other platform combines all three. Sandbox platforms (E2B, Modal, Daytona) isolate code but have zero detection. Security platforms (Lakera, Arthur AI) detect but cannot stop execution. AgentGuard does both.
+
+| Capability | E2B / Modal | Lakera / CalypsoAI | Arthur AI | **AgentGuard** |
+|------------|-------------|-------------------|-----------|----------------|
+| Detect threats | - | Yes | Yes | **Yes** |
+| Contain agents | Yes | - | - | **Yes** |
+| Incident response | - | - | Partial | **Yes** |
+| Financial compliance | - | - | - | **Yes** |
 
 ## Detection Categories
 
@@ -38,6 +52,7 @@ Your App  ──▶  AgentGuard Proxy  ──▶  LLM Provider
 
 - **LLM Proxy** — Drop-in replacement for OpenAI/Anthropic APIs with 6 provider backends
 - **Real-time Detection** — 10 algorithms across sync and async pipelines
+- **Sandboxed Execution** — Capability-based agent containment with resource limits, network policies, and ephemeral environments
 - **Incident Management** — Track, triage, and resolve detected issues
 - **Alerting** — Slack, PagerDuty, email, and webhook integrations
 - **Agent Governance** — Agent registry, behavior policies, human-in-the-loop review queues
@@ -48,6 +63,50 @@ Your App  ──▶  AgentGuard Proxy  ──▶  LLM Provider
 - **SSO** — SAML 2.0 and OAuth2/OIDC for enterprise identity providers
 - **SDKs** — Python (async) and Node.js client libraries
 - **API Playground** — Built-in testing UI for proxy endpoints
+
+## Sandboxed Execution Runtime
+
+Run AI agents in isolated, capability-controlled environments. Every action is evaluated against an explicit permission model and logged to a tamper-evident audit trail.
+
+```bash
+# 1. Create a sandbox with capabilities and resource limits
+curl -X POST http://localhost:8001/api/v1/sandboxes \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "trading-assistant",
+    "capabilities": [
+      {"type": "network:http", "target": "api.openai.com"},
+      {"type": "api:call", "target": "market-data-api"}
+    ],
+    "resource_limits": {
+      "cpu_shares": 512,
+      "memory_mb": 256,
+      "max_tokens": 10000,
+      "timeout_seconds": 300
+    },
+    "network_policy": {
+      "allowed_hosts": ["api.openai.com"],
+      "allowed_ports": [443],
+      "deny_all_egress": true
+    }
+  }'
+
+# 2. Start an execution
+curl -X POST http://localhost:8001/api/v1/sandboxes/{id}/execute \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. View audit log (every action logged with hash chain)
+curl http://localhost:8001/api/v1/sandboxes/executions/{exec_id}/audit \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Key capabilities:**
+- **Default-deny permissions** — Agents can only access files, APIs, and network endpoints explicitly granted
+- **Resource enforcement** — CPU, memory, token budget, and timeout limits enforced in real-time
+- **Network isolation** — Whitelist-only egress with per-host/port policies
+- **Detection integration** — BLOCK detections automatically terminate sandbox executions
+- **Hash-chained audit** — Every action logged with SHA-256 chain for tamper detection
 
 ## Quick Start
 
@@ -106,12 +165,13 @@ curl http://localhost:8001/api/v1/proxy/v1/chat/completions \
 
 ```
 agentguard-backend/backend/app/
-├── api/              # 26 API routers
-├── models/           # 20 SQLAlchemy models
+├── api/              # 27 API routers (includes sandboxes)
+├── models/           # 23 SQLAlchemy models (includes sandbox runtime)
 ├── services/         # Business logic
 │   ├── detection/    # 10 detection algorithms + registry
+│   ├── sandbox/      # Sandboxed execution runtime (7 modules)
 │   └── providers/    # 6 LLM provider adapters
-├── tasks/            # Celery background jobs
+├── tasks/            # Celery background jobs (includes sandbox monitoring)
 ├── core/             # Config, auth, security middleware
 ├── schemas/          # Pydantic request/response models
 └── utils/            # Utilities
@@ -233,7 +293,7 @@ pip install -r requirements.txt
 | [Production Plan](docs/PRODUCTION_PLAN.md) | AWS/Kubernetes deployment strategy |
 | [Launch Checklist](docs/launch-checklist.md) | Pre-release validation |
 | [Runbook](docs/runbook.md) | Operational procedures |
-| [Enhancements](docs/ENHANCEMENTS.md) | Feature roadmap (32/32 complete) |
+| [Enhancements](docs/ENHANCEMENTS.md) | Feature roadmap (39/39 complete) |
 
 ## License
 
