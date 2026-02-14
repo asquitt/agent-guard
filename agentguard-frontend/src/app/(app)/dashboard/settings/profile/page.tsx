@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/useToast';
 import { updateProfileApi } from '@/lib/api';
 
 export default function ProfilePage() {
   const { user, organization, fetchMe } = useAuth();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [name, setName] = useState(user?.name ?? '');
   const [saved, setSaved] = useState(false);
 
@@ -15,7 +17,11 @@ export default function ProfilePage() {
     onSuccess: async () => {
       await fetchMe();
       setSaved(true);
+      toastSuccess('Profile updated');
       setTimeout(() => setSaved(false), 3000);
+    },
+    onError: (err: Error) => {
+      toastError(err.message || 'Failed to update profile');
     },
   });
 

@@ -48,7 +48,7 @@ export default function RegisterPage() {
           className="rounded-xl border border-border bg-card p-8 shadow-sm shadow-black/10"
         >
           {error && (
-            <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div id="register-error" role="alert" className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -65,6 +65,9 @@ export default function RegisterPage() {
                 id="fullName"
                 type="text"
                 required
+                autoComplete="name"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'register-error' : undefined}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -83,6 +86,9 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'register-error' : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -101,6 +107,9 @@ export default function RegisterPage() {
                 id="orgName"
                 type="text"
                 required
+                autoComplete="organization"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'register-error' : undefined}
                 value={orgName}
                 onChange={(e) => setOrgName(e.target.value)}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -120,12 +129,15 @@ export default function RegisterPage() {
                 type="password"
                 required
                 minLength={8}
+                autoComplete="new-password"
+                aria-invalid={!!error}
+                aria-describedby="password-requirements"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p id="password-requirements" className="mt-1 text-xs text-muted-foreground">
                 Min 8 characters, 1 uppercase, 1 lowercase, 1 number
               </p>
             </div>

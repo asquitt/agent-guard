@@ -2,15 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useToast } from '@/hooks/useToast';
 import { getDashboardMetrics, getRiskScore } from '@/lib/api';
 import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { DetectionEfficacySection } from '@/components/dashboard/DetectionEfficacy';
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
-import { Toast } from '@/components/ui/Toast';
-import type { ToastItem } from '@/components/ui/Toast';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import type { RecentIncidentSummary } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
@@ -20,7 +19,7 @@ import { clsx } from 'clsx';
 export default function DashboardPage() {
   const { user } = useAuth();
   const { status: wsStatus, lastEvent } = useWebSocket();
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const { toast } = useToast();
 
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboard', 'metrics'],
@@ -39,41 +38,18 @@ export default function DashboardPage() {
     const data = lastEvent.data as {
       severity?: string;
       title?: string;
-      id?: string;
     };
     const severity = data.severity ?? 'info';
     if (severity === 'critical' || severity === 'high') {
-      setToasts((prev) => [
-        ...prev,
-        {
-          id: data.id ?? crypto.randomUUID(),
-          message: `New ${severity} incident: ${data.title ?? 'Detection triggered'}`,
-          severity,
-        },
-      ]);
+      toast(
+        `New ${severity} incident: ${data.title ?? 'Detection triggered'}`,
+        severity as 'critical' | 'high',
+      );
     }
-  }, [lastEvent]);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  }, [lastEvent, toast]);
 
   return (
     <div>
-      {/* Toast notifications */}
-      {toasts.length > 0 && (
-        <div className="fixed right-4 top-4 z-50 flex w-96 flex-col gap-2">
-          {toasts.map((toast) => (
-            <Toast
-              key={toast.id}
-              message={toast.message}
-              severity={toast.severity}
-              onDismiss={() => dismissToast(toast.id)}
-            />
-          ))}
-        </div>
-      )}
-
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground">

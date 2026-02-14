@@ -54,7 +54,7 @@ export default function LoginPage() {
           className="rounded-xl border border-border bg-card p-8"
         >
           {error && (
-            <div className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div id="login-error" role="alert" className="mb-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -71,6 +71,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'login-error' : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -97,6 +100,9 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 required
+                autoComplete="current-password"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'login-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"

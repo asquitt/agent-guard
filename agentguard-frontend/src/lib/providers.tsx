@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  MutationCache,
   QueryClient,
   QueryClientProvider,
   useQueryClient,
@@ -8,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/hooks/useAuth';
+import { ToastProvider } from '@/hooks/useToast';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { WebSocketEvent } from '@/hooks/useWebSocket';
 
@@ -49,6 +51,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
             retry: 1,
           },
         },
+        mutationCache: new MutationCache({
+          onError: (error, _variables, _context, mutation) => {
+            // Only show global toast if the mutation has no local onError handler.
+            // This prevents duplicate toasts for mutations that handle errors themselves.
+            if (mutation.options.onError) return;
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('api:mutation-error', {
+                  detail: { message: error.message || 'Something went wrong' },
+                }),
+              );
+            }
+          },
+        }),
       }),
   );
 
@@ -56,7 +72,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <WebSocketManager>{children}</WebSocketManager>
+          <ToastProvider>
+            <WebSocketManager>{children}</WebSocketManager>
+          </ToastProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

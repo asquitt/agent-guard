@@ -12,10 +12,10 @@ const BORDER_COLORS: Record<string, string> = {
 };
 
 const BG_COLORS: Record<string, string> = {
-  critical: 'bg-red-50',
-  high: 'bg-orange-50',
-  medium: 'bg-yellow-50',
-  low: 'bg-blue-50',
+  critical: 'bg-red-50 dark:bg-red-950/50',
+  high: 'bg-orange-50 dark:bg-orange-950/50',
+  medium: 'bg-yellow-50 dark:bg-yellow-950/50',
+  low: 'bg-blue-50 dark:bg-blue-950/50',
   info: 'bg-muted/50',
 };
 
