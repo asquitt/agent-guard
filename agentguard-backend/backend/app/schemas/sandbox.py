@@ -152,6 +152,22 @@ class SandboxAuditLogListResponse(BaseModel):
     total: int
 
 
+class CapabilityAddRequest(BaseModel):
+    """Request to add a single capability to a sandbox."""
+
+    type: str
+    target: str = Field(max_length=512, description="Target pattern, e.g. '*.openai.com'")
+    expires_at: datetime | None = None
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, v: str) -> str:
+        valid = [t.value for t in CapabilityType]
+        if v not in valid:
+            raise ValueError(f"type must be one of: {', '.join(valid)}")
+        return v
+
+
 class SandboxStats(BaseModel):
     """Aggregate sandbox metrics for dashboard."""
 

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_org, get_db
 from app.models.user import Organization
 from app.schemas.sandbox import (
+    CapabilityAddRequest,
     SandboxAuditLogListResponse,
     SandboxAuditLogResponse,
     SandboxCreateRequest,
@@ -249,6 +250,41 @@ async def set_capabilities(
     sandbox = await sandbox_service.update_sandbox(
         db, org.id, sandbox_id, {"capabilities": capabilities}
     )
+    if not sandbox:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
+    await db.commit()
+    return SandboxResponse.model_validate(sandbox)
+
+
+@router.post("/{sandbox_id}/capabilities", response_model=SandboxResponse, status_code=status.HTTP_201_CREATED)
+async def add_capability(
+    sandbox_id: UUID,
+    body: CapabilityAddRequest,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxResponse:
+    """Add a single capability to a sandbox."""
+    sandbox = await sandbox_service.add_capability(
+        db, org.id, sandbox_id, body.model_dump(exclude_none=True)
+    )
+    if not sandbox:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
+    await db.commit()
+    return SandboxResponse.model_validate(sandbox)
+
+
+@router.delete("/{sandbox_id}/capabilities/{index}", response_model=SandboxResponse)
+async def remove_capability(
+    sandbox_id: UUID,
+    index: int,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxResponse:
+    """Remove a capability by index."""
+    try:
+        sandbox = await sandbox_service.remove_capability(db, org.id, sandbox_id, index)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     if not sandbox:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
     await db.commit()

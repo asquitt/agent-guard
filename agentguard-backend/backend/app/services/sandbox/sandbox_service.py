@@ -148,6 +148,45 @@ async def destroy_sandbox(db: AsyncSession, org_id: UUID, sandbox_id: UUID) -> b
     return True
 
 
+async def add_capability(
+    db: AsyncSession,
+    org_id: UUID,
+    sandbox_id: UUID,
+    capability: dict[str, Any],
+) -> Sandbox | None:
+    """Append a single capability to a sandbox's capability list."""
+    sandbox = await get_sandbox(db, org_id, sandbox_id)
+    if not sandbox:
+        return None
+    caps = list(sandbox.capabilities or [])
+    caps.append(capability)
+    sandbox.capabilities = caps
+    await db.flush()
+    await db.refresh(sandbox)
+    return sandbox
+
+
+async def remove_capability(
+    db: AsyncSession,
+    org_id: UUID,
+    sandbox_id: UUID,
+    index: int,
+) -> Sandbox | None:
+    """Remove a capability by index from a sandbox's capability list."""
+    sandbox = await get_sandbox(db, org_id, sandbox_id)
+    if not sandbox:
+        return None
+    caps = list(sandbox.capabilities or [])
+    if index < 0 or index >= len(caps):
+        msg = f"Capability index {index} out of range (0-{len(caps) - 1})"
+        raise ValueError(msg)
+    caps.pop(index)
+    sandbox.capabilities = caps
+    await db.flush()
+    await db.refresh(sandbox)
+    return sandbox
+
+
 # ---------------------------------------------------------------------------
 # Execution Lifecycle
 # ---------------------------------------------------------------------------

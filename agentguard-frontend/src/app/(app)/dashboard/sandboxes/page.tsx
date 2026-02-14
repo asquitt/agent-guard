@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import {
-  createSandbox,
   deleteSandbox,
   getSandboxStats,
   listSandboxes,
   startExecution,
 } from '@/lib/api/sandboxes';
+import CreateSandboxForm from '@/components/sandboxes/CreateSandboxForm';
 import type { SandboxData, SandboxFilters } from '@/types/sandbox';
 
 const SANDBOX_STATUS_COLORS: Record<string, string> = {
@@ -233,81 +233,5 @@ function SandboxRow({
         </div>
       </td>
     </tr>
-  );
-}
-
-function CreateSandboxForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [memoryMb, setMemoryMb] = useState(256);
-  const [maxTokens, setMaxTokens] = useState(10000);
-  const [timeoutSeconds, setTimeoutSeconds] = useState(300);
-  const [denyAllEgress, setDenyAllEgress] = useState(true);
-  const [allowedHosts, setAllowedHosts] = useState('');
-
-  const mutation = useMutation({
-    mutationFn: createSandbox,
-    onSuccess,
-  });
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    mutation.mutate({
-      name: name.trim(),
-      description: description || undefined,
-      resource_limits: { memory_mb: memoryMb, max_tokens: maxTokens, timeout_seconds: timeoutSeconds },
-      network_policy: {
-        deny_all_egress: denyAllEgress,
-        allowed_hosts: allowedHosts.split('\n').map((h) => h.trim()).filter(Boolean),
-        allowed_ports: [443, 80],
-      },
-    });
-  }
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <h3 className="mb-4 text-sm font-semibold text-foreground">Create Sandbox</h3>
-      <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="my-agent-sandbox" />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Description</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="Optional description" />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Memory (MB)</label>
-          <input type="number" value={memoryMb} onChange={(e) => setMemoryMb(Number(e.target.value))} min={64} max={8192} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Token Budget</label>
-          <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} min={100} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Timeout (seconds)</label>
-          <input type="number" value={timeoutSeconds} onChange={(e) => setTimeoutSeconds(Number(e.target.value))} min={10} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" />
-        </div>
-        <div>
-          <label className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <input type="checkbox" checked={denyAllEgress} onChange={(e) => setDenyAllEgress(e.target.checked)} className="rounded" />
-            Deny all egress (whitelist only)
-          </label>
-        </div>
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs text-muted-foreground">Allowed Hosts (one per line)</label>
-          <textarea value={allowedHosts} onChange={(e) => setAllowedHosts(e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="api.openai.com&#10;*.anthropic.com" />
-        </div>
-        <div className="flex gap-2 sm:col-span-2">
-          <button type="submit" disabled={!name.trim() || mutation.isPending} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50">
-            {mutation.isPending ? 'Creating...' : 'Create'}
-          </button>
-          <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50">
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
   );
 }

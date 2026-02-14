@@ -10,8 +10,8 @@ import {
   listExecutions,
   getSandboxAuditLogs,
   startExecution,
-  updateSandbox,
 } from '@/lib/api/sandboxes';
+import CapabilityManager from '@/components/sandboxes/CapabilityManager';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
@@ -20,16 +20,6 @@ const STATUS_COLORS: Record<string, string> = {
   paused: 'bg-yellow-500/10 text-yellow-400 ring-1 ring-inset ring-yellow-500/20',
   terminated: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
   failed: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
-};
-
-const CAPABILITY_LABELS: Record<string, string> = {
-  'file:read': 'File Read',
-  'file:write': 'File Write',
-  'network:http': 'HTTP Network',
-  'network:dns': 'DNS Lookup',
-  'api:call': 'API Call',
-  'tool:execute': 'Tool Execute',
-  'secret:access': 'Secret Access',
 };
 
 type Tab = 'overview' | 'capabilities' | 'executions' | 'audit';
@@ -59,9 +49,7 @@ export default function SandboxDetailPage() {
 
   const execMutation = useMutation({
     mutationFn: () => startExecution(sandboxId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sandboxes'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sandboxes'] }),
   });
 
   if (isLoading) {
@@ -125,7 +113,7 @@ export default function SandboxDetailPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
+      {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6">
@@ -168,7 +156,7 @@ export default function SandboxDetailPage() {
             <h3 className="mb-4 text-sm font-semibold text-foreground">Configuration</h3>
             <dl className="space-y-3">
               <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Image</dt><dd className="text-foreground font-mono text-xs">{sandbox.image}</dd></div>
-              <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Agent</dt><dd className="text-foreground">{sandbox.agentId ? <Link href={`/dashboard/agents`} className="text-primary hover:underline">{sandbox.agentId.slice(0, 8)}...</Link> : 'None'}</dd></div>
+              <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Agent</dt><dd className="text-foreground">{sandbox.agentId ? <Link href="/dashboard/agents" className="text-primary hover:underline">{sandbox.agentId.slice(0, 8)}...</Link> : 'None'}</dd></div>
               <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Created</dt><dd className="text-foreground">{new Date(sandbox.createdAt).toLocaleString()}</dd></div>
             </dl>
           </div>
@@ -190,41 +178,12 @@ export default function SandboxDetailPage() {
         </div>
       )}
 
+      {/* Capabilities Tab */}
       {activeTab === 'capabilities' && (
-        <div className="rounded-xl border border-border bg-card">
-          {sandbox.capabilities?.length ? (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Target</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Expires</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {sandbox.capabilities.map((cap: { type: string; target: string; expires_at?: string | null }, i: number) => (
-                  <tr key={i} className="hover:bg-muted/50">
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400">
-                        {CAPABILITY_LABELS[cap.type] ?? cap.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-sm text-foreground">{cap.target}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {cap.expires_at ? new Date(cap.expires_at).toLocaleString() : 'Never'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              No capabilities granted. This sandbox has no permissions (default-deny).
-            </div>
-          )}
-        </div>
+        <CapabilityManager sandboxId={sandboxId} capabilities={sandbox.capabilities ?? []} />
       )}
 
+      {/* Executions Tab */}
       {activeTab === 'executions' && (
         <div className="rounded-xl border border-border bg-card">
           {executions?.items?.length ? (
@@ -271,6 +230,7 @@ export default function SandboxDetailPage() {
         </div>
       )}
 
+      {/* Audit Tab */}
       {activeTab === 'audit' && (
         <div className="rounded-xl border border-border bg-card">
           {auditLogs?.items?.length ? (

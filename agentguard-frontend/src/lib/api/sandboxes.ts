@@ -72,6 +72,25 @@ export async function setCapabilities(
   });
 }
 
+export async function addCapability(
+  sandboxId: string,
+  capability: { type: string; target: string; expires_at?: string },
+): Promise<SandboxData> {
+  return apiFetch<SandboxData>(`/sandboxes/${sandboxId}/capabilities`, {
+    method: 'POST',
+    body: JSON.stringify(capability),
+  });
+}
+
+export async function removeCapability(
+  sandboxId: string,
+  index: number,
+): Promise<SandboxData> {
+  return apiFetch<SandboxData>(`/sandboxes/${sandboxId}/capabilities/${index}`, {
+    method: 'DELETE',
+  });
+}
+
 // Executions
 
 export async function startExecution(
