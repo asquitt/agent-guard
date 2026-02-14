@@ -112,6 +112,22 @@ export async function apiFetch<T>(
     throw new ApiError(401, 'Session expired');
   }
 
+  // On 429, retry once after the Retry-After delay (max 10s)
+  if (response.status === 429) {
+    const retryAfter = Math.min(
+      parseInt(response.headers.get('Retry-After') ?? '2', 10) * 1000,
+      10000,
+    );
+    await new Promise((r) => setTimeout(r, retryAfter));
+    const retryResponse = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, {
+      ...options,
+      headers,
+    });
+    if (retryResponse.ok) return retryResponse.json();
+    const retryError = await retryResponse.json().catch(() => ({ detail: 'Rate limited' }));
+    throw new ApiError(retryResponse.status, retryError.detail || 'Rate limited');
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
     throw new ApiError(response.status, error.detail || 'Request failed');

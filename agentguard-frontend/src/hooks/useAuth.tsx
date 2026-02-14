@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type { AuthUser, AuthOrganization } from '@/types';
@@ -16,6 +17,8 @@ import {
   logoutApi,
 } from '@/lib/api';
 import { ApiError, tryRefreshToken } from '@/lib/api/client';
+
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes of inactivity
 
 interface AuthState {
   user: AuthUser | null;
@@ -148,6 +151,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: false,
     });
   }, []);
+
+  // Session inactivity timeout — auto-logout after 30 min idle
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
+
+    function resetTimer() {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        logout();
+      }, SESSION_TIMEOUT_MS);
+    }
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'] as const;
+    events.forEach((e) => document.addEventListener(e, resetTimer));
+    resetTimer();
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      events.forEach((e) => document.removeEventListener(e, resetTimer));
+    };
+  }, [state.isAuthenticated, logout]);
 
   const value = useMemo(
     () => ({ ...state, login, register, logout, fetchMe }),
