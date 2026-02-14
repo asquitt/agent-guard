@@ -389,38 +389,48 @@ function IncidentsContent() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className={clsx('border-b border-border text-left font-medium uppercase tracking-wider text-muted-foreground', dc.header)}>
-                  <th className={dc.header}>
-                    <input
-                      type="checkbox"
-                      checked={selected.size === incidents.length && incidents.length > 0}
-                      onChange={toggleAll}
-                      className="rounded border-border"
+          <>
+            {/* Mobile card view */}
+            <div className="space-y-3 md:hidden">
+              {incidents.map((inc) => (
+                <IncidentCard key={inc.id} incident={inc} />
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full">
+                <thead>
+                  <tr className={clsx('border-b border-border text-left font-medium uppercase tracking-wider text-muted-foreground', dc.header)}>
+                    <th className={dc.header}>
+                      <input
+                        type="checkbox"
+                        checked={selected.size === incidents.length && incidents.length > 0}
+                        onChange={toggleAll}
+                        className="rounded border-border"
+                      />
+                    </th>
+                    <SortableHeader field="title" label="Title" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                    <SortableHeader field="category" label="Category" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                    <SortableHeader field="severity" label="Severity" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                    <SortableHeader field="status" label="Status" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                    <SortableHeader field="createdAt" label="Created" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {incidents.map((inc, i) => (
+                    <IncidentRow
+                      key={inc.id}
+                      incident={inc}
+                      cellClass={dc.cell}
+                      selected={selected.has(inc.id)}
+                      focused={i === focusedIndex}
+                      onToggle={() => toggleSelect(inc.id)}
                     />
-                  </th>
-                  <SortableHeader field="title" label="Title" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
-                  <SortableHeader field="category" label="Category" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
-                  <SortableHeader field="severity" label="Severity" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
-                  <SortableHeader field="status" label="Status" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
-                  <SortableHeader field="createdAt" label="Created" current={sortField} dir={sortDir} onSort={toggleSort} headerClass={dc.header} />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {incidents.map((inc, i) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    cellClass={dc.cell}
-                    selected={selected.has(inc.id)}
-                    focused={i === focusedIndex}
-                    onToggle={() => toggleSelect(inc.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -450,7 +460,7 @@ function IncidentsContent() {
                 </button>
               </nav>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -538,6 +548,44 @@ function IncidentRow({
         {timeAgo(incident.createdAt)}
       </td>
     </tr>
+  );
+}
+
+/** Compact card for mobile screens — replaces the table row. */
+function IncidentCard({ incident }: { incident: Incident }) {
+  return (
+    <Link
+      href={`/dashboard/incidents/${incident.id}`}
+      className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-foreground line-clamp-1">
+          {incident.title}
+        </p>
+        <span
+          className={clsx(
+            'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium',
+            SEVERITY_COLORS[incident.severity] ?? 'bg-muted text-muted-foreground',
+          )}
+        >
+          {incident.severity}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span>{incident.category.replace('_', ' ')}</span>
+        <span>·</span>
+        <span
+          className={clsx(
+            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+            STATUS_COLORS[incident.status] ?? 'bg-muted text-muted-foreground',
+          )}
+        >
+          {incident.status}
+        </span>
+        <span>·</span>
+        <span>{timeAgo(incident.createdAt)}</span>
+      </div>
+    </Link>
   );
 }
 
