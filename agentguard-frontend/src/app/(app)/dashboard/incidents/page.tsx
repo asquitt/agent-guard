@@ -2,12 +2,10 @@
 
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { listIncidents, bulkUpdateStatus, updateIncidentStatus } from '@/lib/api';
+import { listIncidents, bulkUpdateStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
-import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { useToast } from '@/hooks/useToast';
 import { useListKeyNav } from '@/hooks/useListKeyNav';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
@@ -18,8 +16,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DensityToggle } from '@/components/ui/DensityToggle';
+import { IncidentRow, IncidentCard } from '@/components/incidents/IncidentRow';
+import { ActiveFilterChips } from '@/components/incidents/ActiveFilterChips';
 import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown, X, Download } from 'lucide-react';
-import { timeAgo } from '@/lib/format';
 
 type SortField = 'title' | 'category' | 'severity' | 'status' | 'createdAt';
 type SortDir = 'asc' | 'desc';
@@ -503,128 +502,6 @@ function IncidentsContent() {
   );
 }
 
-const INCIDENT_STATUSES = ['open', 'acknowledged', 'resolved', 'dismissed'] as const;
-
-function IncidentRow({
-  incident,
-  cellClass,
-  selected,
-  focused,
-  onToggle,
-}: {
-  incident: Incident;
-  cellClass: string;
-  selected: boolean;
-  focused: boolean;
-  onToggle: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const toast = useToast();
-
-  const statusMutation = useMutation({
-    mutationFn: (status: string) => updateIncidentStatus(incident.id, status),
-    onSuccess: (_data, status) => {
-      queryClient.invalidateQueries({ queryKey: ['incidents'] });
-      toast.success(`Incident ${status}`);
-    },
-  });
-
-  return (
-    <tr className={clsx('hover:bg-muted/50', selected && 'bg-primary/10', focused && 'ring-2 ring-inset ring-primary/50 bg-primary/5')}>
-      <td className={cellClass}>
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={onToggle}
-          className="rounded border-border"
-        />
-      </td>
-      <td className={clsx(cellClass, 'font-medium text-foreground')}>
-        <Link
-          href={`/dashboard/incidents/${incident.id}`}
-          className="hover:text-primary"
-        >
-          {incident.title}
-        </Link>
-      </td>
-      <td className={clsx(cellClass, 'text-muted-foreground')}>
-        {incident.category.replace('_', ' ')}
-      </td>
-      <td className={cellClass}>
-        <span
-          className={clsx(
-            'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-            SEVERITY_COLORS[incident.severity] ?? 'bg-muted text-muted-foreground',
-          )}
-        >
-          {incident.severity}
-        </span>
-      </td>
-      <td className={cellClass}>
-        <select
-          value={incident.status}
-          onChange={(e) => statusMutation.mutate(e.target.value)}
-          disabled={statusMutation.isPending}
-          className={clsx(
-            'cursor-pointer rounded-full border-0 py-0.5 pl-2 pr-6 text-xs font-medium appearance-none bg-no-repeat',
-            STATUS_COLORS[incident.status] ?? 'bg-muted text-muted-foreground',
-            statusMutation.isPending && 'opacity-50',
-          )}
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-            backgroundPosition: 'right 4px center',
-          }}
-        >
-          {INCIDENT_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </td>
-      <td className={clsx(cellClass, 'text-muted-foreground')} title={new Date(incident.createdAt).toLocaleString()}>
-        {timeAgo(incident.createdAt)}
-      </td>
-    </tr>
-  );
-}
-
-/** Compact card for mobile screens — replaces the table row. */
-function IncidentCard({ incident }: { incident: Incident }) {
-  return (
-    <Link
-      href={`/dashboard/incidents/${incident.id}`}
-      className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-foreground line-clamp-1">
-          {incident.title}
-        </p>
-        <span
-          className={clsx(
-            'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium',
-            SEVERITY_COLORS[incident.severity] ?? 'bg-muted text-muted-foreground',
-          )}
-        >
-          {incident.severity}
-        </span>
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>{incident.category.replace('_', ' ')}</span>
-        <span>·</span>
-        <span
-          className={clsx(
-            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-            STATUS_COLORS[incident.status] ?? 'bg-muted text-muted-foreground',
-          )}
-        >
-          {incident.status}
-        </span>
-        <span>·</span>
-        <span>{timeAgo(incident.createdAt)}</span>
-      </div>
-    </Link>
-  );
-}
-
 function SortableHeader({
   field,
   label,
@@ -659,66 +536,3 @@ function SortableHeader({
   );
 }
 
-const FILTER_LABELS: Record<string, string> = {
-  status: 'Status',
-  severity: 'Severity',
-  category: 'Category',
-  q: 'Search',
-  dateFrom: 'From',
-  dateTo: 'To',
-  detectorId: 'Detector',
-};
-
-// Keys that are user-facing filters (exclude pagination, sort, internal keys)
-const CHIP_KEYS = ['status', 'severity', 'category', 'q', 'dateFrom', 'dateTo', 'detectorId'];
-
-function ActiveFilterChips({
-  filters,
-  onClear,
-  onClearAll,
-}: {
-  filters: IncidentFilters;
-  onClear: (key: keyof IncidentFilters & string, value: undefined) => void;
-  onClearAll: () => void;
-}) {
-  const chips = CHIP_KEYS
-    .filter((key) => {
-      const val = filters[key as keyof IncidentFilters];
-      return val !== undefined && val !== '';
-    })
-    .map((key) => ({
-      key,
-      label: FILTER_LABELS[key] ?? key,
-      value: String(filters[key as keyof IncidentFilters]),
-    }));
-
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      {chips.map((chip) => (
-        <span
-          key={chip.key}
-          className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-        >
-          {chip.label}: {chip.value}
-          <button
-            onClick={() => onClear(chip.key as keyof IncidentFilters & string, undefined)}
-            className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-            aria-label={`Remove ${chip.label} filter`}
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </span>
-      ))}
-      {chips.length > 1 && (
-        <button
-          onClick={onClearAll}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Clear all
-        </button>
-      )}
-    </div>
-  );
-}
