@@ -1,5 +1,6 @@
 """Sentry error tracking initialization."""
 
+import os
 import re
 
 import sentry_sdk
@@ -25,17 +26,16 @@ def init_sentry() -> None:
     if not settings.SENTRY_DSN:
         return
 
-    environment = (
-        getattr(settings, "ENVIRONMENT", None)
-        or ("development" if settings.DEBUG else "production")
-    )
+    release = settings.GIT_COMMIT_SHA or os.getenv("GIT_COMMIT_SHA") or "agentguard@0.1.0"
+    if release and len(release) > 8 and not release.startswith("agentguard"):
+        release = f"agentguard@{release[:12]}"
 
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         integrations=[FastApiIntegration(), CeleryIntegration()],
-        traces_sample_rate=1.0 if settings.DEBUG else 0.1,
-        profiles_sample_rate=0.1,
-        environment=environment,
-        release="agentguard@0.1.0",
+        traces_sample_rate=1.0 if settings.DEBUG else 0.05,
+        profiles_sample_rate=0.1 if settings.DEBUG else 0.01,
+        environment=settings.ENVIRONMENT,
+        release=release,
         before_send=_strip_pii,
     )

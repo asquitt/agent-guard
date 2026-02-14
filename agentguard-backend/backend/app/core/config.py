@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "AgentGuard"
     DEBUG: bool = False
     API_PREFIX: str = "/api/v1"
+    ENVIRONMENT: str = "development"  # development, staging, production
+    GIT_COMMIT_SHA: str = ""  # populated by CI/CD or docker-compose
 
     # Database
     DATABASE_URL: str = "postgresql://agentguard:agentguard@localhost:5432/agentguard"
@@ -85,9 +87,9 @@ class Settings(BaseSettings):
     RETENTION_DRY_RUN: bool = False
 
     # Rate Limiting (per-org sliding window, 0 = disabled)
-    RATE_LIMIT_RPM: int = 0  # requests per minute (0 = no limit)
-    RATE_LIMIT_RPH: int = 0  # requests per hour (0 = no limit)
-    RATE_LIMIT_RPD: int = 0  # requests per day (0 = no limit)
+    RATE_LIMIT_RPM: int = 120  # requests per minute
+    RATE_LIMIT_RPH: int = 5000  # requests per hour
+    RATE_LIMIT_RPD: int = 100000  # requests per day
 
     # Proxy HA / Degraded Mode
     SYNC_DETECTION_TIMEOUT_MS: int = 500  # max time for sync detectors before fallback to async

@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from app.api.auth import limiter
 from app.core.config import settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
+from app.core.metrics import setup_metrics
 from app.core.security import RequestSizeLimitMiddleware, SecurityHeadersMiddleware
 from app.core.sentry import init_sentry
 
@@ -43,6 +44,9 @@ app.add_middleware(
     allow_methods=settings.ALLOWED_METHODS,
     allow_headers=settings.ALLOWED_HEADERS,
 )
+
+# Prometheus metrics (exposes /metrics endpoint)
+setup_metrics(app)
 
 
 @app.get("/health")

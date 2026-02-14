@@ -241,7 +241,7 @@ class TimeSeriesResponse(BaseModel):
 @router.get("/time-series", response_model=TimeSeriesResponse)
 async def get_time_series(
     days: int = Query(default=7, ge=1, le=365),
-    granularity: str = Query(default="auto", regex="^(hourly|daily|auto)$"),
+    granularity: str = Query(default="auto", pattern="^(hourly|daily|auto)$"),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> TimeSeriesResponse:

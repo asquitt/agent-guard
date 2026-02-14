@@ -15,9 +15,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.circuit_breaker import get_breaker
 from app.core.config import settings
 from app.core.deps import get_client_ip, get_current_org_from_api_key, get_db
 from app.core.exceptions import NotFoundError, ProxyError
+from app.core.metrics import PROXY_LATENCY, PROXY_REQUESTS_TOTAL
 from app.models.user import Organization
 from app.services import proxy_service
 from app.services.billing_service import get_request_limit
@@ -429,12 +431,40 @@ async def _proxy_request(
     actual_provider = str(endpoint.provider) if hasattr(endpoint, "provider") else provider
     adapter = get_adapter(actual_provider)
 
+    # Circuit breaker check — fail fast if provider is down
+    breaker = get_breaker(actual_provider)
+    if not breaker.allow_request():
+        PROXY_REQUESTS_TOTAL.labels(provider=actual_provider, model="", status="circuit_open").inc()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": f"Provider '{actual_provider}' is temporarily unavailable (circuit open)",
+                "type": "circuit_breaker",
+                "retry_after": int(breaker.recovery_timeout),
+            },
+            headers={"Retry-After": str(int(breaker.recovery_timeout))},
+        )
+
     client = await get_http_client()
     target_url = proxy_service.build_target_url(endpoint, path_override or path)
 
-    if body.get("stream"):
-        return await _handle_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
-    return await _handle_non_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
+    model = proxy_service.extract_model_from_body(body)
+
+    try:
+        if body.get("stream"):
+            result = await _handle_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
+        else:
+            result = await _handle_non_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
+
+        breaker.record_success()
+        PROXY_REQUESTS_TOTAL.labels(provider=actual_provider, model=model or "", status="success").inc()
+        PROXY_LATENCY.labels(provider=actual_provider).observe(time.time() - start_time)
+        return result
+    except httpx.HTTPError:
+        breaker.record_failure()
+        PROXY_REQUESTS_TOTAL.labels(provider=actual_provider, model=model or "", status="error").inc()
+        PROXY_LATENCY.labels(provider=actual_provider).observe(time.time() - start_time)
+        raise
 
 
 # --- Endpoints (backward-compatible) ---

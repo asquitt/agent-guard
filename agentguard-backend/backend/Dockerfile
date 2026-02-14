@@ -25,4 +25,6 @@ COPY . .
 # Run as non-root user
 USER appuser
 
+STOPSIGNAL SIGTERM
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

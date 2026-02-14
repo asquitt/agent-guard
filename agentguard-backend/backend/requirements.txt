@@ -30,6 +30,7 @@ aiohttp==3.9.3
 # Observability
 sentry-sdk[fastapi]==1.40.0
 structlog==24.1.0
+prometheus-fastapi-instrumentator==7.0.0
 
 # Rate limiting
 slowapi==0.1.9
