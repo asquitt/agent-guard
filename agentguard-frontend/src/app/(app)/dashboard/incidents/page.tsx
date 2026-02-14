@@ -62,10 +62,11 @@ function IncidentsContent() {
 
   const hasActiveFilters = !!(filters.severity || filters.status || filters.category || filters.q);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['incidents', filters],
     queryFn: () => listIncidents(filters),
   });
+  const isRefetching = isFetching && !isLoading;
 
   const bulkMutation = useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
@@ -356,7 +357,13 @@ function IncidentsContent() {
       <ActiveFilterChips filters={filters} onClear={setFilter} onClearAll={resetFilters} />
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-card">
+      <div className="relative rounded-xl border border-border bg-card">
+        {/* Inline loading bar for filter/sort changes */}
+        {isRefetching && (
+          <div className="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden rounded-t-xl">
+            <div className="h-full w-1/3 animate-shimmer bg-primary" />
+          </div>
+        )}
         {isError ? (
           <div className="py-4">
             <QueryError message="Failed to load incidents." onRetry={refetch} />
