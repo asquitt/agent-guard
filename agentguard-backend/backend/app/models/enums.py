@@ -138,6 +138,7 @@ class DetectorCategory(str, enum.Enum):
     SYCOPHANCY = "sycophancy"
     MEMORY_EXFILTRATION = "memory_exfiltration"
     CONFIDENCE_HALLUCINATION = "confidence_hallucination"
+    CAPABILITY_MONITOR = "capability_monitor"
 
 
 class ActionMode(str, enum.Enum):

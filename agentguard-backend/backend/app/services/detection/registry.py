@@ -46,6 +46,7 @@ ASYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.TOXICITY.value,
         DetectorCategory.SEQUENTIAL_ACTION.value,
         DetectorCategory.SYCOPHANCY.value,
+        DetectorCategory.CONFIDENCE_HALLUCINATION.value,
     }
 )
 
@@ -117,6 +118,7 @@ _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
     DetectorCategory.TOXICITY.value: ToxicityDetector(),
     DetectorCategory.SEQUENTIAL_ACTION.value: SequentialActionDetector(),
     DetectorCategory.SYCOPHANCY.value: SycophancyDetector(),
+    DetectorCategory.CONFIDENCE_HALLUCINATION.value: ConfidenceHallucinationDetector(),
 }
 
 
