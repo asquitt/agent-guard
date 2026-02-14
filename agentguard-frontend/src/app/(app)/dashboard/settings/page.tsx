@@ -55,10 +55,18 @@ export default function SettingsPage() {
 
       {/* Placeholder sections */}
       <div className="space-y-4">
-        <PlaceholderSection
-          title="Team Management"
-          description="Invite members, manage roles, and remove users"
-        />
+        <Link
+          href="/dashboard/settings/team"
+          className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
+        >
+          <h3 className="text-sm font-semibold text-foreground">Team Management</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Invite members, manage roles, and control team access
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary">
+            Manage Team &rarr;
+          </p>
+        </Link>
         <Link
           href="/dashboard/settings/sso"
           className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
@@ -145,18 +153,3 @@ function SettingsRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PlaceholderSection({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-dashed border-border bg-muted/50 p-6">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      <p className="mt-2 text-xs text-muted-foreground/60">Coming soon</p>
-    </div>
-  );
-}

@@ -189,6 +189,107 @@ async def update_member_role(
     return MemberResponse.model_validate(member)
 
 
+@router.delete("/current/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+    org: Organization = Depends(get_current_org),
+) -> None:
+    """Remove a member from the organization. Admin/owner only.
+
+    Cannot remove yourself or the last owner.
+    """
+    from uuid import UUID as PyUUID
+
+    target_id = PyUUID(user_id)
+
+    # Prevent self-removal
+    if target_id == admin_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cannot remove yourself from the organization",
+        )
+
+    result = await db.execute(
+        select(User).where(User.id == target_id, User.org_id == org.id)
+    )
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+    # Prevent removing last owner
+    if str(member.role) == UserRole.OWNER.value:
+        owner_count = await db.execute(
+            select(func.count(User.id)).where(
+                User.org_id == org.id, User.role == UserRole.OWNER.value
+            )
+        )
+        if (owner_count.scalar_one() or 0) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Cannot remove the last owner of the organization",
+            )
+
+    member.is_active = False  # type: ignore[assignment]
+    await db.commit()
+
+
+class InviteMemberRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    role: str = "member"
+
+
+@router.post("/current/members/invite", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
+async def invite_member(
+    body: InviteMemberRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: User = Depends(require_admin),
+    org: Organization = Depends(get_current_org),
+) -> MemberResponse:
+    """Invite a new member to the organization. Admin/owner only.
+
+    If the user already exists, they are added to the org. Otherwise a
+    placeholder account is created (password set on first login).
+    """
+    from uuid import uuid4
+
+    from app.core.auth import get_password_hash
+
+    valid_roles = [r.value for r in UserRole]
+    if body.role not in valid_roles:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}",
+        )
+
+    # Check if already a member
+    existing = await db.execute(
+        select(User).where(User.email == body.email.lower(), User.org_id == org.id)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User is already a member of this organization",
+        )
+
+    # Create placeholder account with random password (user resets on first login)
+    placeholder_hash = get_password_hash(uuid4().hex)
+    new_user = User(
+        id=uuid4(),
+        email=body.email.lower(),
+        hashed_password=placeholder_hash,
+        full_name=body.email.split("@")[0],
+        role=body.role,
+        org_id=org.id,
+        is_active=True,
+    )
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return MemberResponse.model_validate(new_user)
+
+
 # ---------------------------------------------------------------------------
 # Environments
 # ---------------------------------------------------------------------------
