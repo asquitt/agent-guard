@@ -29,6 +29,15 @@ const STATUS_ORDER: Record<string, number> = { open: 3, acknowledged: 2, resolve
 
 const PAGE_SIZE = 20;
 
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+const TIME_QUICK_PICKS = [
+  { label: '1h', ms: HOUR },
+  { label: '24h', ms: DAY },
+  { label: '7d', ms: 7 * DAY },
+  { label: '30d', ms: 30 * DAY },
+] as const;
+
 export default function IncidentsPage() {
   return (
     <Suspense fallback={<TableSkeleton rows={8} cols={6} />}>
@@ -337,6 +346,25 @@ function IncidentsContent() {
           <option value="tool_call">Tool Call Validation</option>
           <option value="mcp_security">MCP Security</option>
         </select>
+        <div className="flex items-center gap-1 rounded-lg border border-border px-1">
+          {TIME_QUICK_PICKS.map((tp) => (
+            <button
+              key={tp.label}
+              onClick={() => {
+                const from = new Date(Date.now() - tp.ms).toISOString().slice(0, 10);
+                setFilters({ ...filters, dateFrom: from, dateTo: undefined });
+              }}
+              className={clsx(
+                'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                filters.dateFrom === new Date(Date.now() - tp.ms).toISOString().slice(0, 10) && !filters.dateTo
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tp.label}
+            </button>
+          ))}
+        </div>
         <input
           type="date"
           value={filters.dateFrom ?? ''}
