@@ -3,8 +3,12 @@ import PricingSection from '@/components/landing/PricingSection';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Pricing - AgentGuard',
+  title: 'Pricing',
   description: 'Simple, transparent pricing for AI agent security. Start free, scale with confidence.',
+  openGraph: {
+    title: 'Pricing - AgentGuard',
+    description: 'Simple, transparent pricing for AI agent security. Start free, scale with confidence.',
+  },
 };
 
 const FAQ = [

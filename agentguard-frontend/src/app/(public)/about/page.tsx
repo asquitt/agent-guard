@@ -4,9 +4,14 @@ import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'About - AgentGuard',
+  title: 'About',
   description:
     'AgentGuard secures AI agents in regulated financial environments with real-time detection, compliance monitoring, and automated incident response.',
+  openGraph: {
+    title: 'About AgentGuard',
+    description:
+      'AgentGuard secures AI agents in regulated financial environments with real-time detection, compliance monitoring, and automated incident response.',
+  },
 };
 
 interface Value {

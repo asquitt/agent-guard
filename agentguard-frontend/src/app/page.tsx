@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: 'AgentGuard - AI Agent Incident Response for Financial Services',
   description:
     'Real-time detection, compliance monitoring, and automated incident response for AI agents in regulated financial environments.',
+  openGraph: {
+    title: 'AgentGuard - AI Agent Incident Response for Financial Services',
+    description:
+      'Real-time detection, compliance monitoring, and automated incident response for AI agents in regulated financial environments.',
+  },
 };
 
 export default function LandingPage() {

@@ -2,9 +2,14 @@ import type { Metadata } from 'next';
 import { Newspaper } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Blog - AgentGuard',
+  title: 'Blog',
   description:
     'Insights on AI agent security, compliance, and incident response for financial services.',
+  openGraph: {
+    title: 'AgentGuard Blog',
+    description:
+      'Insights on AI agent security, compliance, and incident response for financial services.',
+  },
 };
 
 export default function BlogPage() {

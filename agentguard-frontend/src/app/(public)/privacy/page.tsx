@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - AgentGuard',
+  title: 'Privacy Policy',
   description: 'AgentGuard privacy policy — how we collect, use, and protect your data.',
 };
 

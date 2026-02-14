@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Changelog - AgentGuard',
+  title: 'Changelog',
   description: 'Product updates and release notes for AgentGuard.',
 };
 

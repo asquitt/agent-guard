@@ -10,9 +10,14 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Security - AgentGuard',
+  title: 'Security',
   description:
     'How AgentGuard protects your data with encryption, tenant isolation, and industry-standard security practices.',
+  openGraph: {
+    title: 'AgentGuard Security',
+    description:
+      'How AgentGuard protects your data with encryption, tenant isolation, and industry-standard security practices.',
+  },
 };
 
 interface Practice {

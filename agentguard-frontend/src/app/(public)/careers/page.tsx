@@ -9,9 +9,13 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Careers - AgentGuard',
+  title: 'Careers',
   description:
     'Join AgentGuard and help secure the future of AI in financial services.',
+  openGraph: {
+    title: 'Careers at AgentGuard',
+    description: 'Join AgentGuard and help secure the future of AI in financial services.',
+  },
 };
 
 interface Benefit {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - AgentGuard',
+  title: 'Terms of Service',
   description: 'AgentGuard terms of service governing use of our platform.',
 };
 
