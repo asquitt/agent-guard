@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import {
   LayoutDashboard,
   BarChart3,
@@ -24,13 +25,17 @@ import {
   Settings,
   Layers,
   User,
+  Sun,
+  Moon,
+  Keyboard,
   type LucideIcon,
 } from 'lucide-react';
 
 interface CommandItem {
   id: string;
   label: string;
-  href: string;
+  href?: string;
+  action?: () => void;
   icon: LucideIcon;
   section: string;
   keywords?: string[];
@@ -68,6 +73,29 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+
+  // Build action commands dynamically (theme depends on current state)
+  const actionCommands: CommandItem[] = useMemo(() => [
+    {
+      id: 'toggle-theme',
+      label: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
+      icon: theme === 'dark' ? Sun : Moon,
+      section: 'Actions',
+      keywords: ['theme', 'dark', 'light', 'mode'],
+      action: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+    },
+    {
+      id: 'show-shortcuts',
+      label: 'Keyboard shortcuts',
+      icon: Keyboard,
+      section: 'Actions',
+      keywords: ['shortcut', 'hotkey', 'keys'],
+      action: () => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })),
+    },
+  ], [theme, setTheme]);
+
+  const allCommands = useMemo(() => [...COMMANDS, ...actionCommands], [actionCommands]);
 
   // Cmd+K / Ctrl+K to open
   useEffect(() => {
@@ -94,15 +122,15 @@ export function CommandPalette() {
   }, [open]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return COMMANDS;
+    if (!query.trim()) return allCommands;
     const q = query.toLowerCase();
-    return COMMANDS.filter(
+    return allCommands.filter(
       (cmd) =>
         cmd.label.toLowerCase().includes(q) ||
         cmd.section.toLowerCase().includes(q) ||
         cmd.keywords?.some((kw) => kw.includes(q)),
     );
-  }, [query]);
+  }, [query, allCommands]);
 
   // Group by section
   const grouped = useMemo(() => {
@@ -118,10 +146,14 @@ export function CommandPalette() {
     return groups;
   }, [filtered]);
 
-  const navigate = useCallback(
-    (href: string) => {
+  const executeCommand = useCallback(
+    (cmd: CommandItem) => {
       setOpen(false);
-      router.push(href);
+      if (cmd.action) {
+        cmd.action();
+      } else if (cmd.href) {
+        router.push(cmd.href);
+      }
     },
     [router],
   );
@@ -136,7 +168,7 @@ export function CommandPalette() {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter' && filtered[selectedIndex]) {
       e.preventDefault();
-      navigate(filtered[selectedIndex].href);
+      executeCommand(filtered[selectedIndex]);
     }
   }
 
@@ -196,7 +228,7 @@ export function CommandPalette() {
                     <button
                       key={item.id}
                       data-index={idx}
-                      onClick={() => navigate(item.href)}
+                      onClick={() => executeCommand(item)}
                       onMouseEnter={() => setSelectedIndex(idx)}
                       className={`flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors ${
                         idx === selectedIndex

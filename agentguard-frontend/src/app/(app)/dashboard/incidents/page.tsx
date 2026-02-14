@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DensityToggle } from '@/components/ui/DensityToggle';
-import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown, X, Download } from 'lucide-react';
 import { timeAgo } from '@/lib/format';
 
 type SortField = 'title' | 'category' | 'severity' | 'status' | 'createdAt';
@@ -202,9 +202,10 @@ function IncidentsContent() {
           <button
             onClick={exportCsv}
             disabled={incidents.length === 0}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
-            Export CSV
+            <Download className="h-3.5 w-3.5" />
+            Export
           </button>
         </div>
 
