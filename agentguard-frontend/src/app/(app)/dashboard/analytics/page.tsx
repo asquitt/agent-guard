@@ -5,6 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { getTimeSeries, getProviderComparison } from '@/lib/api';
 import type { TimeSeriesBucket, ProviderPerformance } from '@/lib/api';
+import { AnalyticsSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { BarChart3 } from 'lucide-react';
 
 const TIME_RANGES = [
   { label: '1h', days: 0.04, granularity: 'hourly' },
@@ -119,13 +122,13 @@ export default function AnalyticsPage() {
 
       {/* Chart */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
+        <AnalyticsSkeleton />
       ) : buckets.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card py-16 text-center">
-          <p className="text-sm text-muted-foreground">No data for this time range</p>
-        </div>
+        <EmptyState
+          icon={BarChart3}
+          title="No data available"
+          description="No analytics data for this time range. Try selecting a wider window."
+        />
       ) : (
         <BarChart buckets={buckets} metricKey={activeMetric} />
       )}

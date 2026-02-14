@@ -11,6 +11,9 @@ import {
   testDestination,
 } from '@/lib/api';
 import type { AlertDestination } from '@/types';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Bell } from 'lucide-react';
 
 const DEST_TYPE_LABELS: Record<string, string> = {
   slack: 'Slack',
@@ -133,13 +136,30 @@ export default function AlertsPage() {
 
       {/* Destinations list */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+                <Skeleton className="h-6 w-11 rounded-full" />
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Skeleton className="h-8 w-24 rounded-lg" />
+                <Skeleton className="h-8 w-16 rounded-lg" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : destinations.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card py-16 text-center">
-          <p className="text-sm text-muted-foreground">No alert destinations configured</p>
-        </div>
+        <EmptyState
+          icon={Bell}
+          title="No alert destinations"
+          description="Configure where incident alerts are sent — Slack, PagerDuty, email, or webhooks."
+          action={{ label: 'Add destination', onClick: () => setShowCreate(true) }}
+        />
       ) : (
         <div className="space-y-4">
           {destinations.map((d) => (

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { listTraces, getTrace } from '@/lib/api';
 import type { TraceListItem, TraceDetail, TraceFilters } from '@/lib/api';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { FileSearch } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   '2': 'text-green-700 bg-green-50',
@@ -146,14 +149,18 @@ export default function TracesPage() {
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground/60">
-                  Loading…
+                <td colSpan={9}>
+                  <TableSkeleton rows={6} cols={9} />
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground/60">
-                  No traces found.
+                <td colSpan={9} className="p-4">
+                  <EmptyState
+                    icon={FileSearch}
+                    title="No traces found"
+                    description="No request traces match your filters."
+                  />
                 </td>
               </tr>
             ) : (

@@ -4,6 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { listDetectors, updateDetector } from '@/lib/api';
 import type { Detector } from '@/types';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Radar } from 'lucide-react';
 
 const ACTION_MODES = ['MONITOR', 'WARN', 'REDACT', 'BLOCK'] as const;
 
@@ -45,16 +48,30 @@ export default function DetectorsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <Skeleton className="h-6 w-11 rounded-full" />
+              </div>
+              <div className="mt-4 flex gap-2">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <Skeleton key={j} className="h-8 w-20 rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : detectors.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card py-16 text-center">
-          <p className="text-sm text-muted-foreground">No detectors configured yet</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">
-            Detectors are created automatically when you first proxy a request
-          </p>
-        </div>
+        <EmptyState
+          icon={Radar}
+          title="No detectors configured"
+          description="Detectors are created automatically when you first proxy a request through AgentGuard."
+        />
       ) : (
         <div className="space-y-4">
           {detectors.map((d) => (

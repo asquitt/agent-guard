@@ -11,6 +11,7 @@ import { DetectionEfficacySection } from '@/components/dashboard/DetectionEffica
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
 import { Toast } from '@/components/ui/Toast';
 import type { ToastItem } from '@/components/ui/Toast';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import type { RecentIncidentSummary } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { clsx } from 'clsx';
@@ -74,60 +75,60 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Total Incidents"
-          value={isLoading ? '—' : String(metrics?.totalIncidents ?? 0)}
-        />
-        <MetricCard
-          label="Open Incidents"
-          value={isLoading ? '—' : String(metrics?.openIncidents ?? 0)}
-          highlight={!!metrics?.openIncidents}
-        />
-        <SeverityBreakdownCard
-          items={metrics?.incidentsBySeverity ?? []}
-          isLoading={isLoading}
-        />
-        <StatusBreakdownCard
-          items={metrics?.incidentsByStatus ?? []}
-          isLoading={isLoading}
-        />
-      </div>
-
-      {/* SLA metrics */}
-      <SlaMetricsSection />
-
-      {/* Cost analytics */}
-      <CostAnalyticsSection />
-
-      {/* Detection efficacy */}
-      <DetectionEfficacySection />
-
-      {/* Recent incidents */}
-      <div className="mt-8 rounded-xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            Recent Incidents
-          </h2>
-          <Link
-            href="/dashboard/incidents"
-            className="text-sm font-medium text-primary hover:text-primary"
-          >
-            View all
-          </Link>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      {isLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {/* Metric cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              label="Total Incidents"
+              value={String(metrics?.totalIncidents ?? 0)}
+            />
+            <MetricCard
+              label="Open Incidents"
+              value={String(metrics?.openIncidents ?? 0)}
+              highlight={!!metrics?.openIncidents}
+            />
+            <SeverityBreakdownCard
+              items={metrics?.incidentsBySeverity ?? []}
+            />
+            <StatusBreakdownCard
+              items={metrics?.incidentsByStatus ?? []}
+            />
           </div>
-        ) : metrics?.recentIncidents.length ? (
-          <IncidentTable incidents={metrics.recentIncidents} />
-        ) : (
-          <EmptyState />
-        )}
-      </div>
+
+          {/* SLA metrics */}
+          <SlaMetricsSection />
+
+          {/* Cost analytics */}
+          <CostAnalyticsSection />
+
+          {/* Detection efficacy */}
+          <DetectionEfficacySection />
+
+          {/* Recent incidents */}
+          <div className="mt-8 rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <h2 className="text-lg font-semibold text-foreground">
+                Recent Incidents
+              </h2>
+              <Link
+                href="/dashboard/incidents"
+                className="text-sm font-medium text-primary hover:text-primary"
+              >
+                View all
+              </Link>
+            </div>
+
+            {metrics?.recentIncidents.length ? (
+              <IncidentTable incidents={metrics.recentIncidents} />
+            ) : (
+              <DashboardEmptyState />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -158,17 +159,13 @@ function MetricCard({
 
 function SeverityBreakdownCard({
   items,
-  isLoading,
 }: {
   items: { severity: string; count: number }[];
-  isLoading: boolean;
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <p className="mb-2 text-sm text-muted-foreground">By Severity</p>
-      {isLoading ? (
-        <p className="text-lg text-muted-foreground/50">—</p>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-muted-foreground/50">No data</p>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -191,17 +188,13 @@ function SeverityBreakdownCard({
 
 function StatusBreakdownCard({
   items,
-  isLoading,
 }: {
   items: { status: string; count: number }[];
-  isLoading: boolean;
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <p className="mb-2 text-sm text-muted-foreground">By Status</p>
-      {isLoading ? (
-        <p className="text-lg text-muted-foreground/50">—</p>
-      ) : items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-muted-foreground/50">No data</p>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -282,7 +275,7 @@ function IncidentTable({
   );
 }
 
-function EmptyState() {
+function DashboardEmptyState() {
   return (
     <div className="px-6 py-12 text-center">
       <p className="text-sm text-muted-foreground">No incidents yet</p>

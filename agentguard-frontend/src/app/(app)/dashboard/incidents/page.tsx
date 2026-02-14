@@ -7,6 +7,9 @@ import { clsx } from 'clsx';
 import { listIncidents, bulkUpdateStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ShieldAlert } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -198,12 +201,14 @@ export default function IncidentsPage() {
       {/* Table */}
       <div className="rounded-xl border border-border bg-card">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
+          <TableSkeleton rows={8} cols={6} />
         ) : incidents.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            No incidents match your filters
+          <div className="py-4">
+            <EmptyState
+              icon={ShieldAlert}
+              title="No incidents found"
+              description="No incidents match your current filters. Try adjusting your search criteria."
+            />
           </div>
         ) : (
           <>
