@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useToast } from '@/hooks/useToast';
 import { getDashboardMetrics, getRiskScore } from '@/lib/api';
+import { Sparkline } from '@/components/charts/Sparkline';
 import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { DetectionEfficacySection } from '@/components/dashboard/DetectionEfficacy';
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
@@ -87,6 +88,7 @@ export default function DashboardPage() {
               score={riskData.overallScore}
               trend={riskData.trendDirection}
               criticalOpen={riskData.criticalOpen}
+              trendData={riskData.trend.map((p) => p.score)}
             />
           )}
 
@@ -299,13 +301,16 @@ function RiskWidget({
   score,
   trend,
   criticalOpen,
+  trendData,
 }: {
   grade: string;
   score: number;
   trend: string;
   criticalOpen: number;
+  trendData: number[];
 }) {
   const t = TREND_INFO[trend] ?? TREND_INFO.stable;
+  const sparkColor = trend === 'improving' ? '#22c55e' : trend === 'degrading' ? '#ef4444' : '#6366f1';
   return (
     <Link
       href="/dashboard/risk-score"
@@ -313,13 +318,13 @@ function RiskWidget({
     >
       <div
         className={clsx(
-          'flex h-12 w-12 items-center justify-center rounded-full border-2 text-xl font-bold',
+          'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-xl font-bold',
           GRADE_BG[grade] ?? 'text-muted-foreground',
         )}
       >
         {grade}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-foreground">
             Risk Score: {score}/100
@@ -337,7 +342,12 @@ function RiskWidget({
           )}
         </p>
       </div>
-      <span className="text-xs font-medium text-primary">View details →</span>
+      {trendData.length >= 2 && (
+        <div className="w-24 shrink-0">
+          <Sparkline data={trendData} color={sparkColor} height={32} />
+        </div>
+      )}
+      <span className="shrink-0 text-xs font-medium text-primary">View details →</span>
     </Link>
   );
 }

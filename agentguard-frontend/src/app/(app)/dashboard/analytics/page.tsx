@@ -7,7 +7,15 @@ import { getTimeSeries, getProviderComparison } from '@/lib/api';
 import type { TimeSeriesBucket, ProviderPerformance } from '@/lib/api';
 import { AnalyticsSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { TrendChart } from '@/components/charts/TrendChart';
+import { MetricsAreaChart } from '@/components/charts/MetricsAreaChart';
 import { BarChart3, Download } from 'lucide-react';
+
+const THREAT_SERIES = [
+  { key: 'incidents', label: 'Incidents', color: '#ef4444' },
+  { key: 'detections', label: 'Detections', color: '#f59e0b' },
+  { key: 'errorCount', label: 'Errors', color: '#6366f1' },
+] as const;
 
 const TIME_RANGES = [
   { label: '1h', days: 0.04, granularity: 'hourly' },
@@ -160,7 +168,33 @@ export default function AnalyticsPage() {
           description="No analytics data for this time range. Try selecting a wider window."
         />
       ) : (
-        <BarChart buckets={buckets} metricKey={activeMetric} />
+        <div className="rounded-xl border border-border bg-card p-6">
+          <TrendChart
+            data={buckets.map((b) => ({
+              label: formatBucketLabel(b.bucket),
+              value: typeof b[activeMetric] === 'number' ? (b[activeMetric] as number) : 0,
+            }))}
+            height={280}
+            formatValue={(v) => metricConfig.format(v)}
+          />
+        </div>
+      )}
+
+      {/* Threat overview — multi-metric comparison */}
+      {buckets.length > 0 && (
+        <div className="mt-8 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Threat Overview</h2>
+          <MetricsAreaChart
+            data={buckets.map((b) => ({
+              label: formatBucketLabel(b.bucket),
+              incidents: b.incidents,
+              detections: b.detections,
+              errorCount: b.errorCount,
+            }))}
+            series={[...THREAT_SERIES]}
+            height={240}
+          />
+        </div>
       )}
 
       {/* Provider comparison table */}
@@ -178,55 +212,6 @@ function SummaryCard({ label, value, highlight }: { label: string; value: string
       <p className={clsx('text-2xl font-bold', highlight ? 'text-primary' : 'text-foreground')}>
         {value}
       </p>
-    </div>
-  );
-}
-
-function BarChart({ buckets, metricKey }: { buckets: TimeSeriesBucket[]; metricKey: MetricKey }) {
-  const values = buckets.map((b) => {
-    const v = b[metricKey];
-    return typeof v === 'number' ? v : 0;
-  });
-  const maxVal = Math.max(...values, 1);
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <div className="flex h-48 items-end gap-px">
-        {values.map((v, i) => {
-          const pct = (v / maxVal) * 100;
-          const bucket = buckets[i];
-          const isAnomaly = v > maxVal * 0.85;
-          return (
-            <div
-              key={i}
-              className="group relative flex-1"
-              title={`${formatBucketLabel(bucket.bucket)}: ${v}`}
-            >
-              <div
-                className={clsx(
-                  'w-full rounded-t transition-colors',
-                  isAnomaly
-                    ? 'bg-red-400 hover:bg-red-500'
-                    : 'bg-primary/60 hover:bg-primary/100',
-                )}
-                style={{ height: `${Math.max(pct, 1)}%` }}
-              />
-              {/* Tooltip */}
-              <div className="pointer-events-none absolute -top-10 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-popover px-2 py-1 text-xs text-white whitespace-nowrap group-hover:block">
-                {formatBucketLabel(bucket.bucket)}: {v}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {/* X-axis labels */}
-      <div className="mt-2 flex justify-between text-xs text-muted-foreground/60">
-        <span>{formatBucketLabel(buckets[0]?.bucket ?? '')}</span>
-        {buckets.length > 2 && (
-          <span>{formatBucketLabel(buckets[Math.floor(buckets.length / 2)]?.bucket ?? '')}</span>
-        )}
-        <span>{formatBucketLabel(buckets[buckets.length - 1]?.bucket ?? '')}</span>
-      </div>
     </div>
   );
 }

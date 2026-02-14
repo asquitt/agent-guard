@@ -7,6 +7,7 @@ import { getRiskScore } from '@/lib/api';
 import type { CategoryRisk } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { TrendChart } from '@/components/charts/TrendChart';
 import { ShieldCheck } from 'lucide-react';
 
 const TIME_RANGES = [
@@ -145,7 +146,14 @@ export default function RiskScorePage() {
               <h2 className="mb-4 text-sm font-semibold text-foreground">
                 Risk Trend
               </h2>
-              <RiskTrendChart points={data.trend} />
+              <TrendChart
+                data={data.trend.map((p) => ({
+                  label: new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                  value: p.score,
+                }))}
+                color={data.trendDirection === 'improving' ? '#22c55e' : data.trendDirection === 'degrading' ? '#ef4444' : '#6366f1'}
+                height={200}
+              />
             </div>
           )}
 
@@ -214,53 +222,6 @@ function CategoryBar({ category }: { category: CategoryRisk }) {
       </div>
     </div>
   );
-}
-
-function RiskTrendChart({ points }: { points: { date: string; score: number }[] }) {
-  const maxScore = Math.max(...points.map((p) => p.score), 10);
-
-  return (
-    <div>
-      <div className="flex h-32 items-end gap-px">
-        {points.map((p, i) => {
-          const pct = (p.score / maxScore) * 100;
-          const color =
-            p.score >= 70
-              ? 'bg-red-400 hover:bg-red-500'
-              : p.score >= 40
-                ? 'bg-orange-400 hover:bg-orange-500'
-                : p.score >= 15
-                  ? 'bg-yellow-400 hover:bg-yellow-500'
-                  : 'bg-green-400 hover:bg-green-500';
-
-          return (
-            <div
-              key={i}
-              className="group relative flex-1"
-              title={`${formatDate(p.date)}: ${p.score}`}
-            >
-              <div
-                className={clsx('w-full rounded-t transition-colors', color)}
-                style={{ height: `${Math.max(pct, 2)}%` }}
-              />
-              <div className="pointer-events-none absolute -top-8 left-1/2 z-10 hidden -translate-x-1/2 rounded bg-popover px-2 py-1 text-xs text-foreground whitespace-nowrap group-hover:block">
-                {formatDate(p.date)}: {p.score}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 flex justify-between text-xs text-muted-foreground/60">
-        <span>{formatDate(points[0]?.date ?? '')}</span>
-        <span>{formatDate(points[points.length - 1]?.date ?? '')}</span>
-      </div>
-    </div>
-  );
-}
-
-function formatDate(d: string): string {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function RiskSkeleton() {
