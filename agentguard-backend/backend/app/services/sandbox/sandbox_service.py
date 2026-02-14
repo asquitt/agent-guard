@@ -153,6 +153,19 @@ async def destroy_sandbox(db: AsyncSession, org_id: UUID, sandbox_id: UUID) -> b
 # ---------------------------------------------------------------------------
 
 
+async def _get_execution(
+    db: AsyncSession, org_id: UUID, execution_id: UUID
+) -> SandboxExecution | None:
+    """Internal helper to fetch an execution scoped to org."""
+    result = await db.execute(
+        select(SandboxExecution).where(
+            SandboxExecution.id == execution_id,
+            SandboxExecution.org_id == org_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def start_execution(
     db: AsyncSession,
     org_id: UUID,

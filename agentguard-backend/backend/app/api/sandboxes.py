@@ -84,6 +84,76 @@ async def create_sandbox(
     return SandboxResponse.model_validate(sandbox)
 
 
+# ---------------------------------------------------------------------------
+# Execution routes (MUST be before /{sandbox_id} to avoid path conflicts)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/executions/{execution_id}", response_model=SandboxExecutionResponse)
+async def get_execution(
+    execution_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxExecutionResponse:
+    """Get execution details with resource usage."""
+    execution = await sandbox_service.get_execution(db, org.id, execution_id)
+    if not execution:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
+    return SandboxExecutionResponse.model_validate(execution)
+
+
+@router.post("/executions/{execution_id}/stop", response_model=SandboxExecutionResponse)
+async def stop_execution(
+    execution_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxExecutionResponse:
+    """Gracefully stop a running execution."""
+    execution = await sandbox_service.stop_execution(db, org.id, execution_id)
+    if not execution:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
+    await db.commit()
+    return SandboxExecutionResponse.model_validate(execution)
+
+
+@router.post("/executions/{execution_id}/terminate", response_model=SandboxExecutionResponse)
+async def terminate_execution(
+    execution_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxExecutionResponse:
+    """Immediately kill a running execution."""
+    execution = await sandbox_service.terminate_execution(db, org.id, execution_id)
+    if not execution:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
+    await db.commit()
+    return SandboxExecutionResponse.model_validate(execution)
+
+
+@router.get("/executions/{execution_id}/audit", response_model=SandboxAuditLogListResponse)
+async def get_execution_audit(
+    execution_id: UUID,
+    action_type: str | None = Query(default=None, alias="actionType"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> SandboxAuditLogListResponse:
+    """Get audit log for a specific execution."""
+    items, total = await sandbox_service.list_audit_logs(
+        db, org.id, execution_id=execution_id, action_type=action_type, offset=skip, limit=limit
+    )
+    return SandboxAuditLogListResponse(
+        items=[SandboxAuditLogResponse.model_validate(a) for a in items],
+        total=total,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Sandbox-scoped routes (/{sandbox_id}/...)
+# ---------------------------------------------------------------------------
+
+
 @router.get("/{sandbox_id}", response_model=SandboxResponse)
 async def get_sandbox(
     sandbox_id: UUID,
@@ -140,11 +210,6 @@ async def delete_sandbox(
     await db.commit()
 
 
-# ---------------------------------------------------------------------------
-# Capabilities
-# ---------------------------------------------------------------------------
-
-
 @router.put("/{sandbox_id}/capabilities", response_model=SandboxResponse)
 async def set_capabilities(
     sandbox_id: UUID,
@@ -160,11 +225,6 @@ async def set_capabilities(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
     await db.commit()
     return SandboxResponse.model_validate(sandbox)
-
-
-# ---------------------------------------------------------------------------
-# Execution Lifecycle
-# ---------------------------------------------------------------------------
 
 
 @router.post("/{sandbox_id}/execute", response_model=SandboxExecutionResponse, status_code=status.HTTP_201_CREATED)
@@ -198,71 +258,6 @@ async def list_executions(
     )
     return SandboxExecutionListResponse(
         items=[SandboxExecutionResponse.model_validate(e) for e in items],
-        total=total,
-    )
-
-
-@router.get("/executions/{execution_id}", response_model=SandboxExecutionResponse)
-async def get_execution(
-    execution_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    org: Organization = Depends(get_current_org),
-) -> SandboxExecutionResponse:
-    """Get execution details with resource usage."""
-    execution = await sandbox_service.get_execution(db, org.id, execution_id)
-    if not execution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
-    return SandboxExecutionResponse.model_validate(execution)
-
-
-@router.post("/executions/{execution_id}/stop", response_model=SandboxExecutionResponse)
-async def stop_execution(
-    execution_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    org: Organization = Depends(get_current_org),
-) -> SandboxExecutionResponse:
-    """Gracefully stop a running execution."""
-    execution = await sandbox_service.stop_execution(db, org.id, execution_id)
-    if not execution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
-    await db.commit()
-    return SandboxExecutionResponse.model_validate(execution)
-
-
-@router.post("/executions/{execution_id}/terminate", response_model=SandboxExecutionResponse)
-async def terminate_execution(
-    execution_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    org: Organization = Depends(get_current_org),
-) -> SandboxExecutionResponse:
-    """Immediately kill a running execution."""
-    execution = await sandbox_service.terminate_execution(db, org.id, execution_id)
-    if not execution:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
-    await db.commit()
-    return SandboxExecutionResponse.model_validate(execution)
-
-
-# ---------------------------------------------------------------------------
-# Audit Trail
-# ---------------------------------------------------------------------------
-
-
-@router.get("/executions/{execution_id}/audit", response_model=SandboxAuditLogListResponse)
-async def get_execution_audit(
-    execution_id: UUID,
-    action_type: str | None = Query(default=None, alias="actionType"),
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
-    org: Organization = Depends(get_current_org),
-) -> SandboxAuditLogListResponse:
-    """Get audit log for a specific execution."""
-    items, total = await sandbox_service.list_audit_logs(
-        db, org.id, execution_id=execution_id, action_type=action_type, offset=skip, limit=limit
-    )
-    return SandboxAuditLogListResponse(
-        items=[SandboxAuditLogResponse.model_validate(a) for a in items],
         total=total,
     )
 
