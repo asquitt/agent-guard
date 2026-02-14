@@ -5,17 +5,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { listReviews, getReviewStats, decideReview, escalateReview } from '@/lib/api';
 import type { ReviewItem } from '@/lib/api';
-import { SEVERITY_COLORS } from '@/lib/constants';
+import { SEVERITY_COLORS, REVIEW_STATUS_COLORS } from '@/lib/constants';
 
 const REVIEW_STATUSES = ['pending', 'approved', 'rejected', 'escalated', 'expired'] as const;
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700',
-  escalated: 'bg-orange-100 text-orange-700',
-  expired: 'bg-muted text-muted-foreground',
-};
 
 export default function ReviewsPage() {
   const queryClient = useQueryClient();
@@ -174,7 +166,7 @@ function ReviewCard({
     <div
       className={clsx(
         'rounded-xl border bg-card p-5',
-        isOverdue ? 'border-red-300' : 'border-border',
+        isOverdue ? 'border-red-500/40' : 'border-border',
       )}
     >
       <div className="flex items-start justify-between">
@@ -192,13 +184,13 @@ function ReviewCard({
             <span
               className={clsx(
                 'rounded-full px-2 py-0.5 text-xs font-medium',
-                STATUS_COLORS[item.status] ?? 'bg-muted text-muted-foreground',
+                REVIEW_STATUS_COLORS[item.status] ?? 'bg-muted text-muted-foreground',
               )}
             >
               {item.status}
             </span>
             {item.escalationLevel > 0 && (
-              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
+              <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-400">
                 L{item.escalationLevel}
               </span>
             )}
@@ -264,7 +256,7 @@ function ReviewCard({
             <button
               onClick={() => escalateMutation.mutate()}
               disabled={escalateMutation.isPending}
-              className="rounded-lg border border-orange-300 px-4 py-2 text-xs font-medium text-orange-600 hover:bg-orange-50 disabled:opacity-50"
+              className="rounded-lg border border-orange-500/30 px-4 py-2 text-xs font-medium text-orange-500 hover:bg-orange-500/10 disabled:opacity-50"
             >
               Escalate
             </button>

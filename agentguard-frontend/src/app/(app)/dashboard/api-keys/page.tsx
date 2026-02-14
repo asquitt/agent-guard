@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listApiKeys, createApiKey, revokeApiKey } from '@/lib/api';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Key } from 'lucide-react';
 import type { ApiKey } from '@/types';
 
 export default function ApiKeysPage() {
@@ -126,9 +128,12 @@ export default function ApiKeysPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : keys.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            No API keys yet
-          </div>
+          <EmptyState
+            icon={Key}
+            title="No API keys"
+            description="Create an API key to authenticate proxy requests through AgentGuard."
+            action={{ label: 'Create Key', onClick: () => setShowCreate(true) }}
+          />
         ) : (
           <table className="w-full">
             <thead>

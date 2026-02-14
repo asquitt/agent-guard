@@ -6,23 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { listAgents, createAgent, updateAgent, deleteAgent } from '@/lib/api';
 import type { AgentData } from '@/lib/api';
+import { RISK_COLORS, AGENT_STATUS_COLORS, FRAMEWORK_BADGE } from '@/lib/constants';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Bot } from 'lucide-react';
 
 const RISK_TIERS = ['low', 'medium', 'high', 'critical'] as const;
 const STATUSES = ['draft', 'testing', 'production', 'deprecated'] as const;
-
-const RISK_COLORS: Record<string, string> = {
-  low: 'bg-green-100 text-green-700',
-  medium: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-orange-100 text-orange-700',
-  critical: 'bg-red-100 text-red-700',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  testing: 'bg-blue-100 text-blue-700',
-  production: 'bg-green-100 text-green-700',
-  deprecated: 'bg-red-100 text-red-600',
-};
 
 const FRAMEWORKS = ['SOX', 'PCI-DSS', 'FFIEC', 'NYDFS-500', 'DORA', 'EU-AI-Act'] as const;
 
@@ -125,9 +115,12 @@ export default function AgentsPage() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : agents.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            No agents registered yet. Click &ldquo;Register Agent&rdquo; to get started.
-          </div>
+          <EmptyState
+            icon={Bot}
+            title="No agents registered"
+            description="Register your first AI agent to start monitoring and governing its behavior."
+            action={{ label: 'Register Agent', onClick: () => setShowCreate(true) }}
+          />
         ) : (
           <table className="w-full">
             <thead>
@@ -178,6 +171,7 @@ function AgentRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState(agent.status);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => updateAgent(agent.id, data),
@@ -222,7 +216,7 @@ function AgentRow({
             onClick={() => setEditing(true)}
             className={clsx(
               'inline-flex cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium',
-              STATUS_COLORS[agent.status] ?? 'bg-muted text-muted-foreground',
+              AGENT_STATUS_COLORS[agent.status] ?? 'bg-muted text-muted-foreground',
             )}
           >
             {agent.status}
@@ -246,7 +240,7 @@ function AgentRow({
         <div className="flex flex-wrap gap-1">
           {agent.frameworks.length > 0 ? (
             agent.frameworks.map((f) => (
-              <span key={f} className="rounded bg-indigo-50 px-1.5 py-0.5 text-xs text-indigo-700">
+              <span key={f} className={clsx('rounded px-1.5 py-0.5 text-xs', FRAMEWORK_BADGE)}>
                 {f}
               </span>
             ))
@@ -265,12 +259,24 @@ function AgentRow({
             Policies
           </Link>
           <button
-            onClick={onDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             className="text-xs font-medium text-red-600 hover:text-red-500"
           >
             Delete
           </button>
         </div>
+        <ConfirmDialog
+          open={showDeleteConfirm}
+          title="Delete Agent"
+          description={`Permanently delete "${agent.name}"? This will remove all associated policies and cannot be undone.`}
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => {
+            onDelete();
+            setShowDeleteConfirm(false);
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       </td>
     </tr>
   );

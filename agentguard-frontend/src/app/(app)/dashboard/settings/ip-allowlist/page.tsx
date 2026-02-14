@@ -86,7 +86,7 @@ export default function IpAllowlistPage() {
           <div
             className={clsx(
               'inline-flex rounded-full px-3 py-1 text-xs font-medium',
-              data?.enabled ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground',
+              data?.enabled ? 'bg-green-500/10 text-green-400' : 'bg-muted text-muted-foreground',
             )}
           >
             {data?.enabled ? 'Active' : 'Disabled (all IPs allowed)'}
@@ -96,7 +96,7 @@ export default function IpAllowlistPage() {
           )}
         </div>
 
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800 mb-4">
+        <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-xs text-yellow-600 dark:text-yellow-400 mb-4">
           <strong>Warning:</strong> Adding IPs will restrict proxy access. Ensure your current IP is included
           or you may lose proxy connectivity. Dashboard access is not affected.
         </div>

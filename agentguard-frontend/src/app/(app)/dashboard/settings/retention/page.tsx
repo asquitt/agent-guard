@@ -190,11 +190,11 @@ export default function RetentionSettingsPage() {
       </div>
 
       {/* Info Card */}
-      <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
-        <h3 className="text-sm font-semibold text-blue-900">
+      <div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+        <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400">
           How Retention Works
         </h3>
-        <ul className="mt-2 space-y-1 text-sm text-blue-800">
+        <ul className="mt-2 space-y-1 text-sm text-blue-600 dark:text-blue-400">
           <li>
             Data older than the retention period is archived nightly at 3:30 AM
             UTC
@@ -280,10 +280,10 @@ export default function RetentionSettingsPage() {
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                           a.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-green-500/10 text-green-400'
                             : a.status === 'failed'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-yellow-100 text-yellow-700'
+                              ? 'bg-red-500/10 text-red-400'
+                              : 'bg-yellow-500/10 text-yellow-400'
                         }`}
                       >
                         {a.status}

@@ -288,9 +288,10 @@ export default function IncidentsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-border px-4 py-3">
+              <nav aria-label="Incidents pagination" className="flex items-center justify-between border-t border-border px-4 py-3">
                 <button
                   disabled={page === 0}
+                  aria-label="Go to previous page"
                   onClick={() =>
                     setFilters((f) => ({
                       ...f,
@@ -301,11 +302,12 @@ export default function IncidentsPage() {
                 >
                   Previous
                 </button>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground" aria-current="page">
                   Page {page + 1} of {totalPages}
                 </span>
                 <button
                   disabled={page >= totalPages - 1}
+                  aria-label="Go to next page"
                   onClick={() =>
                     setFilters((f) => ({
                       ...f,
@@ -316,7 +318,7 @@ export default function IncidentsPage() {
                 >
                   Next
                 </button>
-              </div>
+              </nav>
             )}
           </div>
         )}
@@ -397,9 +399,10 @@ function SortableHeader({
 }) {
   const isActive = current === field;
   return (
-    <th className="px-4 py-3">
+    <th className="px-4 py-3" aria-sort={isActive ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
       <button
         onClick={() => onSort(field)}
+        aria-label={`Sort by ${label}${isActive ? (dir === 'asc' ? ', ascending' : ', descending') : ''}`}
         className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
       >
         {label}

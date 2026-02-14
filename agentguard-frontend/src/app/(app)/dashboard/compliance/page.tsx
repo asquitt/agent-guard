@@ -13,6 +13,7 @@ import {
 } from '@/lib/api';
 import { ComplianceScoreboard } from '@/components/dashboard/ComplianceScoreboard';
 import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
+import { REPORT_STATUS_COLORS, VERIFICATION_COLORS } from '@/lib/constants';
 
 const PAGE_SIZE = 20;
 
@@ -41,8 +42,11 @@ export default function CompliancePage() {
 
       <ComplianceScoreboard />
 
-      <div className="mb-6 flex gap-1 rounded-lg bg-muted p-1">
+      <div role="tablist" aria-label="Compliance sections" className="mb-6 flex gap-1 rounded-lg bg-muted p-1">
         <button
+          role="tab"
+          aria-selected={tab === 'audit'}
+          aria-controls="panel-audit"
           onClick={() => setTab('audit')}
           className={clsx(
             'rounded-md px-4 py-2 text-sm font-medium transition-colors',
@@ -52,6 +56,9 @@ export default function CompliancePage() {
           Audit Log
         </button>
         <button
+          role="tab"
+          aria-selected={tab === 'reports'}
+          aria-controls="panel-reports"
           onClick={() => setTab('reports')}
           className={clsx(
             'rounded-md px-4 py-2 text-sm font-medium transition-colors',
@@ -62,7 +69,9 @@ export default function CompliancePage() {
         </button>
       </div>
 
-      {tab === 'audit' ? <AuditLogTab /> : <ReportsTab />}
+      <div role="tabpanel" id={`panel-${tab}`}>
+        {tab === 'audit' ? <AuditLogTab /> : <ReportsTab />}
+      </div>
     </div>
   );
 }
@@ -149,8 +158,8 @@ function AuditLogTab() {
             className={clsx(
               'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
               verifyMutation.data.valid
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700',
+                ? VERIFICATION_COLORS.valid
+                : VERIFICATION_COLORS.invalid,
             )}
           >
             {verifyMutation.data.valid
@@ -166,7 +175,10 @@ function AuditLogTab() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">No audit logs found</div>
+          <div className="py-16 text-center">
+              <p className="text-sm font-semibold text-foreground">No audit logs found</p>
+              <p className="mt-1 text-xs text-muted-foreground">Adjust your filters or check back after activity.</p>
+            </div>
         ) : (
           <>
             <table className="w-full">
@@ -187,25 +199,27 @@ function AuditLogTab() {
             </table>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-border px-4 py-3">
+              <nav aria-label="Audit log pagination" className="flex items-center justify-between border-t border-border px-4 py-3">
                 <button
                   disabled={page === 0}
+                  aria-label="Go to previous page"
                   onClick={() => setFilters((f) => ({ ...f, skip: Math.max(0, (f.skip ?? 0) - PAGE_SIZE) }))}
                   className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground" aria-current="page">
                   Page {page + 1} of {totalPages}
                 </span>
                 <button
                   disabled={page >= totalPages - 1}
+                  aria-label="Go to next page"
                   onClick={() => setFilters((f) => ({ ...f, skip: (f.skip ?? 0) + PAGE_SIZE }))}
                   className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >
                   Next
                 </button>
-              </div>
+              </nav>
             )}
           </>
         )}
@@ -315,7 +329,10 @@ function ReportsTab() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : reports.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">No reports generated yet</div>
+          <div className="py-16 text-center">
+              <p className="text-sm font-semibold text-foreground">No reports generated</p>
+              <p className="mt-1 text-xs text-muted-foreground">Use the form above to generate your first compliance report.</p>
+            </div>
         ) : (
           <table className="w-full">
             <thead>
@@ -353,10 +370,7 @@ function ReportRow({ report }: { report: ComplianceReport }) {
         <span
           className={clsx(
             'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-            report.status === 'completed' && 'bg-green-100 text-green-700',
-            report.status === 'pending' && 'bg-yellow-100 text-yellow-700',
-            report.status === 'generating' && 'bg-blue-100 text-blue-700',
-            report.status === 'failed' && 'bg-red-100 text-red-700',
+            REPORT_STATUS_COLORS[report.status] ?? 'bg-muted text-muted-foreground',
           )}
         >
           {report.status}

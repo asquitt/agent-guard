@@ -7,26 +7,13 @@ import type { TraceListItem, TraceDetail, TraceFilters } from '@/lib/api';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FileSearch } from 'lucide-react';
-
-const STATUS_COLORS: Record<string, string> = {
-  '2': 'text-green-700 bg-green-50',
-  '4': 'text-yellow-700 bg-yellow-50',
-  '5': 'text-red-700 bg-red-50',
-};
+import { HTTP_STATUS_COLORS, SEVERITY_COLORS } from '@/lib/constants';
 
 function statusColor(code: number | null): string {
   if (code == null) return 'text-muted-foreground bg-muted/50';
   const prefix = String(Math.floor(code / 100));
-  return STATUS_COLORS[prefix] ?? 'text-muted-foreground bg-muted/50';
+  return HTTP_STATUS_COLORS[prefix] ?? 'text-muted-foreground bg-muted/50';
 }
-
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800',
-  high: 'bg-orange-100 text-orange-800',
-  medium: 'bg-yellow-100 text-yellow-800',
-  low: 'bg-blue-100 text-blue-800',
-  info: 'bg-muted text-foreground',
-};
 
 export default function TracesPage() {
   const [items, setItems] = useState<TraceListItem[]>([]);
@@ -219,9 +206,10 @@ export default function TracesPage() {
 
       {/* Pagination */}
       {total > (filters.limit ?? 50) && (
-        <div className="flex items-center justify-between">
+        <nav aria-label="Traces pagination" className="flex items-center justify-between">
           <button
             disabled={(filters.skip ?? 0) === 0}
+            aria-label="Go to previous page"
             onClick={() =>
               setFilters((f) => ({
                 ...f,
@@ -238,6 +226,7 @@ export default function TracesPage() {
           </span>
           <button
             disabled={(filters.skip ?? 0) + (filters.limit ?? 50) >= total}
+            aria-label="Go to next page"
             onClick={() =>
               setFilters((f) => ({
                 ...f,
@@ -248,17 +237,18 @@ export default function TracesPage() {
           >
             Next
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Detail slide-over */}
       {(selected || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30" role="dialog" aria-modal="true" aria-label="Trace detail">
           <div className="w-full max-w-2xl overflow-y-auto bg-card p-6 shadow-xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">Trace Detail</h2>
               <button
                 onClick={() => setSelected(null)}
+                aria-label="Close trace detail"
                 className="text-muted-foreground/60 hover:text-muted-foreground"
               >
                 ✕

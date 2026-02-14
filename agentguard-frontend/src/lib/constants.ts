@@ -1,5 +1,7 @@
 /** Shared UI constants for AgentGuard dashboard. */
 
+/* ── Incident severity ─────────────────────────────────────────── */
+
 export const SEVERITY_COLORS: Record<string, string> = {
   critical: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
   high: 'bg-orange-500/10 text-orange-400 ring-1 ring-inset ring-orange-500/20',
@@ -16,12 +18,81 @@ export const SEVERITY_COLORS_BORDERED: Record<string, string> = {
   info: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
 };
 
+/* ── Incident status ───────────────────────────────────────────── */
+
 export const STATUS_COLORS: Record<string, string> = {
   open: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
   acknowledged: 'bg-yellow-500/10 text-yellow-400 ring-1 ring-inset ring-yellow-500/20',
   resolved: 'bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20',
   dismissed: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
 };
+
+/* ── Agent risk tier ───────────────────────────────────────────── */
+
+export const RISK_COLORS: Record<string, string> = {
+  low: 'bg-green-500/10 text-green-400',
+  medium: 'bg-yellow-500/10 text-yellow-400',
+  high: 'bg-orange-500/10 text-orange-400',
+  critical: 'bg-red-500/10 text-red-400',
+};
+
+/* ── Agent lifecycle status ────────────────────────────────────── */
+
+export const AGENT_STATUS_COLORS: Record<string, string> = {
+  draft: 'bg-muted text-muted-foreground',
+  testing: 'bg-blue-500/10 text-blue-400',
+  production: 'bg-green-500/10 text-green-400',
+  deprecated: 'bg-red-500/10 text-red-400',
+};
+
+/* ── Detector action modes ─────────────────────────────────────── */
+
+export const MODE_COLORS: Record<string, string> = {
+  MONITOR: 'bg-blue-500/10 text-blue-400',
+  WARN: 'bg-yellow-500/10 text-yellow-400',
+  REDACT: 'bg-orange-500/10 text-orange-400',
+  BLOCK: 'bg-red-500/10 text-red-400',
+};
+
+/* ── HTTP status code (trace page) ─────────────────────────────── */
+
+export const HTTP_STATUS_COLORS: Record<string, string> = {
+  '2': 'text-green-400 bg-green-500/10',
+  '4': 'text-yellow-400 bg-yellow-500/10',
+  '5': 'text-red-400 bg-red-500/10',
+};
+
+/* ── Report / archive row status ───────────────────────────────── */
+
+export const REPORT_STATUS_COLORS: Record<string, string> = {
+  completed: 'bg-green-500/10 text-green-400',
+  pending: 'bg-yellow-500/10 text-yellow-400',
+  generating: 'bg-blue-500/10 text-blue-400',
+  failed: 'bg-red-500/10 text-red-400',
+};
+
+/* ── Review queue status ───────────────────────────────────────── */
+
+export const REVIEW_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-500/10 text-yellow-400',
+  approved: 'bg-green-500/10 text-green-400',
+  rejected: 'bg-red-500/10 text-red-400',
+  escalated: 'bg-orange-500/10 text-orange-400',
+  expired: 'bg-muted text-muted-foreground',
+};
+
+/* ── Compliance verification ───────────────────────────────────── */
+
+export const VERIFICATION_COLORS: Record<string, string> = {
+  valid: 'bg-green-500/10 text-green-400',
+  invalid: 'bg-red-500/10 text-red-400',
+};
+
+/* ── Frameworks badge ──────────────────────────────────────────── */
+
+export const FRAMEWORK_BADGE = 'bg-indigo-500/10 text-indigo-400';
+
+/* ── Category labels ───────────────────────────────────────────── */
 
 export const CATEGORY_LABELS: Record<string, string> = {
   hallucination: 'Hallucination',

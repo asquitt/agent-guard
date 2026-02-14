@@ -23,12 +23,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   mcp_security: 'MCP Security',
 };
 
-const MODE_COLORS: Record<string, string> = {
-  MONITOR: 'bg-blue-50 text-blue-600',
-  WARN: 'bg-yellow-500/10 text-yellow-400',
-  REDACT: 'bg-orange-50 text-orange-600',
-  BLOCK: 'bg-red-500/10 text-red-400',
-};
+import { MODE_COLORS } from '@/lib/constants';
 
 export default function DetectorsPage() {
   const { data, isLoading } = useQuery({
@@ -118,6 +113,9 @@ function DetectorCard({ detector }: { detector: Detector }) {
 
         {/* Toggle */}
         <button
+          role="switch"
+          aria-checked={detector.isActive}
+          aria-label={`Toggle ${detector.name} detector`}
           onClick={() => toggleMutation.mutate(!detector.isActive)}
           disabled={toggleMutation.isPending}
           className={clsx(

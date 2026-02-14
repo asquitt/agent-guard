@@ -22,16 +22,16 @@ const COMPONENT_LABELS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dotColor: string }> = {
-  ok: { label: 'Operational', color: 'text-green-700', dotColor: 'bg-green-500' },
-  degraded: { label: 'Degraded', color: 'text-yellow-700', dotColor: 'bg-yellow-500' },
-  error: { label: 'Outage', color: 'text-red-700', dotColor: 'bg-red-500' },
+  ok: { label: 'Operational', color: 'text-green-600 dark:text-green-400', dotColor: 'bg-green-500' },
+  degraded: { label: 'Degraded', color: 'text-yellow-600 dark:text-yellow-400', dotColor: 'bg-yellow-500' },
+  error: { label: 'Outage', color: 'text-red-600 dark:text-red-400', dotColor: 'bg-red-500' },
   unknown: { label: 'Unknown', color: 'text-muted-foreground', dotColor: 'bg-zinc-500' },
 };
 
 const OVERALL_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  healthy: { label: 'All Systems Operational', bg: 'bg-green-50 border-green-200', text: 'text-green-800' },
-  degraded: { label: 'Partial System Degradation', bg: 'bg-yellow-50 border-yellow-200', text: 'text-yellow-800' },
-  unhealthy: { label: 'System Outage Detected', bg: 'bg-red-50 border-red-200', text: 'text-red-800' },
+  healthy: { label: 'All Systems Operational', bg: 'bg-green-500/10 border-green-500/20', text: 'text-green-600 dark:text-green-400' },
+  degraded: { label: 'Partial System Degradation', bg: 'bg-yellow-500/10 border-yellow-500/20', text: 'text-yellow-600 dark:text-yellow-400' },
+  unhealthy: { label: 'System Outage Detected', bg: 'bg-red-500/10 border-red-500/20', text: 'text-red-600 dark:text-red-400' },
 };
 
 export default function StatusPage() {
