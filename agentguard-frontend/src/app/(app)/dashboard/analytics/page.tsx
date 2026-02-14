@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { MetricsAreaChart } from '@/components/charts/MetricsAreaChart';
+import { ThreatHeatmap } from '@/components/charts/ThreatHeatmap';
 import { BarChart3, Download } from 'lucide-react';
 import { ANALYTICS_SERIES } from '@/lib/constants';
 
@@ -198,6 +199,17 @@ export default function AnalyticsPage() {
             series={[...THREAT_SERIES]}
             height={240}
           />
+        </div>
+      )}
+
+      {/* Threat activity heatmap */}
+      {buckets.length > 0 && (
+        <div className="mt-8 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Incident Activity Pattern</h2>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Hour-of-day × day-of-week heatmap reveals when incidents cluster.
+          </p>
+          <ThreatHeatmap data={buckets} />
         </div>
       )}
 
