@@ -7,6 +7,7 @@ import { getTimeSeries, getProviderComparison } from '@/lib/api';
 import type { TimeSeriesBucket, ProviderPerformance } from '@/lib/api';
 import { AnalyticsSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { MetricsAreaChart } from '@/components/charts/MetricsAreaChart';
 import { BarChart3, Download } from 'lucide-react';
@@ -43,7 +44,7 @@ export default function AnalyticsPage() {
 
   const range = TIME_RANGES[rangeIdx];
 
-  const { data: tsData, isLoading } = useQuery({
+  const { data: tsData, isLoading, isError, refetch } = useQuery({
     queryKey: ['time-series', range.days, range.granularity],
     queryFn: () => getTimeSeries(Math.max(1, Math.ceil(range.days)), range.granularity),
   });
@@ -159,7 +160,9 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Chart */}
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load analytics data." onRetry={refetch} />
+      ) : isLoading ? (
         <AnalyticsSkeleton />
       ) : buckets.length === 0 ? (
         <EmptyState

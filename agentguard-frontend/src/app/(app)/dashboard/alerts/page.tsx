@@ -14,6 +14,7 @@ import {
 import type { AlertDestination } from '@/types';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { Bell } from 'lucide-react';
 
 const DEST_TYPE_LABELS: Record<string, string> = {
@@ -30,7 +31,7 @@ export default function AlertsPage() {
   const [newType, setNewType] = useState('slack');
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['alert-destinations'],
     queryFn: () => listDestinations(),
   });
@@ -136,7 +137,9 @@ export default function AlertsPage() {
       )}
 
       {/* Destinations list */}
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load alert destinations." onRetry={refetch} />
+      ) : isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-6">

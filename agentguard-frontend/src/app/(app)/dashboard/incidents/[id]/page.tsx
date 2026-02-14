@@ -10,6 +10,7 @@ import { getExecution } from '@/lib/api/sandboxes';
 import type { IncidentAction } from '@/types';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
+import { QueryError } from '@/components/ui/QueryError';
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -17,7 +18,7 @@ export default function IncidentDetailPage() {
   const queryClient = useQueryClient();
   const id = params.id as string;
 
-  const { data: incident, isLoading } = useQuery({
+  const { data: incident, isLoading, isError, refetch } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => getIncident(id),
   });
@@ -55,6 +56,10 @@ export default function IncidentDetailPage() {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (isError) {
+    return <QueryError message="Failed to load incident details." onRetry={refetch} />;
   }
 
   if (!incident) {

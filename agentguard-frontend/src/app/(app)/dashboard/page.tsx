@@ -12,6 +12,7 @@ import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { DetectionEfficacySection } from '@/components/dashboard/DetectionEfficacy';
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
+import { QueryError } from '@/components/ui/QueryError';
 import type { RecentIncidentSummary } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { timeAgo } from '@/lib/format';
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   const { status: wsStatus, lastEvent } = useWebSocket();
   const { toast } = useToast();
 
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', 'metrics'],
     queryFn: getDashboardMetrics,
     refetchInterval: wsStatus === 'connected' ? undefined : 30_000,
@@ -58,7 +59,9 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load dashboard metrics." onRetry={refetch} />
+      ) : isLoading ? (
         <DashboardSkeleton />
       ) : (
         <>

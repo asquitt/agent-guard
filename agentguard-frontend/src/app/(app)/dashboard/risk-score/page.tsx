@@ -7,6 +7,7 @@ import { getRiskScore } from '@/lib/api';
 import type { CategoryRisk } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { ShieldCheck } from 'lucide-react';
 
@@ -59,7 +60,7 @@ export default function RiskScorePage() {
   const [rangeIdx, setRangeIdx] = useState(1); // 30d default
   const range = TIME_RANGES[rangeIdx];
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['risk-score', range.days],
     queryFn: () => getRiskScore(range.days),
   });
@@ -91,7 +92,9 @@ export default function RiskScorePage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load risk score data." onRetry={refetch} />
+      ) : isLoading ? (
         <RiskSkeleton />
       ) : !data || data.totalIncidents === 0 ? (
         <EmptyState

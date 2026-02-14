@@ -6,6 +6,7 @@ import { listDetectors, updateDetector } from '@/lib/api';
 import type { Detector } from '@/types';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { Radar } from 'lucide-react';
 
 const ACTION_MODES = ['MONITOR', 'WARN', 'REDACT', 'BLOCK'] as const;
@@ -26,7 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 import { MODE_COLORS } from '@/lib/constants';
 
 export default function DetectorsPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['detectors'],
     queryFn: () => listDetectors(),
   });
@@ -42,7 +43,9 @@ export default function DetectorsPage() {
         </p>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load detectors." onRetry={refetch} />
+      ) : isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-6">

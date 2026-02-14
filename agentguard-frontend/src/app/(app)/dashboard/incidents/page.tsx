@@ -9,6 +9,7 @@ import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { timeAgo } from '@/lib/format';
 
@@ -27,7 +28,7 @@ export default function IncidentsPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['incidents', filters],
     queryFn: () => listIncidents(filters),
   });
@@ -244,7 +245,11 @@ export default function IncidentsPage() {
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card">
-        {isLoading ? (
+        {isError ? (
+          <div className="py-4">
+            <QueryError message="Failed to load incidents." onRetry={refetch} />
+          </div>
+        ) : isLoading ? (
           <TableSkeleton rows={8} cols={6} />
         ) : incidents.length === 0 ? (
           <div className="py-4">
