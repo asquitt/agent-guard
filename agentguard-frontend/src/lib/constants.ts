@@ -92,6 +92,30 @@ export const VERIFICATION_COLORS: Record<string, string> = {
 
 export const FRAMEWORK_BADGE = 'bg-indigo-500/10 text-indigo-400';
 
+/* ── Chart hex colors (used by Recharts / sparklines) ──────────── */
+
+export const CHART_COLORS = {
+  green: '#22c55e',
+  red: '#ef4444',
+  indigo: '#6366f1',
+  amber: '#f59e0b',
+  blue: '#3b82f6',
+} as const;
+
+/** Map trend direction to a chart color. */
+export const TREND_COLORS: Record<string, string> = {
+  improving: CHART_COLORS.green,
+  degrading: CHART_COLORS.red,
+  stable: CHART_COLORS.indigo,
+};
+
+/** Series definitions for the analytics chart. */
+export const ANALYTICS_SERIES = [
+  { key: 'incidents', label: 'Incidents', color: CHART_COLORS.red },
+  { key: 'detections', label: 'Detections', color: CHART_COLORS.amber },
+  { key: 'errorCount', label: 'Errors', color: CHART_COLORS.indigo },
+] as const;
+
 /* ── Category labels ───────────────────────────────────────────── */
 
 export const CATEGORY_LABELS: Record<string, string> = {

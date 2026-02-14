@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { ShieldCheck } from 'lucide-react';
+import { TREND_COLORS } from '@/lib/constants';
 
 const TIME_RANGES = [
   { label: '7d', days: 7 },
@@ -158,7 +159,7 @@ export default function RiskScorePage() {
                   label: new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
                   value: p.score,
                 }))}
-                color={data.trendDirection === 'improving' ? '#22c55e' : data.trendDirection === 'degrading' ? '#ef4444' : '#6366f1'}
+                color={TREND_COLORS[data.trendDirection] ?? TREND_COLORS.stable}
                 height={200}
               />
             </div>

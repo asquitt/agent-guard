@@ -15,7 +15,7 @@ import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import { QueryError } from '@/components/ui/QueryError';
 import type { RecentIncidentSummary } from '@/types';
-import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
+import { SEVERITY_COLORS, STATUS_COLORS, TREND_COLORS } from '@/lib/constants';
 import { timeAgo } from '@/lib/format';
 import { clsx } from 'clsx';
 
@@ -318,7 +318,7 @@ function RiskWidget({
   trendData: number[];
 }) {
   const t = TREND_INFO[trend] ?? TREND_INFO.stable;
-  const sparkColor = trend === 'improving' ? '#22c55e' : trend === 'degrading' ? '#ef4444' : '#6366f1';
+  const sparkColor = TREND_COLORS[trend] ?? TREND_COLORS.stable;
   return (
     <Link
       href="/dashboard/risk-score"

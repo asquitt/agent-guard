@@ -11,12 +11,9 @@ import { QueryError } from '@/components/ui/QueryError';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { MetricsAreaChart } from '@/components/charts/MetricsAreaChart';
 import { BarChart3, Download } from 'lucide-react';
+import { ANALYTICS_SERIES } from '@/lib/constants';
 
-const THREAT_SERIES = [
-  { key: 'incidents', label: 'Incidents', color: '#ef4444' },
-  { key: 'detections', label: 'Detections', color: '#f59e0b' },
-  { key: 'errorCount', label: 'Errors', color: '#6366f1' },
-] as const;
+const THREAT_SERIES = ANALYTICS_SERIES;
 
 const TIME_RANGES = [
   { label: '1h', days: 0.04, granularity: 'hourly' },
