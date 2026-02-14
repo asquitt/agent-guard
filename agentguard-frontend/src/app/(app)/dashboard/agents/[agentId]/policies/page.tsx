@@ -409,7 +409,7 @@ function CreatePolicyForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Max Transaction Amount</label>
             <input

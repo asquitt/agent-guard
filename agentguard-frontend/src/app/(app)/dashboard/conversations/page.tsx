@@ -162,7 +162,7 @@ export default function ConversationsPage() {
 
       {/* Stats */}
       {!statsLoading && stats && (
-        <div className="mb-6 grid grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-2xl font-bold text-foreground">{stats.totalConversations}</p>
@@ -294,7 +294,7 @@ export default function ConversationsPage() {
               </div>
 
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Risk Score</p>
                   <p className="text-lg font-bold text-foreground">{detail.riskScore.toFixed(1)}</p>

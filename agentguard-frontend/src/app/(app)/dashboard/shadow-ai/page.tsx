@@ -97,7 +97,7 @@ export default function ShadowAIPage() {
 
       {/* Summary cards */}
       {summary && (
-        <div className="mb-6 grid grid-cols-4 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard label="Unmonitored" value={summary.unmonitoredCount} highlight />
           <StatCard label="Monitored" value={summary.monitoredCount} color="text-green-600" />
           <StatCard label="Blocked" value={summary.blockedCount} color="text-red-600" />

@@ -272,7 +272,7 @@ export default function TracesPage() {
             ) : selected ? (
               <div className="mt-4 space-y-6">
                 {/* Meta */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                   <div>
                     <span className="text-muted-foreground">Method</span>
                     <p className="font-mono font-medium">{selected.method}</p>

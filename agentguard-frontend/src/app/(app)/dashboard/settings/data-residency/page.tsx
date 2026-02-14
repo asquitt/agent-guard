@@ -97,7 +97,7 @@ export default function DataResidencyPage() {
               Select regions where your proxy traffic and data may be processed.
               At minimum, the primary region must be selected.
             </p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {regions.map((r) => {
                 const isSelected = allowedRegions.includes(r.id);
                 const isPrimary = r.id === primaryRegion;

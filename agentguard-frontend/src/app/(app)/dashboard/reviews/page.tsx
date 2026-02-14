@@ -50,7 +50,7 @@ export default function ReviewsPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="mb-6 grid grid-cols-6 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           <StatCard label="Pending" value={stats.pending} highlight={stats.pending > 0} />
           <StatCard label="Approved" value={stats.approved} color="text-green-600" />
           <StatCard label="Rejected" value={stats.rejected} color="text-red-600" />

@@ -99,7 +99,7 @@ export default function AgentsPage() {
       </div>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-4 gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total Agents" value={data?.total ?? 0} />
         <StatCard
           label="Production"
@@ -317,7 +317,7 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         <button onClick={onClose} className="text-xs text-muted-foreground/60 hover:text-muted-foreground">Close</button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Name *</label>
             <input
@@ -347,7 +347,7 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             placeholder="What does this agent do?"
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Risk Tier</label>
             <select
