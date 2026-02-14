@@ -3,6 +3,7 @@
 # pyright: reportAttributeAccessIssue=false, reportArgumentType=false
 
 import logging
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -12,19 +13,35 @@ from app.tasks.celery_app import celery_app
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="app.tasks.billing.reset_monthly_usage")
+@celery_app.task(
+    name="app.tasks.billing.reset_monthly_usage",
+    max_retries=3,
+    default_retry_delay=60,
+)
 def reset_monthly_usage() -> dict:
-    """Reset monthly_request_count for all orgs. Runs 1st of each month."""
+    """Reset monthly_request_count for all orgs. Runs 1st of each month.
+
+    Idempotent: uses settings JSONB to track last reset month,
+    skipping orgs already reset for the current billing period.
+    """
+    now = datetime.now(timezone.utc)
+    current_month = now.strftime("%Y-%m")
+
     db = SessionLocal()
     try:
         orgs = db.query(Organization).all()
         count = 0
         for org in orgs:
+            org_settings = dict(org.settings or {})
+            if org_settings.get("last_monthly_reset") == current_month:
+                continue  # Already reset — idempotent skip
             org.monthly_request_count = 0
+            org_settings["last_monthly_reset"] = current_month
+            org.settings = org_settings
             count += 1
         db.commit()
-        logger.info("Reset monthly usage for %d organizations", count)
-        return {"reset_count": count}
+        logger.info("Reset monthly usage for %d orgs (month=%s)", count, current_month)
+        return {"reset_count": count, "month": current_month}
     except Exception:
         db.rollback()
         logger.exception("Failed to reset monthly usage")

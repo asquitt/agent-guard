@@ -46,6 +46,10 @@ class ConversationListResponse(BaseModel):
     total: int
 
 
+class ConversationStatusUpdateRequest(BaseModel):
+    status: str = Field(pattern="^(active|completed|escalated|flagged)$")
+
+
 class TurnResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -306,7 +310,7 @@ async def add_turn(
 @router.patch("/{conversation_id}/status")
 async def update_conversation_status(
     conversation_id: UUID,
-    body: dict,
+    body: ConversationStatusUpdateRequest,
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ConversationResponse:
@@ -321,15 +325,7 @@ async def update_conversation_status(
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
 
-    new_status = body.get("status")
-    valid_statuses = {"active", "completed", "escalated", "flagged"}
-    if new_status not in valid_statuses:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Status must be one of: {', '.join(sorted(valid_statuses))}",
-        )
-
-    conv.status = new_status  # type: ignore[assignment]
+    conv.status = body.status  # type: ignore[assignment]
     if new_status == "completed":
         conv.completed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     elif new_status == "escalated" and not conv.escalated_at:

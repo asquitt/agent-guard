@@ -64,6 +64,14 @@ class IndicatorCreateRequest(BaseModel):
     source: str = "manual"
 
 
+class IndicatorUpdateRequest(BaseModel):
+    is_active: bool | None = None
+    pattern: str | None = None
+    severity: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    description: str | None = None
+
+
 class ThreatSummaryResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -253,7 +261,9 @@ async def get_threat_summary(
 
 
 @router.get("/types")
-async def list_indicator_types() -> dict[str, list[str]]:
+async def list_indicator_types(
+    _org: Organization = Depends(get_current_org),
+) -> dict[str, list[str]]:
     """List available indicator types."""
     return {"types": INDICATOR_TYPES}
 
@@ -291,7 +301,7 @@ async def create_indicator(
 @router.patch("/{indicator_id}", response_model=IndicatorResponse)
 async def update_indicator(
     indicator_id: UUID,
-    body: dict,
+    body: IndicatorUpdateRequest,
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> IndicatorResponse:
@@ -306,9 +316,9 @@ async def update_indicator(
     if not indicator:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Indicator not found")
 
-    for field in ("is_active", "pattern", "severity", "confidence", "description"):
-        if field in body:
-            setattr(indicator, field, body[field])
+    update_data = body.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(indicator, field, value)
 
     await db.commit()
     await db.refresh(indicator)

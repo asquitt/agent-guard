@@ -214,7 +214,9 @@ async def get_run_stats(
 
 
 @router.get("/categories")
-async def list_test_categories() -> dict[str, list[str]]:
+async def list_test_categories(
+    _org: Organization = Depends(get_current_org),
+) -> dict[str, list[str]]:
     """List available test categories."""
     return {"categories": TEST_CATEGORIES}
 

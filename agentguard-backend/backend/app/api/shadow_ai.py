@@ -285,7 +285,9 @@ async def update_discovery_status(
 
 
 @router.get("/providers", response_model=list[dict[str, str]])
-async def list_known_providers() -> list[dict[str, str]]:
+async def list_known_providers(
+    _org: Organization = Depends(get_current_org),
+) -> list[dict[str, str]]:
     """List known AI provider domains for network proxy configuration."""
     return [
         {"domain": domain, "provider": provider}

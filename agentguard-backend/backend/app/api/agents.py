@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_admin
 from app.models.agent import Agent
-from app.models.user import Organization
+from app.models.user import Organization, User
 from app.schemas.agents import (
     AgentCreateRequest,
     AgentListResponse,
@@ -56,6 +56,7 @@ async def list_agents(
 @router.post("", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     body: AgentCreateRequest,
+    _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AgentResponse:
@@ -99,6 +100,7 @@ async def get_agent(
 async def update_agent(
     agent_id: UUID,
     body: AgentUpdateRequest,
+    _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AgentResponse:
@@ -124,6 +126,7 @@ async def update_agent(
 @router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_agent(
     agent_id: UUID,
+    _admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> None:

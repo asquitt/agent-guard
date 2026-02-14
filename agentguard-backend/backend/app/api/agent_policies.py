@@ -213,7 +213,9 @@ _TEMPLATES: list[dict[str, object]] = [
 
 
 @router.get("/templates", response_model=list[PolicyTemplateResponse])
-async def list_policy_templates() -> list[PolicyTemplateResponse]:
+async def list_policy_templates(
+    _org: Organization = Depends(get_current_org),
+) -> list[PolicyTemplateResponse]:
     """List available policy templates for common financial agent types."""
     return [PolicyTemplateResponse(**t) for t in _TEMPLATES]
 

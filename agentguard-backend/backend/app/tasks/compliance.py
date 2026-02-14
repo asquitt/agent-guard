@@ -286,7 +286,7 @@ def _generate_framework_report(
 
     # 4. Active detectors
     detectors = db.execute(
-        select(Detector.name, Detector.category, Detector.enabled)
+        select(Detector.name, Detector.category, Detector.is_active)
         .where(Detector.org_id == org_id)
     ).all()
 

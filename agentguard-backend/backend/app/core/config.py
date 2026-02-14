@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENCRYPTION_KEY: str = ""  # 64-char hex string (32 bytes) for AES-256-GCM field encryption
 
+    # Database connection pooling
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800  # 30 minutes
+
     # Authentication hardening
     MAX_FAILED_LOGIN_ATTEMPTS: int = 10
     ACCOUNT_LOCKOUT_MINUTES: int = 30
@@ -98,7 +104,20 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    return Settings()
+    s = Settings()
+    # Block startup with insecure defaults in production
+    if not s.DEBUG:
+        if s.SECRET_KEY == "dev-secret-key-change-in-production":
+            raise RuntimeError(
+                "FATAL: SECRET_KEY is set to the default dev value. "
+                "Set a strong, unique SECRET_KEY environment variable for production."
+            )
+        if not s.ENCRYPTION_KEY:
+            raise RuntimeError(
+                "FATAL: ENCRYPTION_KEY is empty. "
+                "Set a 64-char hex string (32 bytes) for AES-256-GCM field encryption."
+            )
+    return s
 
 
 settings = get_settings()

@@ -273,13 +273,13 @@ async def delete_sandbox(
 @router.put("/{sandbox_id}/capabilities", response_model=SandboxResponse)
 async def set_capabilities(
     sandbox_id: UUID,
-    capabilities: list[dict],
+    capabilities: list[CapabilityAddRequest],
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
     """Replace all capabilities for a sandbox."""
     sandbox = await sandbox_service.update_sandbox(
-        db, org.id, sandbox_id, {"capabilities": capabilities}
+        db, org.id, sandbox_id, {"capabilities": [c.model_dump() for c in capabilities]}
     )
     if not sandbox:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sandbox not found")
