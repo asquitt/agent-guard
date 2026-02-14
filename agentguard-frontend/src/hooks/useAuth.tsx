@@ -12,11 +12,10 @@ import type { AuthUser, AuthOrganization } from '@/types';
 import {
   loginApi,
   registerApi,
-  refreshTokenApi,
   getMeApi,
   logoutApi,
 } from '@/lib/api';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, tryRefreshToken } from '@/lib/api/client';
 
 interface AuthState {
   user: AuthUser | null;
@@ -75,13 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: true,
       });
     } catch (err) {
-      // Try refresh if access token expired
+      // Try refresh if access token expired — delegate to shared tryRefreshToken
       if (err instanceof ApiError && err.status === 401) {
-        const refresh = localStorage.getItem(REFRESH_KEY);
-        if (refresh) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
           try {
-            const tokens = await refreshTokenApi(refresh);
-            storeTokens(tokens.access_token, tokens.refresh_token);
             const me = await getMeApi();
             setState({
               user: me.user,
@@ -91,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
             return;
           } catch {
-            // Refresh also failed — clear everything
+            // Retry also failed — clear everything
           }
         }
       }

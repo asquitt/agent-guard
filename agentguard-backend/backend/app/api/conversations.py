@@ -326,9 +326,9 @@ async def update_conversation_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
 
     conv.status = body.status  # type: ignore[assignment]
-    if new_status == "completed":
+    if body.status == "completed":
         conv.completed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
-    elif new_status == "escalated" and not conv.escalated_at:
+    elif body.status == "escalated" and not conv.escalated_at:
         conv.escalated_at = datetime.now(timezone.utc)  # type: ignore[assignment]
 
     await db.commit()

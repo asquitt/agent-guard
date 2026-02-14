@@ -41,8 +41,8 @@ export function Toast({
 
   return (
     <div
-      role="alert"
-      aria-live="polite"
+      role={severity === 'critical' || severity === 'high' ? 'alert' : 'status'}
+      aria-live={severity === 'critical' || severity === 'high' ? 'assertive' : 'polite'}
       className={clsx(
         'flex items-start gap-3 rounded-lg border-l-4 px-4 py-3 shadow-lg',
         BORDER_COLORS[severity] ?? 'border-l-gray-400',

@@ -3,7 +3,10 @@
  */
 
 import type { AuthTokens, MeResponse } from '@/types';
-import { apiFetch } from './client';
+import { apiFetch, ApiError } from './client';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_PREFIX = '/api/v1';
 
 export async function loginApi(
   email: string,
@@ -35,10 +38,14 @@ export async function registerApi(
 export async function refreshTokenApi(
   refreshToken: string,
 ): Promise<AuthTokens> {
-  return apiFetch<AuthTokens>('/auth/refresh', {
+  // Use raw fetch to avoid apiFetch's 401 interceptor triggering a recursive refresh
+  const res = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
+  if (!res.ok) throw new ApiError(res.status, 'Token refresh failed');
+  return res.json();
 }
 
 export async function getMeApi(): Promise<MeResponse> {

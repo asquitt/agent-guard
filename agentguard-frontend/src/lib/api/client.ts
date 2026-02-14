@@ -38,7 +38,9 @@ function clearTokens() {
 // Prevent concurrent refresh attempts
 let refreshPromise: Promise<boolean> | null = null;
 
-async function tryRefreshToken(): Promise<boolean> {
+export { clearTokens };
+
+export async function tryRefreshToken(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
@@ -88,10 +90,11 @@ export async function apiFetch<T>(
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const newToken = getAccessToken();
+      const { Authorization: _, ...callerHeaders } = (options.headers || {}) as Record<string, string>;
       const retryHeaders: HeadersInit = {
         'Content-Type': 'application/json',
+        ...callerHeaders,
         ...(newToken && { Authorization: `Bearer ${newToken}` }),
-        ...options.headers,
       };
       const retryResponse = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, {
         ...options,

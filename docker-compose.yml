@@ -63,6 +63,7 @@ services:
       DATABASE_URL: postgresql://agentguard:agentguard@db:5432/agentguard
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
+      DEBUG: ${DEBUG:-true}
     depends_on:
       db:
         condition: service_healthy
@@ -81,6 +82,7 @@ services:
       DATABASE_URL: postgresql://agentguard:agentguard@db:5432/agentguard
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
+      DEBUG: ${DEBUG:-true}
     depends_on:
       db:
         condition: service_healthy
