@@ -133,7 +133,10 @@ export default function IncidentDetailPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{incident.title}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground">{incident.title}</h1>
+            <CopyIdButton value={incident.id} />
+          </div>
           <div className="mt-2 flex items-center gap-3">
             <span
               className={clsx(
@@ -278,6 +281,27 @@ function MetaItem({ label, value }: { label: string; value: string }) {
       <p className="text-xs font-medium uppercase text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm text-foreground">{value}</p>
     </div>
+  );
+}
+
+function CopyIdButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy incident ID"
+      className="rounded-md border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+    >
+      {copied ? '✓ copied' : value.slice(0, 8)}
+    </button>
   );
 }
 
