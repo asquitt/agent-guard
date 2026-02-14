@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { Radar } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
 
 const ACTION_MODES = ['MONITOR', 'WARN', 'REDACT', 'BLOCK'] as const;
 
@@ -83,17 +84,24 @@ export default function DetectorsPage() {
 
 function DetectorCard({ detector }: { detector: Detector }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const toggleMutation = useMutation({
     mutationFn: (active: boolean) =>
       updateDetector(detector.id, { is_active: active }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['detectors'] }),
+    onSuccess: (_data, active) => {
+      queryClient.invalidateQueries({ queryKey: ['detectors'] });
+      toast.success(`${detector.name} ${active ? 'enabled' : 'disabled'}`);
+    },
   });
 
   const modeMutation = useMutation({
     mutationFn: (mode: string) =>
       updateDetector(detector.id, { action_mode: mode }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['detectors'] }),
+    onSuccess: (_data, mode) => {
+      queryClient.invalidateQueries({ queryKey: ['detectors'] });
+      toast.success(`${detector.name} set to ${mode.toLowerCase()}`);
+    },
   });
 
   return (

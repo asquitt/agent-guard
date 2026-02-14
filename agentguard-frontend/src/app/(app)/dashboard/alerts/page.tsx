@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
 import { Bell } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
 
 const DEST_TYPE_LABELS: Record<string, string> = {
   slack: 'Slack',
@@ -26,6 +27,7 @@ const DEST_TYPE_LABELS: Record<string, string> = {
 
 export default function AlertsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('slack');
@@ -48,6 +50,7 @@ export default function AlertsPage() {
       setShowCreate(false);
       setNewName('');
       setNewWebhookUrl('');
+      toast.success('Destination created');
     },
   });
 
@@ -177,25 +180,33 @@ export default function AlertsPage() {
 
 function DestinationCard({ destination }: { destination: AlertDestination }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [testResult, setTestResult] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const toggleMutation = useMutation({
     mutationFn: (active: boolean) =>
       updateDestination(destination.id, { is_active: active }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['alert-destinations'] }),
+    onSuccess: (_data, active) => {
+      queryClient.invalidateQueries({ queryKey: ['alert-destinations'] });
+      toast.success(`${destination.name} ${active ? 'enabled' : 'disabled'}`);
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteDestination(destination.id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['alert-destinations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alert-destinations'] });
+      toast.success(`${destination.name} deleted`);
+    },
   });
 
   const testMutation = useMutation({
     mutationFn: () => testDestination(destination.id),
-    onSuccess: (resp) => setTestResult(resp.message ?? 'Test sent'),
+    onSuccess: (resp) => {
+      setTestResult(resp.message ?? 'Test sent');
+      toast.success('Test alert sent');
+    },
     onError: () => setTestResult('Test failed'),
   });
 

@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { listIncidents, bulkUpdateStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
+import { useToast } from '@/hooks/useToast';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
@@ -24,6 +25,7 @@ const PAGE_SIZE = 20;
 
 export default function IncidentsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [filters, setFilters] = useState<IncidentFilters>({ limit: PAGE_SIZE });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -38,9 +40,10 @@ export default function IncidentsPage() {
   const bulkMutation = useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
       bulkUpdateStatus(ids, status),
-    onSuccess: () => {
+    onSuccess: (_data, { ids, status }) => {
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
       setSelected(new Set());
+      toast.success(`${ids.length} incident${ids.length !== 1 ? 's' : ''} ${status}`);
     },
   });
 

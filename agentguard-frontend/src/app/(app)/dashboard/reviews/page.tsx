@@ -7,6 +7,7 @@ import { listReviews, getReviewStats, decideReview, escalateReview } from '@/lib
 import type { ReviewItem } from '@/lib/api';
 import { SEVERITY_COLORS, REVIEW_STATUS_COLORS } from '@/lib/constants';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/hooks/useToast';
 
 const REVIEW_STATUSES = ['pending', 'approved', 'rejected', 'escalated', 'expired'] as const;
 
@@ -141,23 +142,24 @@ function ReviewCard({
   item: ReviewItem;
   onRefresh: () => void;
 }) {
+  const toast = useToast();
   const [reason, setReason] = useState('');
   const [showActions, setShowActions] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
 
   const approveMutation = useMutation({
     mutationFn: () => decideReview(item.id, 'approved', reason || undefined),
-    onSuccess: onRefresh,
+    onSuccess: () => { onRefresh(); toast.success('Review approved'); },
   });
 
   const rejectMutation = useMutation({
     mutationFn: () => decideReview(item.id, 'rejected', reason || undefined),
-    onSuccess: onRefresh,
+    onSuccess: () => { onRefresh(); toast.success('Review rejected'); },
   });
 
   const escalateMutation = useMutation({
     mutationFn: () => escalateReview(item.id),
-    onSuccess: onRefresh,
+    onSuccess: () => { onRefresh(); toast.success('Review escalated'); },
   });
 
   const isPending = item.status === 'pending' || item.status === 'escalated';

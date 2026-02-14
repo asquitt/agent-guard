@@ -8,6 +8,7 @@ import { clsx } from 'clsx';
 import { getIncident, updateIncidentStatus, addIncidentAction } from '@/lib/api';
 import { getExecution } from '@/lib/api/sandboxes';
 import type { IncidentAction } from '@/types';
+import { useToast } from '@/hooks/useToast';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
 import { ResponsePlaybook } from '@/components/incidents/ResponsePlaybook';
@@ -19,6 +20,8 @@ export default function IncidentDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params.id as string;
+
+  const toast = useToast();
 
   const { data: incident, isLoading, isError, refetch } = useQuery({
     queryKey: ['incident', id],
@@ -33,9 +36,10 @@ export default function IncidentDetailPage() {
 
   const statusMutation = useMutation({
     mutationFn: (status: string) => updateIncidentStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: ['incident', id] });
       queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      toast.success(`Incident ${status}`);
     },
   });
 
@@ -49,6 +53,7 @@ export default function IncidentDetailPage() {
     }) => addIncidentAction(id, actionType, details),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incident', id] });
+      toast.success('Action added');
     },
   });
 
