@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listApiKeys, createApiKey, revokeApiKey } from '@/lib/api';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { ApiKey } from '@/types';
 
 export default function ApiKeysPage() {
@@ -11,6 +12,7 @@ export default function ApiKeysPage() {
   const [newKeyName, setNewKeyName] = useState('');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [revokingKey, setRevokingKey] = useState<ApiKey | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['api-keys'],
@@ -144,7 +146,7 @@ export default function ApiKeysPage() {
                 <ApiKeyRow
                   key={key.id}
                   apiKey={key}
-                  onRevoke={() => revokeMutation.mutate(key.id)}
+                  onRevoke={() => setRevokingKey(key)}
                   revoking={revokeMutation.isPending}
                 />
               ))}
@@ -152,6 +154,23 @@ export default function ApiKeysPage() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!revokingKey}
+        title="Revoke API key"
+        description={`Are you sure you want to revoke "${revokingKey?.name ?? ''}"? Any integrations using this key will stop working immediately.`}
+        confirmLabel="Revoke"
+        variant="danger"
+        loading={revokeMutation.isPending}
+        onConfirm={() => {
+          if (revokingKey) {
+            revokeMutation.mutate(revokingKey.id, {
+              onSuccess: () => setRevokingKey(null),
+            });
+          }
+        }}
+        onCancel={() => setRevokingKey(null)}
+      />
     </div>
   );
 }

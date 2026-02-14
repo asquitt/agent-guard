@@ -25,7 +25,7 @@ export default function DashboardLayout({
           <CommandPalette />
           <KeyboardShortcuts />
           <main id="main-content" className="pt-14 md:ml-64" tabIndex={-1}>
-            <div className="p-4 md:p-6">
+            <div className="animate-fade-in-up p-4 md:p-6">
               <Breadcrumbs />
               {children}
             </div>

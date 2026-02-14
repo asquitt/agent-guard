@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   listDestinations,
   createDestination,
@@ -174,6 +175,7 @@ export default function AlertsPage() {
 function DestinationCard({ destination }: { destination: AlertDestination }) {
   const queryClient = useQueryClient();
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const toggleMutation = useMutation({
     mutationFn: (active: boolean) =>
@@ -245,11 +247,7 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
           {testMutation.isPending ? 'Sending...' : 'Send test'}
         </button>
         <button
-          onClick={() => {
-            if (confirm('Delete this destination?')) {
-              deleteMutation.mutate();
-            }
-          }}
+          onClick={() => setShowDeleteConfirm(true)}
           disabled={deleteMutation.isPending}
           className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
         >
@@ -259,6 +257,21 @@ function DestinationCard({ destination }: { destination: AlertDestination }) {
           <span className="text-sm text-muted-foreground">{testResult}</span>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete alert destination"
+        description={`Are you sure you want to delete "${destination.name}"? You will stop receiving alerts through this destination.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          deleteMutation.mutate(undefined, {
+            onSuccess: () => setShowDeleteConfirm(false),
+          });
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   listMembers,
   listRoles,
@@ -28,6 +29,7 @@ export default function TeamSettingsPage() {
   const [inviteRole, setInviteRole] = useState('member');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState('');
+  const [removingMember, setRemovingMember] = useState<Member | null>(null);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['team-members'],
@@ -253,11 +255,7 @@ export default function TeamSettingsPage() {
                             Edit Role
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm(`Remove ${m.name} from the team?`)) {
-                                removeMutation.mutate(m.id);
-                              }
-                            }}
+                            onClick={() => setRemovingMember(m)}
                             className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                           >
                             Remove
@@ -304,6 +302,23 @@ export default function TeamSettingsPage() {
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!removingMember}
+        title="Remove team member"
+        description={`Are you sure you want to remove ${removingMember?.name ?? 'this member'} from the team? They will lose access immediately.`}
+        confirmLabel="Remove"
+        variant="danger"
+        loading={removeMutation.isPending}
+        onConfirm={() => {
+          if (removingMember) {
+            removeMutation.mutate(removingMember.id, {
+              onSuccess: () => setRemovingMember(null),
+            });
+          }
+        }}
+        onCancel={() => setRemovingMember(null)}
+      />
     </div>
   );
 }
