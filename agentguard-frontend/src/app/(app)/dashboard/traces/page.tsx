@@ -6,6 +6,7 @@ import { listTraces, getTrace } from '@/lib/api';
 import type { TraceListItem, TraceDetail, TraceFilters } from '@/lib/api';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { QueryError } from '@/components/ui/QueryError';
 import { FileSearch } from 'lucide-react';
 import { HTTP_STATUS_COLORS, SEVERITY_COLORS } from '@/lib/constants';
 
@@ -19,18 +20,21 @@ export default function TracesPage() {
   const [items, setItems] = useState<TraceListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [filters, setFilters] = useState<TraceFilters>({ skip: 0, limit: 50 });
   const [selected, setSelected] = useState<TraceDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchTraces = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const res = await listTraces(filters);
       setItems(res.items);
       setTotal(res.total);
     } catch {
       setItems([]);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -138,6 +142,12 @@ export default function TracesPage() {
               <tr>
                 <td colSpan={9}>
                   <TableSkeleton rows={6} cols={9} />
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="p-4">
+                  <QueryError message="Failed to load traces." onRetry={fetchTraces} />
                 </td>
               </tr>
             ) : items.length === 0 ? (

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/sandboxes';
 import CreateSandboxForm from '@/components/sandboxes/CreateSandboxForm';
 import type { SandboxData, SandboxFilters } from '@/types/sandbox';
+import { QueryError } from '@/components/ui/QueryError';
 
 const SANDBOX_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
@@ -34,7 +35,7 @@ export default function SandboxesPage() {
     queryFn: getSandboxStats,
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['sandboxes', filters],
     queryFn: () => listSandboxes(filters),
   });
@@ -112,7 +113,9 @@ export default function SandboxesPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load sandboxes." onRetry={refetch} />
+      ) : isLoading ? (
         <div className="flex justify-center py-12">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>

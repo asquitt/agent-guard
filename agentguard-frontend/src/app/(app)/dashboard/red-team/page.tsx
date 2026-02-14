@@ -10,6 +10,7 @@ import {
   createRedTeamRun,
 } from '@/lib/api';
 import type { RedTeamRun } from '@/lib/api';
+import { QueryError } from '@/components/ui/QueryError';
 
 const CATEGORY_LABELS: Record<string, string> = {
   injection_resistance: 'Injection Resistance',
@@ -38,7 +39,7 @@ export default function RedTeamPage() {
     queryFn: () => getRedTeamStats(90),
   });
 
-  const { data: runs, isLoading } = useQuery({
+  const { data: runs, isLoading, isError, refetch } = useQuery({
     queryKey: ['red-team-runs'],
     queryFn: () => listRedTeamRuns({ limit: 50 }),
   });
@@ -110,7 +111,7 @@ export default function RedTeamPage() {
 
       {/* Category breakdown + trend */}
       {stats && (stats.byCategory.length > 0 || stats.resilienceTrend.length > 0) && (
-        <div className="mb-6 grid grid-cols-2 gap-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {stats.byCategory.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-4">
               <h2 className="mb-3 text-sm font-semibold text-foreground">Failure Rate by Category</h2>
@@ -198,10 +199,12 @@ export default function RedTeamPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Runs list */}
         <div className="space-y-3">
-          {isLoading ? (
+          {isError ? (
+            <QueryError message="Failed to load red team runs." onRetry={refetch} />
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>

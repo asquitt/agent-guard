@@ -10,6 +10,7 @@ import {
   seedPlatformIndicators,
 } from '@/lib/api';
 import type { ThreatIndicator } from '@/lib/api';
+import { QueryError } from '@/components/ui/QueryError';
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'bg-red-100 text-red-700',
@@ -38,7 +39,7 @@ export default function ThreatIntelPage() {
     queryFn: () => getThreatSummary(30),
   });
 
-  const { data: indicators, isLoading } = useQuery({
+  const { data: indicators, isLoading, isError, refetch } = useQuery({
     queryKey: ['threat-indicators', typeFilter, severityFilter],
     queryFn: () =>
       listIndicators({
@@ -109,7 +110,7 @@ export default function ThreatIntelPage() {
 
       {/* Type breakdown + top indicators */}
       {summary && (
-        <div className="mb-6 grid grid-cols-2 gap-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-4">
             <h2 className="mb-3 text-sm font-semibold text-foreground">By Type</h2>
             <div className="space-y-2">
@@ -174,7 +175,9 @@ export default function ThreatIntelPage() {
       </div>
 
       {/* Indicators table */}
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Failed to load threat indicators." onRetry={refetch} />
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>

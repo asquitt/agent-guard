@@ -10,6 +10,7 @@ import {
   updateConversationStatus,
 } from '@/lib/api';
 import type { Conversation, ConversationDetail } from '@/lib/api';
+import { QueryError } from '@/components/ui/QueryError';
 
 const RISK_COLORS: Record<string, string> = {
   low: 'bg-green-100 text-green-700',
@@ -121,7 +122,7 @@ export default function ConversationsPage() {
     queryFn: () => getConversationStats(30),
   });
 
-  const { data: conversations, isLoading } = useQuery({
+  const { data: conversations, isLoading, isError, refetch } = useQuery({
     queryKey: ['conversations', statusFilter, riskFilter],
     queryFn: () =>
       listConversations({
@@ -212,10 +213,12 @@ export default function ConversationsPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Conversation list */}
         <div className="space-y-3">
-          {isLoading ? (
+          {isError ? (
+            <QueryError message="Failed to load conversations." onRetry={refetch} />
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
