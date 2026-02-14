@@ -6,11 +6,13 @@ import { useTheme } from 'next-themes';
 import { Sun, Moon, Search, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSidebar } from '@/hooks/useSidebar';
+import { useWebSocket, type WsStatus } from '@/hooks/useWebSocket';
 
 export function Header() {
   const { user, organization, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { toggle: toggleSidebar } = useSidebar();
+  const { status: wsStatus } = useWebSocket();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -51,6 +53,7 @@ export function Header() {
         <span className="text-sm text-muted-foreground">
           {organization?.name ?? 'Organization'}
         </span>
+        <ConnectionIndicator status={wsStatus} />
         <button
           onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
           className="hidden items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted sm:flex"
@@ -126,5 +129,29 @@ export function Header() {
       </div>
       </div>
     </header>
+  );
+}
+
+const WS_STATUS_CONFIG: Record<WsStatus, { dot: string; label: string; animate?: boolean }> = {
+  connected: { dot: 'bg-green-500', label: 'Live', animate: true },
+  connecting: { dot: 'bg-yellow-500', label: 'Connecting', animate: true },
+  disconnected: { dot: 'bg-muted-foreground/30', label: 'Offline' },
+};
+
+function ConnectionIndicator({ status }: { status: WsStatus }) {
+  const config = WS_STATUS_CONFIG[status];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5"
+      title={`WebSocket: ${config.label}`}
+    >
+      <span className="relative flex h-2 w-2">
+        {config.animate && (
+          <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${config.dot}`} />
+        )}
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${config.dot}`} />
+      </span>
+      <span className="text-[10px] font-medium text-muted-foreground">{config.label}</span>
+    </span>
   );
 }
