@@ -11,7 +11,14 @@ export interface WebSocketEvent {
 
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
+/** Derive WS URL from env or auto-detect from current page location. */
+function getWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (typeof window === 'undefined') return 'ws://localhost:8001';
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${window.location.host}`;
+}
+
 const MAX_BACKOFF_MS = 30_000;
 const AUTH_CLOSE_CODE = 4001;
 
@@ -52,7 +59,7 @@ export function useWebSocket() {
     cleanup();
     setStatus('connecting');
 
-    const ws = new WebSocket(`${WS_URL}/ws/events?token=${token}`);
+    const ws = new WebSocket(`${getWsUrl()}/ws/events?token=${token}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
