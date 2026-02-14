@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
-import { listIncidents, bulkUpdateStatus } from '@/lib/api';
+import { listIncidents, bulkUpdateStatus, updateIncidentStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { useToast } from '@/hooks/useToast';
@@ -366,6 +366,8 @@ function IncidentsContent() {
   );
 }
 
+const INCIDENT_STATUSES = ['open', 'acknowledged', 'resolved', 'dismissed'] as const;
+
 function IncidentRow({
   incident,
   cellClass,
@@ -379,6 +381,17 @@ function IncidentRow({
   focused: boolean;
   onToggle: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const statusMutation = useMutation({
+    mutationFn: (status: string) => updateIncidentStatus(incident.id, status),
+    onSuccess: (_data, status) => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      toast.success(`Incident ${status}`);
+    },
+  });
+
   return (
     <tr className={clsx('hover:bg-muted/50', selected && 'bg-primary/10', focused && 'ring-2 ring-inset ring-primary/50 bg-primary/5')}>
       <td className={cellClass}>
@@ -411,14 +424,24 @@ function IncidentRow({
         </span>
       </td>
       <td className={cellClass}>
-        <span
+        <select
+          value={incident.status}
+          onChange={(e) => statusMutation.mutate(e.target.value)}
+          disabled={statusMutation.isPending}
           className={clsx(
-            'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+            'cursor-pointer rounded-full border-0 py-0.5 pl-2 pr-6 text-xs font-medium appearance-none bg-no-repeat',
             STATUS_COLORS[incident.status] ?? 'bg-muted text-muted-foreground',
+            statusMutation.isPending && 'opacity-50',
           )}
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+            backgroundPosition: 'right 4px center',
+          }}
         >
-          {incident.status}
-        </span>
+          {INCIDENT_STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </td>
       <td className={clsx(cellClass, 'text-muted-foreground')} title={new Date(incident.createdAt).toLocaleString()}>
         {timeAgo(incident.createdAt)}
