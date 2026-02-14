@@ -755,6 +755,86 @@ Based on analysis of 15 competitors (Lakera, CalypsoAI/F5, Cisco AI Defense, Art
 
 ---
 
+## Category 10: Sandbox V2 — "Fly.io for Agents" Experience
+
+### 10.1 Proxy-Sandbox Integration [P0] ✅ DONE (e460b97)
+**Gap:** Proxy requests and sandbox executions were disconnected — detection results couldn't link back to the sandboxed agent that triggered them.
+
+**Enhancement:**
+- `X-Sandbox-Execution-Id` header threading through proxy → detection → incident pipeline
+- `sandbox_execution_id` FK on `Incident` and `ProxyRequest` models
+- Detection pipeline passes sandbox context to incident creation
+- Dead code removal in proxy (line 236 metadata hack)
+
+**Why it matters:** Closes the detect-contain-respond loop. When a sandboxed agent triggers a detection, the incident links directly to the execution — enabling one-click drill-down from security alert to runtime context.
+
+---
+
+### 10.2 Incident-Sandbox Bidirectional Link [P0] ✅ DONE (e460b97)
+**Gap:** No way to navigate between incidents and the sandbox executions that caused them.
+
+**Enhancement:**
+- Incident detail page shows "Sandbox Context" card with link to execution
+- Execution detail page has "Incidents" tab listing linked incidents
+- `GET /sandboxes/executions/{execution_id}/incidents` endpoint
+- Frontend `getExecutionIncidents` API function
+
+**Why it matters:** Security analysts need immediate context: "This injection attempt came from sandbox X, execution Y, which was running agent Z." Bidirectional linking eliminates manual correlation.
+
+---
+
+### 10.3 Capability Management UI [P0] ✅ DONE (c84094a)
+**Gap:** Capabilities were view-only in the frontend — no way to add or remove permissions without API calls.
+
+**Enhancement:**
+- `CapabilityManager` component with add/remove UI
+- Capability type dropdown, target input, per-row remove button
+- `POST /sandboxes/{id}/capabilities` and `DELETE /sandboxes/{id}/capabilities/{index}` endpoints
+- `addCapability` and `removeCapability` service methods with validation
+
+**Why it matters:** Operations teams need to adjust agent permissions without developer intervention. Self-serve capability management reduces time-to-configure from API calls to clicks.
+
+---
+
+### 10.4 Sandbox Templates & Clone [P0] ✅ DONE (92fdd7a)
+**Gap:** Every sandbox required manual configuration from scratch — no quick-start patterns.
+
+**Enhancement:**
+- 4 immutable templates: OpenAI Agent, File Processor, Data Analyst, Minimal
+- Template selector in create form pre-fills all fields (image, capabilities, resource limits, network policy)
+- Clone endpoint duplicates existing sandbox with new name
+- `GET /sandboxes/templates` and `POST /sandboxes/{id}/clone` endpoints
+
+**Why it matters:** Templates reduce sandbox creation from minutes to seconds. Clone enables rapid iteration — modify a working sandbox config instead of starting from scratch.
+
+---
+
+### 10.5 Compliance Audit Export [P0] ✅ DONE (92fdd7a)
+**Gap:** Hash-chained audit logs existed but couldn't be exported for compliance reporting or independently verified.
+
+**Enhancement:**
+- CSV and JSON streaming export of sandbox audit logs
+- Hash chain integrity verification endpoint
+- Frontend export buttons (CSV/JSON) and "Verify Chain" button with result display
+- `GET /sandboxes/{id}/audit/export?format=csv|json` and `GET /sandboxes/{id}/audit/verify` endpoints
+
+**Why it matters:** SOX and FFIEC require exportable, verifiable audit trails. Compliance teams need to extract audit data for external review and prove cryptographic integrity of the log chain.
+
+---
+
+### 10.6 Complete Create Form [P0] ✅ DONE (c84094a)
+**Gap:** Sandbox creation form was missing image selector, environment variables, and initial capabilities — core fields were only settable via API.
+
+**Enhancement:**
+- Extracted `CreateSandboxForm` component with image, env vars, and capability inputs
+- Environment variable key/value management with masked display
+- Capability picker with type dropdown and target input
+- Template pre-fill integration
+
+**Why it matters:** A create form missing core fields forces developers to use the API for basic setup. Full-featured UI creation enables non-developer stakeholders to configure sandboxes.
+
+---
+
 ## Competitive Positioning Summary
 
 ### Where We Win Against Each Competitor
