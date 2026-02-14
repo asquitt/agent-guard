@@ -14,6 +14,32 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: '0.5.0',
+    date: 'February 2026',
+    title: 'AI Model Registry & Developer Experience',
+    changes: [
+      'AI Model Registry for tracking model provenance, risk profiles, and supply chain dependencies',
+      'Interactive API documentation with Quick Start, API Reference, SDK, and LangChain guides',
+      'Post-registration onboarding wizard with proxy endpoint and API key setup',
+      'Password reset flow with self-service recovery',
+      'CSV export and date range filtering on the incidents page',
+      'SIEM/SOAR integration settings page (Splunk, Elastic, QRadar, Sentinel)',
+    ],
+  },
+  {
+    version: '0.4.0',
+    date: 'February 2026',
+    title: 'SDK Integrations & Enterprise Settings',
+    changes: [
+      'Python and Node.js SDKs with typed responses, retry logic, and custom exceptions',
+      'LangChain and LlamaIndex callback handlers for automatic event capture',
+      'OpenTelemetry span exporter for distributed tracing',
+      'Team management with invite, remove, and role-based access control',
+      'SSO (SAML 2.0 / OIDC), IP allowlisting, and data residency configuration',
+      'Data retention policies with hot/warm/cold archival tiers',
+    ],
+  },
+  {
     version: '0.3.0',
     date: 'February 2026',
     title: 'Red Team Testing & Shadow AI Discovery',
@@ -62,7 +88,7 @@ export default function ChangelogPage() {
         </p>
 
         <div className="mt-16 space-y-0">
-          {RELEASES.map((release, idx) => (
+          {RELEASES.map((release) => (
             <div
               key={release.version}
               className="relative border-l-2 border-border pb-12 pl-8 last:pb-0"
