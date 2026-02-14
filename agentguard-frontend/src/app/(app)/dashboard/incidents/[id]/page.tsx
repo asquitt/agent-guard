@@ -10,6 +10,7 @@ import { getExecution } from '@/lib/api/sandboxes';
 import type { IncidentAction } from '@/types';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
+import { ResponsePlaybook } from '@/components/incidents/ResponsePlaybook';
 import { QueryError } from '@/components/ui/QueryError';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -201,6 +202,13 @@ export default function IncidentDetailPage() {
           <p className="whitespace-pre-wrap text-sm text-muted-foreground">
             {incident.description}
           </p>
+        </div>
+      )}
+
+      {/* Response Playbook */}
+      {(incident.status === 'open' || incident.status === 'acknowledged') && (
+        <div className="mb-6">
+          <ResponsePlaybook category={incident.category} />
         </div>
       )}
 
