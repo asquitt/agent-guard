@@ -78,6 +78,44 @@ export async function createRedTeamRun(data: RedTeamRunCreate): Promise<RedTeamR
   });
 }
 
-export async function getTestCategories(): Promise<{ categories: string[] }> {
-  return apiFetch<{ categories: string[] }>('/red-team/categories');
+export interface OwaspMapping {
+  [key: string]: { name: string; categories: string[] };
+}
+
+export interface CategoriesResponse {
+  categories: string[];
+  owasp_mapping: OwaspMapping;
+}
+
+export interface MultiTurnSequenceInfo {
+  steps: number;
+  description: string;
+}
+
+export interface MutationVariant {
+  name: string;
+  prompt: string;
+  strategy: string;
+}
+
+export async function getTestCategories(): Promise<CategoriesResponse> {
+  return apiFetch<CategoriesResponse>('/red-team/categories');
+}
+
+export async function getMultiTurnSequences(): Promise<{ sequences: Record<string, MultiTurnSequenceInfo> }> {
+  return apiFetch<{ sequences: Record<string, MultiTurnSequenceInfo> }>('/red-team/multi-turn/sequences');
+}
+
+export async function getMutationStrategies(): Promise<{ strategies: string[] }> {
+  return apiFetch<{ strategies: string[] }>('/red-team/mutations/strategies');
+}
+
+export async function generateMutations(
+  prompt: string,
+  strategies?: string[],
+): Promise<{ original: string; mutations: MutationVariant[] }> {
+  return apiFetch<{ original: string; mutations: MutationVariant[] }>('/red-team/mutations/generate', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, strategies }),
+  });
 }

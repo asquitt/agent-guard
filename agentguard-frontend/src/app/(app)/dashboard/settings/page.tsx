@@ -96,6 +96,18 @@ export default function SettingsPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/settings/siem"
+          className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
+        >
+          <h3 className="text-sm font-semibold text-foreground">SIEM/SOAR Integration</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Send events to Splunk, Elastic, QRadar, Sentinel in CEF, OCSF, ECS, or LEEF format
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary">
+            Configure SIEM &rarr;
+          </p>
+        </Link>
+        <Link
           href="/dashboard/settings/retention"
           className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
         >
