@@ -12,10 +12,14 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { ToastProvider } from '@/hooks/useToast';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { pushWsEvent } from '@/hooks/useActivityFeed';
+import { useToast } from '@/hooks/useToast';
+
+const HIGH_SEVERITY = new Set(['critical', 'high']);
 
 function WebSocketManager({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const { lastEvent } = useWebSocket();
+  const toast = useToast();
 
   useEffect(() => {
     if (!lastEvent || lastEvent.type === 'connected') return;
@@ -24,10 +28,16 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
     pushWsEvent(lastEvent);
 
     switch (lastEvent.type) {
-      case 'incident.new':
+      case 'incident.new': {
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
         queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        const severity = (lastEvent.data?.severity as string) ?? '';
+        if (HIGH_SEVERITY.has(severity)) {
+          const title = (lastEvent.data?.title as string) ?? 'New incident';
+          toast.error(`🚨 ${severity.toUpperCase()}: ${title}`);
+        }
         break;
+      }
       case 'incident.updated':
         queryClient.invalidateQueries({ queryKey: ['dashboard', 'metrics'] });
         queryClient.invalidateQueries({ queryKey: ['incidents'] });
@@ -39,7 +49,7 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
         queryClient.invalidateQueries({ queryKey: ['billing'] });
         break;
     }
-  }, [lastEvent, queryClient]);
+  }, [lastEvent, queryClient, toast]);
 
   return <>{children}</>;
 }
