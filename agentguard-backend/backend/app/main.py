@@ -111,6 +111,7 @@ from app.api import (  # noqa: E402
     conversations,
     dashboard,
     governance,
+    governance_testing,
     detectors,
     incidents,
     organizations,
@@ -154,4 +155,5 @@ app.include_router(threat_intel.router, prefix="/api/v1/threat-intel", tags=["Th
 app.include_router(traces.router, prefix="/api/v1/traces", tags=["Traces"])
 app.include_router(sandboxes.router, prefix="/api/v1/sandboxes", tags=["Sandboxes"])
 app.include_router(governance.router, prefix="/api/v1/governance", tags=["Governance"])
+app.include_router(governance_testing.router, prefix="/api/v1/governance", tags=["Governance Testing"])
 app.include_router(websocket.router, tags=["WebSocket"])
