@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { useListKeyNav } from '@/hooks/useListKeyNav';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useTableDensity, DENSITY_CLASSES } from '@/hooks/useTableDensity';
+import { useSavedViews } from '@/hooks/useSavedViews';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
@@ -51,6 +52,9 @@ function IncidentsContent() {
   };
   const { isCompact } = useTableDensity();
   const dc = isCompact ? DENSITY_CLASSES.compact : DENSITY_CLASSES.comfortable;
+  const { views: savedViews, save: saveView, remove: removeView } = useSavedViews('incidents');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [viewName, setViewName] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const sortField = (filters.sort as SortField) || 'createdAt';
   const sortDir = (filters.dir as SortDir) || 'desc';
@@ -212,6 +216,74 @@ function IncidentsContent() {
           </div>
         )}
       </div>
+
+      {/* Saved views */}
+      {(savedViews.length > 0 || showSaveInput) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {savedViews.map((view) => (
+            <span
+              key={view.id}
+              className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 text-xs"
+            >
+              <button
+                onClick={() => setFilters(view.filters as Partial<IncidentFilters>)}
+                className="px-2.5 py-1 font-medium text-foreground hover:text-primary transition-colors"
+              >
+                {view.name}
+              </button>
+              <button
+                onClick={() => removeView(view.id)}
+                className="pr-1.5 text-muted-foreground/60 hover:text-red-500 transition-colors"
+                aria-label={`Remove ${view.name} view`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {showSaveInput ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (viewName.trim()) {
+                  saveView(viewName.trim(), filters as Record<string, string | number | undefined>);
+                  setViewName('');
+                  setShowSaveInput(false);
+                }
+              }}
+              className="inline-flex items-center gap-1"
+            >
+              <input
+                autoFocus
+                value={viewName}
+                onChange={(e) => setViewName(e.target.value)}
+                placeholder="View name..."
+                className="w-32 rounded-md border border-border bg-background px-2 py-1 text-xs"
+              />
+              <button
+                type="submit"
+                disabled={!viewName.trim()}
+                className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowSaveInput(false); setViewName(''); }}
+                className="text-xs text-muted-foreground"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowSaveInput(true)}
+              className="rounded-lg border border-dashed border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              + Save current view
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
