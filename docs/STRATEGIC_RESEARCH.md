@@ -79,6 +79,76 @@ Ranked by competitive differentiation x market demand x implementation feasibili
 
 ---
 
+## Implementation Status
+
+All 20 features have been implemented, tested, and deployed. Status as of February 2026:
+
+### Priority 1: Immediate Differentiation — ALL DONE
+
+| # | Feature | Status | Backend | API Endpoint |
+|---|---------|--------|---------|-------------|
+| 1 | Instruction Hierarchy Violation Detector | **DONE** | `detection/instruction_hierarchy.py` | Sync detector (playground) |
+| 2 | Schema-Level Injection Detection | **DONE** | `detection/schema_injection.py` | Sync detector (playground) |
+| 3 | Financial-Services PII Pipeline | **DONE** | `detection/financial_pii.py` | Sync detector (playground) |
+| 4 | Hierarchical Detection Pipeline | **DONE** | `detection/tiered.py` | TieredExecutor (Tier 1→2→3) |
+| 5 | OWASP LLM Top 10 Compliance Dashboard | **DONE** | `services/owasp_service.py` | `GET /governance/owasp-compliance` |
+
+### Priority 2: Deep Technical Moats — ALL DONE
+
+| # | Feature | Status | Backend | API Endpoint |
+|---|---------|--------|---------|-------------|
+| 6 | Reasoning Trace Monitor | **DONE** | `detection/reasoning_trace.py` | Async detector |
+| 7 | Confidence-Calibrated Hallucination Detector | **DONE** | `detection/confidence_hallucination.py` | Async detector |
+| 8 | Sequential Action Analyzer | **DONE** | `detection/sequential_action.py` | Async detector |
+| 9 | Sycophancy & Deception Detector | **DONE** | `detection/sycophancy.py` | Async detector |
+| 10 | Model-Specific Safety Profiles | **DONE** | `detection/model_safety_profile.py` | Sync detector |
+
+### Priority 3: Governance & Compliance — ALL DONE
+
+| # | Feature | Status | Backend | API Endpoint |
+|---|---------|--------|---------|-------------|
+| 11 | Cross-Framework Compliance Reporting | **DONE** | `services/compliance_framework_service.py` | `GET /governance/compliance-matrix`, `/framework-summary` |
+| 12 | Scope Enforcement Monitor | **DONE** | `detection/scope_enforcement.py` | Sync detector (playground) |
+| 13 | MITRE ATLAS Threat Mapping | **DONE** | `services/mitre_atlas_service.py` | `GET /governance/threat-mapping` |
+| 14 | EU AI Act Article 12 Logging | **DONE** | `services/eu_ai_act_service.py` | `GET /governance/article12-logs`, `/article12-summary` |
+| 15 | DORA Incident Reporting Automation | **DONE** | `services/dora_service.py` | `GET /governance/dora-report`, `/dora-classify/{id}`, `/dora-timeline/{id}` |
+
+### Priority 4: Advanced Capabilities — ALL DONE
+
+| # | Feature | Status | Backend | API Endpoint |
+|---|---------|--------|---------|-------------|
+| 16 | Agent Stress Testing / Red Teaming | **DONE** | `services/stress_test_service.py` | `GET /governance/stress-test/suite`, `/readiness`, `POST /run` |
+| 17 | Agent Capability Monitoring | **DONE** | `detection/capability_monitor.py` | Async detector |
+| 18 | Self-Hosted Policy Classifier | **DONE** | `services/policy_classifier_service.py` | `GET /governance/policies`, `POST /classify`, `GET /compliance` |
+| 19 | Agent Memory Exfiltration Detector | **DONE** | `detection/memory_exfiltration.py` | Sync detector (playground) |
+| 20 | Interpretability-Powered Investigation | **DONE** | `services/interpretability_service.py` | `GET /governance/investigations/{id}`, `/summary` |
+
+### Detection Pipeline Summary
+
+| Type | Count | Categories |
+|------|-------|-----------|
+| Sync Detectors | 12 | compliance, financial_pii, instruction_hierarchy, mcp_security, memory_exfiltration, model_safety_profile, pii_leak, prompt_extraction, prompt_injection, schema_injection, scope_enforcement, tool_call |
+| Async Detectors | 9 | capability_monitor, confidence_hallucination, cost_anomaly, hallucination, loop, reasoning_trace, sequential_action, sycophancy, toxicity |
+| **Total** | **21** | All registered in `detection/registry.py` |
+
+### Governance API Endpoints
+
+18 endpoints across 2 routers (`governance.py` + `governance_testing.py`):
+
+| Domain | Endpoints | Tests |
+|--------|----------|-------|
+| OWASP Compliance | 1 | PASS |
+| MITRE ATLAS | 1 | PASS |
+| Cross-Framework Compliance | 2 | PASS |
+| Enforcement Timeline | 1 | PASS |
+| DORA Incident Reporting | 3 | PASS |
+| EU AI Act Article 12 | 2 | PASS |
+| Stress Testing | 3 | PASS |
+| Policy Classifier | 3 | PASS |
+| Interpretability Investigation | 2 | PASS |
+
+---
+
 ## Anthropic Research Insights
 
 ### Constitutional AI & Classifiers
