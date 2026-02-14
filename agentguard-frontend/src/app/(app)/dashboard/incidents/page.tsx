@@ -60,6 +60,8 @@ function IncidentsContent() {
   const sortDir = (filters.dir as SortDir) || 'desc';
   const [bulkAction, setBulkAction] = useState<'resolved' | 'dismissed' | null>(null);
 
+  const hasActiveFilters = !!(filters.severity || filters.status || filters.category || filters.q);
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['incidents', filters],
     queryFn: () => listIncidents(filters),
@@ -366,7 +368,24 @@ function IncidentsContent() {
             <EmptyState
               icon={ShieldAlert}
               title="No incidents found"
-              description="No incidents match your current filters. Try adjusting your search criteria."
+              description={
+                hasActiveFilters
+                  ? 'No incidents match your current filters. Try adjusting your search criteria.'
+                  : 'No incidents detected yet. Start proxying LLM traffic to monitor for threats.'
+              }
+              hints={
+                hasActiveFilters
+                  ? undefined
+                  : [
+                      { label: 'Configure detectors', href: '/dashboard/detectors' },
+                      { label: 'Create an API key', href: '/dashboard/api-keys' },
+                    ]
+              }
+              action={
+                hasActiveFilters
+                  ? { label: 'Clear filters', onClick: resetFilters }
+                  : undefined
+              }
             />
           </div>
         ) : (

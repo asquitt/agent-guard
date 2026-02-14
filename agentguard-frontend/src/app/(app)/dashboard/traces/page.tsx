@@ -146,7 +146,11 @@ export default function TracesPage() {
                   <EmptyState
                     icon={FileSearch}
                     title="No traces found"
-                    description="No request traces match your filters."
+                    description="No request traces match your filters. Traces appear when LLM requests flow through the proxy."
+                    hints={[
+                      { label: 'Get API keys', href: '/dashboard/api-keys' },
+                      { label: 'View docs', href: '/docs' },
+                    ]}
                   />
                 </td>
               </tr>

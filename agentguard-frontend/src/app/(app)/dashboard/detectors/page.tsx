@@ -114,6 +114,10 @@ export default function DetectorsPage() {
           icon={Radar}
           title="No detectors configured"
           description="Detectors are created automatically when you first proxy a request through AgentGuard."
+          hints={[
+            { label: 'Create an API key', href: '/dashboard/api-keys' },
+            { label: 'View integration docs', href: '/docs' },
+          ]}
         />
       ) : (
         <>

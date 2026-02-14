@@ -101,6 +101,10 @@ export default function RiskScorePage() {
           icon={ShieldCheck}
           title="No risk data yet"
           description="Risk scoring requires incident data. Start proxying LLM traffic to see your security posture."
+          hints={[
+            { label: 'View incidents', href: '/dashboard/incidents' },
+            { label: 'Configure detectors', href: '/dashboard/detectors' },
+          ]}
         />
       ) : (
         <>

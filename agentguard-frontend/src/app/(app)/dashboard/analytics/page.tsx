@@ -168,7 +168,11 @@ export default function AnalyticsPage() {
         <EmptyState
           icon={BarChart3}
           title="No data available"
-          description="No analytics data for this time range. Try selecting a wider window."
+          description="No analytics data for this time range. Try selecting a wider window or start proxying traffic."
+          hints={[
+            { label: 'View traces', href: '/dashboard/traces' },
+            { label: 'View incidents', href: '/dashboard/incidents' },
+          ]}
         />
       ) : (
         <div className="rounded-xl border border-border bg-card p-6">
