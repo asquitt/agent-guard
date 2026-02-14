@@ -139,6 +139,10 @@ class DetectorCategory(str, enum.Enum):
     MEMORY_EXFILTRATION = "memory_exfiltration"
     CONFIDENCE_HALLUCINATION = "confidence_hallucination"
     CAPABILITY_MONITOR = "capability_monitor"
+    INSTRUCTION_HIERARCHY = "instruction_hierarchy"
+    REASONING_TRACE = "reasoning_trace"
+    FINANCIAL_PII = "financial_pii"
+    MODEL_SAFETY_PROFILE = "model_safety_profile"
 
 
 class ActionMode(str, enum.Enum):

@@ -39,7 +39,7 @@ export interface MeResponse {
 // Incidents
 export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type IncidentStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
-export type IncidentCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security';
+export type IncidentCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security' | 'schema_injection' | 'sequential_action' | 'scope_enforcement' | 'sycophancy' | 'memory_exfiltration' | 'confidence_hallucination' | 'capability_monitor' | 'instruction_hierarchy' | 'reasoning_trace' | 'financial_pii' | 'model_safety_profile';
 
 export interface Incident {
   id: UUID;
@@ -82,7 +82,7 @@ export interface IncidentFilters {
 }
 
 // Detectors
-export type DetectorCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security';
+export type DetectorCategory = 'hallucination' | 'pii_leak' | 'compliance' | 'cost_anomaly' | 'loop' | 'prompt_injection' | 'prompt_extraction' | 'toxicity' | 'tool_call' | 'mcp_security' | 'schema_injection' | 'sequential_action' | 'scope_enforcement' | 'sycophancy' | 'memory_exfiltration' | 'confidence_hallucination' | 'capability_monitor' | 'instruction_hierarchy' | 'reasoning_trace' | 'financial_pii' | 'model_safety_profile';
 
 export interface DetectorRule {
   id: UUID;
@@ -419,4 +419,88 @@ export interface PlaygroundTestResponse {
 export interface PlaygroundCategories {
   sync: string[];
   async: string[];
+}
+
+// Governance - OWASP
+export interface OWASPRisk {
+  id: string;
+  name: string;
+  description: string;
+  coverage: 'full' | 'partial' | 'none';
+  mappedCategories: string[];
+  incidentsDetected: number;
+  incidentsResolved: number;
+  activeIncidents: number;
+}
+
+export interface OWASPCompliance {
+  risks: OWASPRisk[];
+  coveragePercentage: number;
+  coveredRisks: number;
+  totalRisks: number;
+  periodDays: number;
+}
+
+// Governance - MITRE ATLAS
+export interface ATLASTechnique {
+  id: string;
+  name: string;
+  tactic: string;
+  description: string;
+  coverage: 'full' | 'partial' | 'none';
+  mappedCategories: string[];
+  incidentsDetected: number;
+  severityBreakdown: Record<string, number>;
+}
+
+export interface ThreatMapping {
+  techniques: ATLASTechnique[];
+  coveragePercentage: number;
+  totalTechniques: number;
+  coveredTechniques: number;
+  periodDays: number;
+}
+
+// Governance - Cross-Framework Compliance
+export interface FrameworkRequirement {
+  framework: string;
+  requirementId: string;
+  requirementName: string;
+  status: 'compliant' | 'partial' | 'non_compliant';
+  mappedCategories: string[];
+  violations: number;
+  lastViolation: string | null;
+}
+
+export interface ComplianceMatrix {
+  requirements: FrameworkRequirement[];
+  overallCompliance: number;
+  frameworksAssessed: number;
+  periodDays: number;
+}
+
+export interface FrameworkSummaryItem {
+  framework: string;
+  displayName: string;
+  totalRequirements: number;
+  compliant: number;
+  partial: number;
+  nonCompliant: number;
+  compliancePercentage: number;
+  totalViolations: number;
+}
+
+export interface FrameworkSummaryResponse {
+  frameworks: FrameworkSummaryItem[];
+  overallCompliance: number;
+  periodDays: number;
+}
+
+export interface EnforcementDeadline {
+  framework: string;
+  milestone: string;
+  date: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  status: 'upcoming' | 'active' | 'passed';
 }

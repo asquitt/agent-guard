@@ -6,13 +6,17 @@ from app.models.enums import DetectorCategory
 from app.services.detection.base import AsyncDetector, SyncDetector
 from app.services.detection.capability_monitor import CapabilityMonitorDetector
 from app.services.detection.compliance import ComplianceDetector
+from app.services.detection.financial_pii import FinancialPIIDetector
 from app.services.detection.confidence_hallucination import ConfidenceHallucinationDetector
 from app.services.detection.cost import CostAnomalyDetector
 from app.services.detection.hallucination import HallucinationDetector
+from app.services.detection.instruction_hierarchy import InstructionHierarchyDetector
 from app.services.detection.loop import LoopDetector
+from app.services.detection.model_safety_profile import ModelSafetyProfileDetector
 from app.services.detection.pii import PIIDetector
 from app.services.detection.prompt_extraction import PromptExtractionDetector
 from app.services.detection.prompt_injection import PromptInjectionDetector
+from app.services.detection.reasoning_trace import ReasoningTraceDetector
 from app.services.detection.mcp_security import MCPSecurityDetector
 from app.services.detection.memory_exfiltration import MemoryExfiltrationDetector
 from app.services.detection.schema_injection import SchemaInjectionDetector
@@ -35,6 +39,9 @@ SYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.SCHEMA_INJECTION.value,
         DetectorCategory.SCOPE_ENFORCEMENT.value,
         DetectorCategory.MEMORY_EXFILTRATION.value,
+        DetectorCategory.INSTRUCTION_HIERARCHY.value,
+        DetectorCategory.FINANCIAL_PII.value,
+        DetectorCategory.MODEL_SAFETY_PROFILE.value,
     }
 )
 
@@ -49,6 +56,7 @@ ASYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.SYCOPHANCY.value,
         DetectorCategory.CONFIDENCE_HALLUCINATION.value,
         DetectorCategory.CAPABILITY_MONITOR.value,
+        DetectorCategory.REASONING_TRACE.value,
     }
 )
 
@@ -111,6 +119,9 @@ _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.SCHEMA_INJECTION.value: SchemaInjectionDetector(),
     DetectorCategory.SCOPE_ENFORCEMENT.value: ScopeEnforcementDetector(),
     DetectorCategory.MEMORY_EXFILTRATION.value: MemoryExfiltrationDetector(),
+    DetectorCategory.INSTRUCTION_HIERARCHY.value: InstructionHierarchyDetector(),
+    DetectorCategory.FINANCIAL_PII.value: FinancialPIIDetector(),
+    DetectorCategory.MODEL_SAFETY_PROFILE.value: ModelSafetyProfileDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
@@ -122,6 +133,7 @@ _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
     DetectorCategory.SYCOPHANCY.value: SycophancyDetector(),
     DetectorCategory.CONFIDENCE_HALLUCINATION.value: ConfidenceHallucinationDetector(),
     DetectorCategory.CAPABILITY_MONITOR.value: CapabilityMonitorDetector(),
+    DetectorCategory.REASONING_TRACE.value: ReasoningTraceDetector(),
 }
 
 

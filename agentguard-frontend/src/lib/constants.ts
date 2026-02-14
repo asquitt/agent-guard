@@ -22,3 +22,27 @@ export const STATUS_COLORS: Record<string, string> = {
   resolved: 'bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20',
   dismissed: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
 };
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  hallucination: 'Hallucination',
+  pii_leak: 'PII Leak',
+  compliance: 'Compliance',
+  cost_anomaly: 'Cost Anomaly',
+  loop: 'Loop Detection',
+  prompt_injection: 'Prompt Injection',
+  prompt_extraction: 'Prompt Extraction',
+  toxicity: 'Toxicity',
+  tool_call: 'Tool Call',
+  mcp_security: 'MCP Security',
+  schema_injection: 'Schema Injection',
+  sequential_action: 'Sequential Action',
+  scope_enforcement: 'Scope Enforcement',
+  sycophancy: 'Sycophancy',
+  memory_exfiltration: 'Memory Exfiltration',
+  confidence_hallucination: 'Confidence Hallucination',
+  capability_monitor: 'Capability Monitor',
+  instruction_hierarchy: 'Instruction Hierarchy',
+  reasoning_trace: 'Reasoning Trace',
+  financial_pii: 'Financial PII',
+  model_safety_profile: 'Model Safety Profile',
+};
