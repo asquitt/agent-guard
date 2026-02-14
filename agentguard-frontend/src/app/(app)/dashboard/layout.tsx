@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { CommandPalette } from '@/components/ui/CommandPalette';
+import { KeyboardShortcuts } from '@/components/ui/KeyboardShortcuts';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export default function DashboardLayout({
@@ -20,6 +21,7 @@ export default function DashboardLayout({
         <Sidebar />
         <Header />
         <CommandPalette />
+        <KeyboardShortcuts />
         <main id="main-content" className="ml-64 pt-14" tabIndex={-1}>
           <div className="p-6">
             <Breadcrumbs />

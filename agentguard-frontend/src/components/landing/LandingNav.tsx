@@ -4,7 +4,8 @@ import Logo from '@/components/ui/Logo';
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'Docs', href: '/docs' },
 ];
 
 export default function LandingNav() {
