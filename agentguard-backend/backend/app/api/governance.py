@@ -1,6 +1,6 @@
 """Governance API router — OWASP, MITRE ATLAS, cross-framework, DORA, EU AI Act."""
 
-# pyright: reportGeneralTypeIssues=false, reportArgumentType=false, reportCallIssue=false
+# pyright: reportGeneralTypeIssues=false, reportArgumentType=false, reportCallIssue=false, reportOperatorIssue=false
 
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -99,13 +99,28 @@ async def get_threat_mapping(
     """Get MITRE ATLAS threat technique mapping with incident counts."""
     from app.services import mitre_atlas_service
 
-    data = await mitre_atlas_service.get_threat_mapping(db, UUID(str(org.id)), days)
+    raw = await mitre_atlas_service.get_threat_mapping(db, UUID(str(org.id)), days)
+    techniques = [
+        ATLASTechnique(
+            id=str(t.get("id", "")),
+            name=str(t.get("name", "")),
+            tactic=str(t.get("tactic", "")),
+            description=str(t.get("description", "")),
+            coverage="full" if t.get("incident_count", 0) > 0 else "none",
+            mapped_categories=t.get("mapped_categories", []),
+            incidents_detected=int(t.get("incident_count", 0)),
+            severity_breakdown={},
+        )
+        for t in raw
+    ]
+    covered = sum(1 for t in techniques if t.coverage != "none")
+    total = len(techniques)
     return ThreatMappingResponse(
-        techniques=[ATLASTechnique(**t) for t in data["techniques"]],
-        coverage_percentage=data["coverage_percentage"],
-        total_techniques=data["total_techniques"],
-        covered_techniques=data["covered_techniques"],
-        period_days=data["period_days"],
+        techniques=techniques,
+        coverage_percentage=round(covered / total * 100, 1) if total else 0.0,
+        total_techniques=total,
+        covered_techniques=covered,
+        period_days=days,
     )
 
 
@@ -144,14 +159,32 @@ async def get_compliance_matrix(
     """Get full cross-framework compliance matrix (SOX, PCI-DSS, EU AI Act, DORA)."""
     from app.services import compliance_framework_service
 
-    data = await compliance_framework_service.get_compliance_matrix(
+    raw = await compliance_framework_service.get_compliance_matrix(
         db, UUID(str(org.id)), days
     )
+    requirements: list[FrameworkRequirement] = []
+    frameworks_seen: set[str] = set()
+    for entry in raw:
+        for fw in entry.get("frameworks", []):
+            fw_name = str(fw.get("framework", ""))
+            frameworks_seen.add(fw_name)
+            violations = int(entry.get("incident_count", 0))
+            status = "non_compliant" if violations > 0 else "compliant"
+            requirements.append(FrameworkRequirement(
+                framework=fw_name,
+                requirement_id=str(fw.get("requirement_id", "")),
+                requirement_name=str(fw.get("requirement", "")),
+                status=status,
+                mapped_categories=[str(entry.get("category", ""))],
+                violations=violations,
+            ))
+    compliant = sum(1 for r in requirements if r.status == "compliant")
+    total = len(requirements)
     return ComplianceMatrixResponse(
-        requirements=[FrameworkRequirement(**r) for r in data["requirements"]],
-        overall_compliance=data["overall_compliance"],
-        frameworks_assessed=data["frameworks_assessed"],
-        period_days=data["period_days"],
+        requirements=requirements,
+        overall_compliance=round(compliant / total * 100, 1) if total else 100.0,
+        frameworks_assessed=len(frameworks_seen),
+        period_days=days,
     )
 
 
@@ -185,13 +218,30 @@ async def get_framework_summary(
     """Get per-framework violation summary."""
     from app.services import compliance_framework_service
 
-    data = await compliance_framework_service.get_framework_summary(
+    raw = await compliance_framework_service.get_framework_summary(
         db, UUID(str(org.id)), days
     )
+    frameworks = [
+        FrameworkSummary(
+            framework=str(f.get("framework", "")),
+            display_name=str(f.get("framework", "")),
+            total_requirements=len(f.get("covered_categories", [])),
+            compliant=len(f.get("covered_categories", [])) - len(f.get("categories_with_incidents", [])),
+            partial=0,
+            non_compliant=len(f.get("categories_with_incidents", [])),
+            compliance_percentage=round(
+                (1 - len(f.get("categories_with_incidents", [])) / max(len(f.get("covered_categories", [])), 1)) * 100, 1
+            ),
+            total_violations=int(f.get("total_violations", 0)),
+        )
+        for f in raw
+    ]
+    total_reqs = sum(fw.total_requirements for fw in frameworks)
+    total_compliant = sum(fw.compliant for fw in frameworks)
     return FrameworkSummaryResponse(
-        frameworks=[FrameworkSummary(**f) for f in data["frameworks"]],
-        overall_compliance=data["overall_compliance"],
-        period_days=data["period_days"],
+        frameworks=frameworks,
+        overall_compliance=round(total_compliant / max(total_reqs, 1) * 100, 1),
+        period_days=days,
     )
 
 
@@ -222,10 +272,19 @@ async def get_enforcement_timeline(
     """Get upcoming regulatory enforcement deadlines."""
     from app.services import compliance_framework_service
 
-    data = compliance_framework_service.get_enforcement_timeline()
-    return EnforcementTimelineResponse(
-        deadlines=[EnforcementDeadline(**d) for d in data["deadlines"]],
-    )
+    raw = compliance_framework_service.get_enforcement_timeline()
+    deadlines = [
+        EnforcementDeadline(
+            framework=str(d.get("framework", "")),
+            milestone=str(d.get("framework", "")),
+            date=str(d.get("date", "")),
+            description=str(d.get("detail", "")),
+            impact="high" if d.get("status") == "enforced" else "medium",
+            status=str(d.get("status", "upcoming")),
+        )
+        for d in raw
+    ]
+    return EnforcementTimelineResponse(deadlines=deadlines)
 
 
 # ---------------------------------------------------------------------------
