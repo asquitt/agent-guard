@@ -107,3 +107,12 @@ export {
   deleteSiemDestination,
 } from './siem';
 export type { SiemFormat, SiemDestination, SiemDestinationCreate, SiemDestinationList, FormatPreview } from './siem';
+export {
+  listModels,
+  getModel,
+  getModelSummary,
+  createModel,
+  updateModel,
+  deleteModel,
+} from './model-registry';
+export type { AIModel, AIModelListResponse, ModelSummary, AIModelCreate, AIModelFilters } from './model-registry';

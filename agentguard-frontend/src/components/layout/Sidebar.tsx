@@ -23,6 +23,7 @@ import {
   CreditCard,
   ClipboardCheck,
   Settings,
+  Layers,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -54,6 +55,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Reviews', href: '/dashboard/reviews', icon: Eye },
       { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
       { label: 'Sandboxes', href: '/dashboard/sandboxes', icon: Box },
+      { label: 'Model Registry', href: '/dashboard/model-registry', icon: Layers },
     ],
   },
   {

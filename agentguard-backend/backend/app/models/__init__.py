@@ -16,6 +16,7 @@ from app.models.conversation import Conversation, ConversationTurn
 from app.models.data_archive import DataArchive
 from app.models.detector import Detector, DetectorRule
 from app.models.incident import Incident, IncidentAction
+from app.models.model_registry import AIModel
 from app.models.proxy import ProxyEndpoint, ProxyRequest
 from app.models.red_team import RedTeamFinding, RedTeamRun
 from app.models.retention_policy import RetentionPolicy
@@ -33,6 +34,7 @@ from app.models.user import ApiKey, Organization, User
 __all__ = [
     "Agent",
     "AgentPolicy",
+    "AIModel",
     "Alert",
     "AlertDestination",
     "ApiKey",
