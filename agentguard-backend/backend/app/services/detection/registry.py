@@ -12,6 +12,10 @@ from app.services.detection.pii import PIIDetector
 from app.services.detection.prompt_extraction import PromptExtractionDetector
 from app.services.detection.prompt_injection import PromptInjectionDetector
 from app.services.detection.mcp_security import MCPSecurityDetector
+from app.services.detection.schema_injection import SchemaInjectionDetector
+from app.services.detection.scope_enforcement import ScopeEnforcementDetector
+from app.services.detection.sequential_action import SequentialActionDetector
+from app.services.detection.sycophancy import SycophancyDetector
 from app.services.detection.tool_call import ToolCallDetector
 from app.services.detection.toxicity import ToxicityDetector
 from app.services.detection.types import DetectionAction, DetectionResult
@@ -25,6 +29,8 @@ SYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.PROMPT_EXTRACTION.value,
         DetectorCategory.TOOL_CALL.value,
         DetectorCategory.MCP_SECURITY.value,
+        DetectorCategory.SCHEMA_INJECTION.value,
+        DetectorCategory.SCOPE_ENFORCEMENT.value,
     }
 )
 
@@ -35,6 +41,8 @@ ASYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.COST_ANOMALY.value,
         DetectorCategory.LOOP.value,
         DetectorCategory.TOXICITY.value,
+        DetectorCategory.SEQUENTIAL_ACTION.value,
+        DetectorCategory.SYCOPHANCY.value,
     }
 )
 
@@ -94,6 +102,8 @@ _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.PROMPT_EXTRACTION.value: PromptExtractionDetector(),
     DetectorCategory.TOOL_CALL.value: ToolCallDetector(),
     DetectorCategory.MCP_SECURITY.value: MCPSecurityDetector(),
+    DetectorCategory.SCHEMA_INJECTION.value: SchemaInjectionDetector(),
+    DetectorCategory.SCOPE_ENFORCEMENT.value: ScopeEnforcementDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
@@ -101,6 +111,8 @@ _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
     DetectorCategory.COST_ANOMALY.value: CostAnomalyDetector(),
     DetectorCategory.LOOP.value: LoopDetector(),
     DetectorCategory.TOXICITY.value: ToxicityDetector(),
+    DetectorCategory.SEQUENTIAL_ACTION.value: SequentialActionDetector(),
+    DetectorCategory.SYCOPHANCY.value: SycophancyDetector(),
 }
 
 

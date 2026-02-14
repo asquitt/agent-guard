@@ -132,6 +132,10 @@ class DetectorCategory(str, enum.Enum):
     TOXICITY = "toxicity"
     TOOL_CALL = "tool_call"
     MCP_SECURITY = "mcp_security"
+    SCHEMA_INJECTION = "schema_injection"
+    SEQUENTIAL_ACTION = "sequential_action"
+    SCOPE_ENFORCEMENT = "scope_enforcement"
+    SYCOPHANCY = "sycophancy"
 
 
 class ActionMode(str, enum.Enum):
