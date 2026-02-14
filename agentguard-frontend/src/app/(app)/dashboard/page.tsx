@@ -8,6 +8,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useToast } from '@/hooks/useToast';
 import { getDashboardMetrics, getRiskScore } from '@/lib/api';
 import { Sparkline } from '@/components/charts/Sparkline';
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { DetectionEfficacySection } from '@/components/dashboard/DetectionEfficacy';
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
@@ -104,27 +105,31 @@ export default function DashboardPage() {
           {/* Detection efficacy */}
           <DetectionEfficacySection />
 
-          {/* Recent incidents */}
-          <div className="mt-8 rounded-xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <h2 className="text-lg font-semibold text-foreground">
-                Recent Incidents
-              </h2>
-              <Link
-                href="/dashboard/incidents"
-                className="text-sm font-medium text-primary hover:text-primary"
-              >
-                View all
-              </Link>
+          {/* Recent incidents + Activity feed */}
+          <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div className="xl:col-span-2 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Recent Incidents
+                </h2>
+                <Link
+                  href="/dashboard/incidents"
+                  className="text-sm font-medium text-primary hover:text-primary"
+                >
+                  View all
+                </Link>
+              </div>
+
+              {metrics?.recentIncidents.length ? (
+                <div className="overflow-x-auto">
+                  <IncidentTable incidents={metrics.recentIncidents} />
+                </div>
+              ) : (
+                <DashboardEmptyState />
+              )}
             </div>
 
-            {metrics?.recentIncidents.length ? (
-              <div className="overflow-x-auto">
-                <IncidentTable incidents={metrics.recentIncidents} />
-              </div>
-            ) : (
-              <DashboardEmptyState />
-            )}
+            <ActivityFeed />
           </div>
         </>
       )}

@@ -11,7 +11,7 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/hooks/useAuth';
 import { ToastProvider } from '@/hooks/useToast';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import type { WebSocketEvent } from '@/hooks/useWebSocket';
+import { pushWsEvent } from '@/hooks/useActivityFeed';
 
 function WebSocketManager({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
@@ -19,6 +19,9 @@ function WebSocketManager({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!lastEvent || lastEvent.type === 'connected') return;
+
+    // Feed the activity store
+    pushWsEvent(lastEvent);
 
     switch (lastEvent.type) {
       case 'incident.new':
