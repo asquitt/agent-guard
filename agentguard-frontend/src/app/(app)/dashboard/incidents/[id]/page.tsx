@@ -9,6 +9,7 @@ import { getIncident, updateIncidentStatus, addIncidentAction } from '@/lib/api'
 import { getExecution } from '@/lib/api/sandboxes';
 import type { IncidentAction } from '@/types';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
+import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -159,6 +160,11 @@ export default function IncidentDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Detection Timeline */}
+      <div className="mb-6">
+        <DetectionTimeline incident={incident} />
+      </div>
 
       {/* Description */}
       {incident.description && (
