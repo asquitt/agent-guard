@@ -80,3 +80,44 @@ class DetectionEfficacyResponse(BaseModel):
     daily_trend: list[DailyDetectionCount] = Field(serialization_alias="dailyTrend")
     overall_false_positive_rate: float = Field(serialization_alias="overallFalsePositiveRate")
     period_days: int = Field(serialization_alias="periodDays")
+
+
+# --- Risk Score ---
+
+
+class CategoryRisk(BaseModel):
+    """Risk contribution from a single detector category."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    category: str
+    score: float  # 0-100
+    incident_count: int = Field(serialization_alias="incidentCount")
+    critical_count: int = Field(serialization_alias="criticalCount")
+    high_count: int = Field(serialization_alias="highCount")
+    open_count: int = Field(serialization_alias="openCount")
+
+
+class RiskTrendPoint(BaseModel):
+    """Risk score at a point in time."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    date: str
+    score: float
+
+
+class RiskScoreResponse(BaseModel):
+    """Composite risk score for an organization."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    overall_score: float = Field(serialization_alias="overallScore")
+    grade: str  # A, B, C, D, F
+    trend_direction: str = Field(serialization_alias="trendDirection")  # improving, stable, degrading
+    categories: list[CategoryRisk]
+    trend: list[RiskTrendPoint]
+    total_incidents: int = Field(serialization_alias="totalIncidents")
+    open_incidents: int = Field(serialization_alias="openIncidents")
+    critical_open: int = Field(serialization_alias="criticalOpen")
+    period_days: int = Field(serialization_alias="periodDays")

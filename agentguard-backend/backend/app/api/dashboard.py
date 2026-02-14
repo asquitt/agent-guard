@@ -16,12 +16,15 @@ from app.models.user import Organization
 from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
 from app.schemas.dashboard import (
     CategoryEfficacy,
+    CategoryRisk,
     DailyDetectionCount,
     DashboardMetricsResponse,
     DetectionEfficacyResponse,
     IncidentCountBySeverity,
     IncidentCountByStatus,
     RecentIncidentSummary,
+    RiskScoreResponse,
+    RiskTrendPoint,
 )
 from app.schemas.health import ProviderSlaMetrics, SlaMetricsResponse
 from app.services import cost_analytics_service, dashboard_service, sla_service
@@ -327,4 +330,30 @@ async def get_time_series(
         buckets=buckets,
         granularity=granularity,
         period_days=days,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Risk Score
+# ---------------------------------------------------------------------------
+
+
+@router.get("/risk-score", response_model=RiskScoreResponse)
+async def get_risk_score(
+    days: int = Query(default=30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> RiskScoreResponse:
+    """Get composite risk score for the organization."""
+    data = await dashboard_service.get_risk_score(db, UUID(str(org.id)), days)
+    return RiskScoreResponse(
+        overall_score=data["overall_score"],
+        grade=data["grade"],
+        trend_direction=data["trend_direction"],
+        categories=[CategoryRisk(**c) for c in data["categories"]],
+        trend=[RiskTrendPoint(**t) for t in data["trend"]],
+        total_incidents=data["total_incidents"],
+        open_incidents=data["open_incidents"],
+        critical_open=data["critical_open"],
+        period_days=data["period_days"],
     )

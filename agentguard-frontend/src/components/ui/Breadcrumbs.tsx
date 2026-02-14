@@ -24,6 +24,7 @@ const LABEL_MAP: Record<string, string> = {
   compliance: 'Compliance',
   settings: 'Settings',
   analytics: 'Analytics',
+  'risk-score': 'Risk Score',
   profile: 'Profile',
   notifications: 'Notifications',
   team: 'Team',

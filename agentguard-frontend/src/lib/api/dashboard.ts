@@ -65,3 +65,35 @@ export async function getTimeSeries(
     `/dashboard/time-series?days=${days}&granularity=${granularity}`,
   );
 }
+
+// --- Risk Score ---
+
+export interface CategoryRisk {
+  category: string;
+  score: number;
+  incidentCount: number;
+  criticalCount: number;
+  highCount: number;
+  openCount: number;
+}
+
+export interface RiskTrendPoint {
+  date: string;
+  score: number;
+}
+
+export interface RiskScoreData {
+  overallScore: number;
+  grade: string;
+  trendDirection: 'improving' | 'stable' | 'degrading';
+  categories: CategoryRisk[];
+  trend: RiskTrendPoint[];
+  totalIncidents: number;
+  openIncidents: number;
+  criticalOpen: number;
+  periodDays: number;
+}
+
+export async function getRiskScore(days: number = 30): Promise<RiskScoreData> {
+  return apiFetch<RiskScoreData>(`/dashboard/risk-score?days=${days}`);
+}

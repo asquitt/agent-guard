@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   BarChart3,
+  ShieldCheck,
   AlertTriangle,
   Bot,
   Search,
@@ -38,6 +39,7 @@ interface CommandItem {
 const COMMANDS: CommandItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, section: 'Navigation' },
   { id: 'analytics', label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, section: 'Navigation' },
+  { id: 'risk-score', label: 'Risk Score', href: '/dashboard/risk-score', icon: ShieldCheck, section: 'Navigation', keywords: ['risk', 'grade', 'posture', 'score'] },
   { id: 'incidents', label: 'Incidents', href: '/dashboard/incidents', icon: AlertTriangle, section: 'Security', keywords: ['alert', 'issue'] },
   { id: 'agents', label: 'Agents', href: '/dashboard/agents', icon: Bot, section: 'Security' },
   { id: 'detectors', label: 'Detectors', href: '/dashboard/detectors', icon: Search, section: 'Security', keywords: ['detection', 'rules'] },

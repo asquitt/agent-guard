@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import {
   LayoutDashboard,
   BarChart3,
+  ShieldCheck,
   AlertTriangle,
   Bot,
   Search,
@@ -44,6 +45,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+      { label: 'Risk Score', href: '/dashboard/risk-score', icon: ShieldCheck },
     ],
   },
   {
