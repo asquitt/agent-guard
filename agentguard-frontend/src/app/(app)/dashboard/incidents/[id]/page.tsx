@@ -223,6 +223,16 @@ export default function IncidentDetailPage() {
         <DetectionTimeline incident={incident} />
       </div>
 
+      {/* Detection Feedback */}
+      <DetectionFeedback
+        incidentId={incident.id}
+        actions={incident.actions}
+        onSubmit={(actionType) =>
+          actionMutation.mutate({ actionType, details: { source: 'feedback' } })
+        }
+        isPending={actionMutation.isPending}
+      />
+
       {/* Description */}
       {incident.description && (
         <div className="mb-6 rounded-xl border border-border bg-card p-6">
@@ -302,6 +312,59 @@ function CopyIdButton({ value }: { value: string }) {
     >
       {copied ? '✓ copied' : value.slice(0, 8)}
     </button>
+  );
+}
+
+function DetectionFeedback({
+  incidentId,
+  actions,
+  onSubmit,
+  isPending,
+}: {
+  incidentId: string;
+  actions: IncidentAction[];
+  onSubmit: (actionType: string) => void;
+  isPending: boolean;
+}) {
+  const existing = actions.find(
+    (a) => a.actionType === 'true_positive' || a.actionType === 'false_positive',
+  );
+
+  if (existing) {
+    const isTp = existing.actionType === 'true_positive';
+    return (
+      <div className="mb-6 flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3">
+        <span className="text-xs text-muted-foreground">Detection feedback:</span>
+        <span
+          className={clsx(
+            'rounded-full px-2.5 py-0.5 text-xs font-medium',
+            isTp ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700',
+          )}
+        >
+          {isTp ? 'True Positive' : 'False Positive'}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-card px-6 py-3">
+      <span className="text-xs text-muted-foreground">Was this detection accurate?</span>
+      <button
+        onClick={() => onSubmit('true_positive')}
+        disabled={isPending}
+        className="rounded-lg border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700 hover:bg-green-100 disabled:opacity-50"
+      >
+        True Positive
+      </button>
+      <button
+        onClick={() => onSubmit('false_positive')}
+        disabled={isPending}
+        className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700 hover:bg-yellow-100 disabled:opacity-50"
+      >
+        False Positive
+      </button>
+    </div>
   );
 }
 
