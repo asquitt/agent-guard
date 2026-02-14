@@ -11,7 +11,9 @@ export {
   logoutApi,
   forgotPasswordApi,
   resetPasswordApi,
+  updateProfileApi,
 } from './auth';
+export type { UserProfile } from './auth';
 export {
   getBillingStatus,
   createCheckoutSession,

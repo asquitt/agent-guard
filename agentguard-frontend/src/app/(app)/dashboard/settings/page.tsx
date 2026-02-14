@@ -56,6 +56,18 @@ export default function SettingsPage() {
       {/* Placeholder sections */}
       <div className="space-y-4">
         <Link
+          href="/dashboard/settings/profile"
+          className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
+        >
+          <h3 className="text-sm font-semibold text-foreground">Profile</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Update your name, view account details, and manage security settings
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary">
+            Edit Profile &rarr;
+          </p>
+        </Link>
+        <Link
           href="/dashboard/settings/notifications"
           className="block rounded-xl border border-border bg-card p-6 transition-colors hover:bg-muted/50"
         >

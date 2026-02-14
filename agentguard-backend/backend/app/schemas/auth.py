@@ -97,6 +97,10 @@ class ResetPasswordRequest(BaseModel):
         return _validate_password_strength(v)
 
 
+class UpdateProfileRequest(BaseModel):
+    full_name: str | None = Field(None, min_length=1, max_length=255)
+
+
 class MeResponse(BaseModel):
     user: UserResponse
     organization: OrgResponse

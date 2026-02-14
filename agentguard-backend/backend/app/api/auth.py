@@ -21,6 +21,7 @@ from app.schemas.auth import (
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
+    UpdateProfileRequest,
     UserResponse,
 )
 from app.schemas.notifications import NotificationPreferences, NotificationPreferencesResponse
@@ -286,6 +287,27 @@ async def get_me(
         user=UserResponse.model_validate(current_user),
         organization=OrgResponse.model_validate(org),
     )
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_profile(
+    request: Request,
+    body: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Update current user's profile (name)."""
+    if body.full_name is not None:
+        current_user.full_name = body.full_name  # type: ignore[assignment]
+    db.add(current_user)
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "user.profile_updated", "user", UUID(str(current_user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    await db.refresh(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

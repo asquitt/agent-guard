@@ -1,11 +1,18 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useTheme } from 'next-themes';
+import { Sun, Moon, Search } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function Header() {
   const { user, organization, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => setMounted(true), []);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -31,9 +38,32 @@ export function Header() {
 
   return (
     <header className="fixed left-64 right-0 top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-sm" role="banner">
-      <div className="text-sm text-muted-foreground">
-        {organization?.name ?? 'Organization'}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-muted-foreground">
+          {organization?.name ?? 'Organization'}
+        </span>
+        <button
+          onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+          className="hidden items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted sm:flex"
+        >
+          <Search className="h-3 w-3" />
+          Search...
+          <kbd className="ml-2 rounded border border-border bg-background px-1 py-0.5 text-[10px] font-medium">
+            ⌘K
+          </kbd>
+        </button>
       </div>
+
+      <div className="flex items-center gap-2">
+        {mounted && (
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
 
       <div className="relative" ref={menuRef} onKeyDown={handleKeyDown}>
         <button
@@ -56,6 +86,22 @@ export function Header() {
               <p className="text-sm font-medium text-foreground">{user?.name}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <Link
+              href="/dashboard/settings/profile"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="block w-full px-4 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              Profile
+            </Link>
+            <Link
+              href="/dashboard/settings"
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="block w-full px-4 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              Settings
+            </Link>
             <button
               role="menuitem"
               onClick={() => {
@@ -68,6 +114,7 @@ export function Header() {
             </button>
           </div>
         )}
+      </div>
       </div>
     </header>
   );

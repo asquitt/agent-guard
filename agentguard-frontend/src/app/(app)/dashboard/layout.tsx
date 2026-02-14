@@ -3,6 +3,7 @@
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { CommandPalette } from '@/components/ui/CommandPalette';
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
         </a>
         <Sidebar />
         <Header />
+        <CommandPalette />
         <main id="main-content" className="ml-64 pt-14" tabIndex={-1}>
           <div className="p-6">{children}</div>
         </main>

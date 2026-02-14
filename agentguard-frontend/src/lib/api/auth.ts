@@ -72,3 +72,20 @@ export async function resetPasswordApi(
     body: JSON.stringify({ token, new_password: newPassword }),
   });
 }
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  organizationId: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export async function updateProfileApi(data: { full_name?: string }): Promise<UserProfile> {
+  return apiFetch<UserProfile>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
