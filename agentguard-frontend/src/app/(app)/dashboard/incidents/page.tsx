@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { clsx } from 'clsx';
@@ -59,12 +59,44 @@ export default function IncidentsPage() {
     }
   }
 
+  const exportCsv = useCallback(() => {
+    if (incidents.length === 0) return;
+    const headers = ['ID', 'Title', 'Category', 'Severity', 'Status', 'Created', 'Resolved'];
+    const rows = incidents.map((i) => [
+      i.id,
+      `"${i.title.replace(/"/g, '""')}"`,
+      i.category,
+      i.severity,
+      i.status,
+      new Date(i.createdAt).toISOString(),
+      i.resolvedAt ? new Date(i.resolvedAt).toISOString() : '',
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `incidents-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [incidents]);
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Incidents</h1>
           <p className="text-sm text-muted-foreground">{total} total</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCsv}
+            disabled={incidents.length === 0}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            Export CSV
+          </button>
         </div>
 
         {selected.size > 0 && (
@@ -147,6 +179,20 @@ export default function IncidentsPage() {
           <option value="tool_call">Tool Call Validation</option>
           <option value="mcp_security">MCP Security</option>
         </select>
+        <input
+          type="date"
+          value={filters.dateFrom ?? ''}
+          onChange={(e) => updateFilter('dateFrom', e.target.value)}
+          className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+          title="From date"
+        />
+        <input
+          type="date"
+          value={filters.dateTo ?? ''}
+          onChange={(e) => updateFilter('dateTo', e.target.value)}
+          className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+          title="To date"
+        />
       </div>
 
       {/* Table */}
