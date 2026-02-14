@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.models.enums import DetectorCategory
 from app.services.detection.base import AsyncDetector, SyncDetector
+from app.services.detection.capability_monitor import CapabilityMonitorDetector
 from app.services.detection.compliance import ComplianceDetector
 from app.services.detection.confidence_hallucination import ConfidenceHallucinationDetector
 from app.services.detection.cost import CostAnomalyDetector
@@ -47,6 +48,7 @@ ASYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.SEQUENTIAL_ACTION.value,
         DetectorCategory.SYCOPHANCY.value,
         DetectorCategory.CONFIDENCE_HALLUCINATION.value,
+        DetectorCategory.CAPABILITY_MONITOR.value,
     }
 )
 
@@ -119,6 +121,7 @@ _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
     DetectorCategory.SEQUENTIAL_ACTION.value: SequentialActionDetector(),
     DetectorCategory.SYCOPHANCY.value: SycophancyDetector(),
     DetectorCategory.CONFIDENCE_HALLUCINATION.value: ConfidenceHallucinationDetector(),
+    DetectorCategory.CAPABILITY_MONITOR.value: CapabilityMonitorDetector(),
 }
 
 
