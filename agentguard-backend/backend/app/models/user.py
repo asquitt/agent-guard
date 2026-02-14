@@ -63,6 +63,9 @@ class User(TimestampMixin, Base):
     token_version = Column(Integer, nullable=False, server_default="0")
     password_changed_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Notification preferences (JSONB)
+    notification_preferences = Column(JSONB, nullable=False, server_default="{}")
+
     # Relationships
     organization = relationship("Organization", back_populates="users")
     incident_actions = relationship("IncidentAction", back_populates="user")

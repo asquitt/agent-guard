@@ -118,3 +118,5 @@ export {
   deleteModel,
 } from './model-registry';
 export type { AIModel, AIModelListResponse, ModelSummary, AIModelCreate, AIModelFilters } from './model-registry';
+export { getNotificationPreferences, updateNotificationPreferences } from './notifications';
+export type { NotificationPreferences } from './notifications';

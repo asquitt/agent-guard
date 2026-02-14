@@ -23,6 +23,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
+from app.schemas.notifications import NotificationPreferences, NotificationPreferencesResponse
 from app.services import auth_service
 from app.services.audit_service import write_audit
 
@@ -298,3 +299,32 @@ async def logout(
     await write_audit(db, UUID(str(current_user.org_id)), UUID(str(current_user.id)), "auth.logout", "user", UUID(str(current_user.id)), ip_address=client_ip)
     await db.commit()
     return None
+
+
+@router.get("/me/notifications", response_model=NotificationPreferencesResponse)
+async def get_notification_preferences(
+    current_user: User = Depends(get_current_user),
+) -> NotificationPreferencesResponse:
+    """Get current user's notification preferences."""
+    raw: dict = current_user.notification_preferences or {}  # type: ignore[assignment]
+    prefs = NotificationPreferences(**raw) if raw else NotificationPreferences()
+    return NotificationPreferencesResponse(preferences=prefs)
+
+
+@router.put("/me/notifications", response_model=NotificationPreferencesResponse)
+async def update_notification_preferences(
+    request: Request,
+    body: NotificationPreferences,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> NotificationPreferencesResponse:
+    """Update current user's notification preferences."""
+    current_user.notification_preferences = body.model_dump()  # type: ignore[assignment]
+    db.add(current_user)
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "user.notification_preferences_updated", "user", UUID(str(current_user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    return NotificationPreferencesResponse(preferences=body)
