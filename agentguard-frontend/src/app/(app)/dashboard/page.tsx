@@ -14,6 +14,7 @@ import type { ToastItem } from '@/components/ui/Toast';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import type { RecentIncidentSummary } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
+import { timeAgo } from '@/lib/format';
 import { clsx } from 'clsx';
 
 export default function DashboardPage() {
@@ -280,8 +281,8 @@ function IncidentTable({
                 {inc.status}
               </span>
             </td>
-            <td className="px-6 py-3 text-sm text-muted-foreground">
-              {new Date(inc.createdAt).toLocaleString()}
+            <td className="px-6 py-3 text-sm text-muted-foreground" title={new Date(inc.createdAt).toLocaleString()}>
+              {timeAgo(inc.createdAt)}
             </td>
           </tr>
         ))}

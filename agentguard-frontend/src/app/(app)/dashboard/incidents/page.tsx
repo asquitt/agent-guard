@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { clsx } from 'clsx';
@@ -9,7 +9,14 @@ import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { timeAgo } from '@/lib/format';
+
+type SortField = 'title' | 'category' | 'severity' | 'status' | 'createdAt';
+type SortDir = 'asc' | 'desc';
+
+const SEVERITY_ORDER: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+const STATUS_ORDER: Record<string, number> = { open: 3, acknowledged: 2, resolved: 1, dismissed: 0 };
 
 const PAGE_SIZE = 20;
 
@@ -17,6 +24,8 @@ export default function IncidentsPage() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<IncidentFilters>({ limit: PAGE_SIZE });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const { data, isLoading } = useQuery({
     queryKey: ['incidents', filters],
@@ -32,7 +41,42 @@ export default function IncidentsPage() {
     },
   });
 
-  const incidents = data?.items ?? [];
+  const rawIncidents = data?.items ?? [];
+
+  const incidents = useMemo(() => {
+    const sorted = [...rawIncidents];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'title':
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case 'category':
+          cmp = a.category.localeCompare(b.category);
+          break;
+        case 'severity':
+          cmp = (SEVERITY_ORDER[a.severity] ?? 0) - (SEVERITY_ORDER[b.severity] ?? 0);
+          break;
+        case 'status':
+          cmp = (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0);
+          break;
+        case 'createdAt':
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }, [rawIncidents, sortField, sortDir]);
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir(field === 'createdAt' ? 'desc' : 'asc');
+    }
+  }
   const total = data?.total ?? 0;
   const page = Math.floor((filters.skip ?? 0) / PAGE_SIZE);
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -223,11 +267,11 @@ export default function IncidentsPage() {
                       className="rounded border-border"
                     />
                   </th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Severity</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Created</th>
+                  <SortableHeader field="title" label="Title" current={sortField} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader field="category" label="Category" current={sortField} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader field="severity" label="Severity" current={sortField} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader field="status" label="Status" current={sortField} dir={sortDir} onSort={toggleSort} />
+                  <SortableHeader field="createdAt" label="Created" current={sortField} dir={sortDir} onSort={toggleSort} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -331,9 +375,40 @@ function IncidentRow({
           {incident.status}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {new Date(incident.createdAt).toLocaleString()}
+      <td className="px-4 py-3 text-sm text-muted-foreground" title={new Date(incident.createdAt).toLocaleString()}>
+        {timeAgo(incident.createdAt)}
       </td>
     </tr>
+  );
+}
+
+function SortableHeader({
+  field,
+  label,
+  current,
+  dir,
+  onSort,
+}: {
+  field: SortField;
+  label: string;
+  current: SortField;
+  dir: SortDir;
+  onSort: (f: SortField) => void;
+}) {
+  const isActive = current === field;
+  return (
+    <th className="px-4 py-3">
+      <button
+        onClick={() => onSort(field)}
+        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+      >
+        {label}
+        {isActive ? (
+          dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    </th>
   );
 }
