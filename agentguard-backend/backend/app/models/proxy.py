@@ -47,6 +47,12 @@ class ProxyRequest(TimestampMixin, Base):
         nullable=True,
         index=True,
     )
+    sandbox_execution_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sandbox_executions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     method = Column(String(10), nullable=False, default="POST")
     path = Column(String(2048), nullable=False)
     request_body = Column(Text, nullable=True)

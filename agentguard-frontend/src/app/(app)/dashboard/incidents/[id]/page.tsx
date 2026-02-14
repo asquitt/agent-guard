@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { getIncident, updateIncidentStatus, addIncidentAction } from '@/lib/api';
+import { getExecution } from '@/lib/api/sandboxes';
 import type { IncidentAction } from '@/types';
 import { SEVERITY_COLORS_BORDERED as SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 
@@ -17,6 +19,12 @@ export default function IncidentDetailPage() {
   const { data: incident, isLoading } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => getIncident(id),
+  });
+
+  const { data: sandboxExecution } = useQuery({
+    queryKey: ['sandbox-execution', incident?.sandboxExecutionId],
+    queryFn: () => getExecution(incident!.sandboxExecutionId!),
+    enabled: !!incident?.sandboxExecutionId,
   });
 
   const statusMutation = useMutation({
@@ -129,23 +137,28 @@ export default function IncidentDetailPage() {
       {/* Metadata grid */}
       <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-6 lg:grid-cols-4">
         <MetaItem label="Created" value={new Date(incident.createdAt).toLocaleString()} />
-        <MetaItem
-          label="Resolved"
-          value={
-            incident.resolvedAt
-              ? new Date(incident.resolvedAt).toLocaleString()
-              : '—'
-          }
-        />
-        <MetaItem
-          label="Action Taken"
-          value={incident.actionTaken ?? 'None'}
-        />
-        <MetaItem
-          label="Detector ID"
-          value={incident.detectorId?.slice(0, 8) ?? '—'}
-        />
+        <MetaItem label="Resolved" value={incident.resolvedAt ? new Date(incident.resolvedAt).toLocaleString() : '—'} />
+        <MetaItem label="Action Taken" value={incident.actionTaken ?? 'None'} />
+        <MetaItem label="Detector ID" value={incident.detectorId?.slice(0, 8) ?? '—'} />
       </div>
+
+      {/* Sandbox context */}
+      {incident.sandboxExecutionId && (
+        <div className="mb-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-foreground">Sandbox Context</h2>
+            {sandboxExecution && (
+              <Link href={`/dashboard/sandboxes/${sandboxExecution.sandboxId}/executions/${sandboxExecution.id}`} className="text-sm font-medium text-primary hover:underline">View execution →</Link>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <MetaItem label="Execution" value={incident.sandboxExecutionId.slice(0, 8)} />
+            <MetaItem label="Status" value={sandboxExecution?.status ?? '—'} />
+            <MetaItem label="Trigger" value={sandboxExecution?.trigger ?? '—'} />
+            <MetaItem label="Container" value={sandboxExecution?.containerId?.slice(0, 12) ?? '—'} />
+          </div>
+        </div>
+      )}
 
       {/* Description */}
       {incident.description && (

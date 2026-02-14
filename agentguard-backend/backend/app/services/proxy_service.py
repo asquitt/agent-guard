@@ -74,6 +74,7 @@ async def create_request_log(
     path: str,
     request_body: str,
     model: str | None,
+    sandbox_execution_id: UUID | None = None,
 ) -> ProxyRequest:
     """Create initial ProxyRequest record before forwarding."""
     proxy_req = ProxyRequest(
@@ -83,6 +84,7 @@ async def create_request_log(
         path=path,
         request_body=truncate_body(request_body),
         model=model,
+        sandbox_execution_id=sandbox_execution_id,
     )
     db.add(proxy_req)
     await db.commit()

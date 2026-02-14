@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from '@/types';
+import type { Incident, PaginatedResponse } from '@/types';
 import type {
   SandboxAuditLogEntry,
   SandboxData,
@@ -137,6 +137,18 @@ export async function getSandboxAuditLogs(
   const qs = buildQueryString(params as Record<string, unknown>);
   return apiFetch<PaginatedResponse<SandboxAuditLogEntry>>(
     `/sandboxes/${sandboxId}/audit${qs}`,
+  );
+}
+
+// Execution → Incidents
+
+export async function getExecutionIncidents(
+  executionId: string,
+  params: { skip?: number; limit?: number } = {},
+): Promise<PaginatedResponse<Incident>> {
+  const qs = buildQueryString(params as Record<string, unknown>);
+  return apiFetch<PaginatedResponse<Incident>>(
+    `/sandboxes/executions/${executionId}/incidents${qs}`,
   );
 }
 

@@ -149,6 +149,34 @@ async def get_execution_audit(
     )
 
 
+@router.get("/executions/{execution_id}/incidents")
+async def get_execution_incidents(
+    execution_id: UUID,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_org),
+) -> dict:
+    """Get incidents linked to a specific sandbox execution."""
+    from sqlalchemy import select, func
+    from app.models.incident import Incident
+    from app.schemas.incidents import IncidentResponse
+
+    base_filter = [Incident.org_id == org.id, Incident.sandbox_execution_id == execution_id]
+    count_result = await db.execute(select(func.count(Incident.id)).where(*base_filter))
+    total = count_result.scalar() or 0
+
+    result = await db.execute(
+        select(Incident)
+        .where(*base_filter)
+        .order_by(Incident.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    items = [IncidentResponse.model_validate(i) for i in result.scalars().all()]
+    return {"items": items, "total": total}
+
+
 # ---------------------------------------------------------------------------
 # Sandbox-scoped routes (/{sandbox_id}/...)
 # ---------------------------------------------------------------------------

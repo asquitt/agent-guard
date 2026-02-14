@@ -65,6 +65,31 @@ def _ip_in_allowlist(client_ip: str, allowlist: list[str]) -> bool:
     return False
 
 
+async def _resolve_sandbox_execution(
+    db: AsyncSession, org_id: UUID, header_value: str | None,
+) -> UUID | None:
+    """Validate and resolve X-Sandbox-Execution-Id header."""
+    if not header_value:
+        return None
+    from sqlalchemy import select
+    from app.models.sandbox_execution import SandboxExecution
+
+    exec_id = UUID(header_value)
+    result = await db.execute(
+        select(SandboxExecution.id).where(
+            SandboxExecution.id == exec_id,
+            SandboxExecution.org_id == org_id,
+            SandboxExecution.status == "running",
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Sandbox execution {header_value} not found or not running",
+        )
+    return exec_id
+
+
 async def _parse_and_resolve(
     request: Request,
     db: AsyncSession,
@@ -111,6 +136,12 @@ async def _parse_and_resolve(
     path = request.url.path.replace("/api/v1/proxy", "")
     model = proxy_service.extract_model_from_body(body)
 
+    # Resolve sandbox execution (optional header)
+    sandbox_exec_header = request.headers.get("x-sandbox-execution-id")
+    sandbox_execution_id = await _resolve_sandbox_execution(
+        db, UUID(str(org.id)), sandbox_exec_header,
+    )
+
     # Log request
     proxy_req = await proxy_service.create_request_log(
         db,
@@ -120,6 +151,7 @@ async def _parse_and_resolve(
         path,
         raw_body.decode("utf-8", errors="replace"),
         model,
+        sandbox_execution_id=sandbox_execution_id,
     )
 
     # Get upstream API key
@@ -233,7 +265,7 @@ async def _handle_non_streaming(
     # Run detection pipeline on successful responses
     if response.status_code == 200:
         # Track sandbox token usage if sandboxed
-        sandbox_exec_id = proxy_req.metadata_.get("sandbox_execution_id") if hasattr(proxy_req, "metadata_") and isinstance(getattr(proxy_req, "metadata_", None), dict) else None
+        sandbox_exec_id = str(proxy_req.sandbox_execution_id) if proxy_req.sandbox_execution_id else None
         if sandbox_exec_id and (input_tokens or output_tokens):
             try:
                 await _track_sandbox_tokens(db, org_id, sandbox_exec_id, (input_tokens or 0) + (output_tokens or 0))
@@ -242,11 +274,14 @@ async def _handle_non_streaming(
 
         timeout_s = settings.SYNC_DETECTION_TIMEOUT_MS / 1000.0
 
+        sandbox_exec_uuid = UUID(sandbox_exec_id) if sandbox_exec_id else None
+
         if settings.DEGRADED_MODE_ENABLED and timeout_s > 0:
             try:
                 decision = await asyncio.wait_for(
                     detection_pipeline.run_sync_detectors(
-                        db, org_id, json.dumps(body), response_text, response_model, UUID(str(proxy_req.id)),
+                        db, org_id, json.dumps(body), response_text, response_model,
+                        UUID(str(proxy_req.id)), sandbox_execution_id=sandbox_exec_uuid,
                     ),
                     timeout=timeout_s,
                 )
@@ -258,7 +293,8 @@ async def _handle_non_streaming(
                 decision = None
         else:
             decision = await detection_pipeline.run_sync_detectors(
-                db, org_id, json.dumps(body), response_text, response_model, UUID(str(proxy_req.id)),
+                db, org_id, json.dumps(body), response_text, response_model,
+                UUID(str(proxy_req.id)), sandbox_execution_id=sandbox_exec_uuid,
             )
 
         if decision is not None:

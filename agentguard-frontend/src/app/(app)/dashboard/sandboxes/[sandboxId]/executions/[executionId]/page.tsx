@@ -10,7 +10,9 @@ import {
   stopExecution,
   terminateExecution,
   getExecutionAuditLogs,
+  getExecutionIncidents,
 } from '@/lib/api/sandboxes';
+import { SEVERITY_COLORS_BORDERED } from '@/lib/constants';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-zinc-500/10 text-zinc-400 ring-1 ring-inset ring-zinc-500/20',
@@ -21,7 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
   failed: 'bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20',
 };
 
-type Tab = 'resources' | 'audit';
+type Tab = 'resources' | 'incidents' | 'audit';
 
 function ResourceGauge({ label, value, max, unit }: { label: string; value: number; max: number; unit: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -65,6 +67,12 @@ export default function ExecutionDetailPage() {
     refetchInterval: execution?.status === 'running' ? 5000 : false,
   });
 
+  const { data: incidents } = useQuery({
+    queryKey: ['executions', executionId, 'incidents'],
+    queryFn: () => getExecutionIncidents(executionId),
+    enabled: activeTab === 'incidents',
+  });
+
   const stopMut = useMutation({
     mutationFn: () => stopExecution(executionId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['executions', executionId] }),
@@ -99,6 +107,7 @@ export default function ExecutionDetailPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'resources', label: 'Resources' },
+    { key: 'incidents', label: `Incidents (${incidents?.total ?? '...'})` },
     { key: 'audit', label: `Audit Log (${auditLogs?.total ?? '...'})` },
   ];
 
@@ -224,6 +233,28 @@ export default function ExecutionDetailPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Incidents Tab */}
+      {activeTab === 'incidents' && (
+        <div className="rounded-xl border border-border bg-card">
+          {incidents?.items?.length ? (
+            <div className="divide-y divide-border">
+              {incidents.items.map((inc) => (
+                <Link key={inc.id} href={`/dashboard/incidents/${inc.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <span className={clsx('rounded-full px-2 py-0.5 text-xs font-medium', SEVERITY_COLORS_BORDERED[inc.severity] ?? 'bg-muted text-muted-foreground')}>{inc.severity}</span>
+                    <span className="text-sm font-medium text-foreground">{inc.title}</span>
+                    <span className="text-xs text-muted-foreground">{inc.category}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{new Date(inc.createdAt).toLocaleString()}</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">No incidents linked to this execution.</div>
+          )}
         </div>
       )}
 

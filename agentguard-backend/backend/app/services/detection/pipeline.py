@@ -54,6 +54,7 @@ async def run_sync_detectors(
     response_body: str,
     model: str | None,
     proxy_request_id: UUID,
+    sandbox_execution_id: UUID | None = None,
 ) -> PipelineDecision:
     """Run all sync detectors and aggregate results.
 
@@ -89,6 +90,7 @@ async def run_sync_detectors(
                     title=result.title,
                     description=result.description,
                     details=result.details,
+                    sandbox_execution_id=sandbox_execution_id,
                 )
 
                 if _ACTION_PRIORITY.get(effective_action.value, 0) > _ACTION_PRIORITY.get(highest_action.value, 0):
@@ -183,6 +185,7 @@ async def _create_incident_from_result(
         org_id=org_id,
         proxy_request_id=proxy_request_id,
         detector_id=result.detector_id,
+        sandbox_execution_id=result.sandbox_execution_id,
         severity=result.severity,
         category=result.category,
         title=result.title,

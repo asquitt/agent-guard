@@ -51,6 +51,7 @@ export interface Incident {
   actionTaken: string | null;
   proxyRequestId: UUID | null;
   detectorId: UUID | null;
+  sandboxExecutionId: UUID | null;
   resolvedAt: string | null;
   createdAt: string;
   updatedAt: string;

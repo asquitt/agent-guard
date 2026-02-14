@@ -57,6 +57,7 @@ class IncidentResponse(BaseModel):
     action_taken: str | None = Field(serialization_alias="actionTaken")
     proxy_request_id: UUID | None = Field(serialization_alias="proxyRequestId")
     detector_id: UUID | None = Field(serialization_alias="detectorId")
+    sandbox_execution_id: UUID | None = Field(None, serialization_alias="sandboxExecutionId")
     resolved_at: datetime | None = Field(serialization_alias="resolvedAt")
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")

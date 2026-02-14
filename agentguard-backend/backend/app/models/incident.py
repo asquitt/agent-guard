@@ -30,6 +30,12 @@ class Incident(TimestampMixin, Base):
         nullable=True,
         index=True,
     )
+    sandbox_execution_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sandbox_executions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     severity = Column(String(50), nullable=False)
     category = Column(String(50), nullable=False)
     title = Column(String(500), nullable=False)
@@ -43,6 +49,7 @@ class Incident(TimestampMixin, Base):
     organization = relationship("Organization", back_populates="incidents")
     proxy_request = relationship("ProxyRequest", back_populates="incidents")
     detector = relationship("Detector", back_populates="incidents")
+    sandbox_execution = relationship("SandboxExecution", back_populates="incidents")
     actions = relationship("IncidentAction", back_populates="incident")
     alerts = relationship("Alert", back_populates="incident")
     review_items = relationship("ReviewItem", back_populates="incident")

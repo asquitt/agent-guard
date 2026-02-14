@@ -40,6 +40,7 @@ class SandboxExecution(TimestampMixin, Base):
     audit_logs = relationship(
         "SandboxAuditLog", back_populates="execution", cascade="all, delete-orphan"
     )
+    incidents = relationship("Incident", back_populates="sandbox_execution")
 
     __table_args__ = (
         Index("ix_sandbox_executions_org_id_status", "org_id", "status"),
