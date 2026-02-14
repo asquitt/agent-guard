@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/lib/api';
 import type { NotificationPreferences } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
 
 const ALL_CATEGORIES = [
   { value: 'hallucination', label: 'Hallucination' },
@@ -36,6 +37,7 @@ const SEVERITY_OPTIONS = [
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [dirty, setDirty] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
 
@@ -54,6 +56,7 @@ export default function NotificationsPage() {
       queryClient.setQueryData(['notification-preferences'], saved);
       setPrefs(saved);
       setDirty(false);
+      toast.success('Preferences saved');
     },
   });
 

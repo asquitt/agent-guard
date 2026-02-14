@@ -7,9 +7,11 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Key } from 'lucide-react';
 import type { ApiKey } from '@/types';
+import { useToast } from '@/hooks/useToast';
 
 export default function ApiKeysPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
@@ -28,13 +30,16 @@ export default function ApiKeysPage() {
       setNewKeyName('');
       setShowCreate(false);
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      toast.success('API key created');
     },
   });
 
   const revokeMutation = useMutation({
     mutationFn: (id: string) => revokeApiKey(id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['api-keys'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      toast.success('API key revoked');
+    },
   });
 
   const keys = data?.items ?? [];

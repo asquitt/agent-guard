@@ -10,6 +10,7 @@ import { RISK_COLORS, AGENT_STATUS_COLORS, FRAMEWORK_BADGE } from '@/lib/constan
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Bot } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
 
 const RISK_TIERS = ['low', 'medium', 'high', 'critical'] as const;
 const STATUSES = ['draft', 'testing', 'production', 'deprecated'] as const;
@@ -18,6 +19,7 @@ const FRAMEWORKS = ['SOX', 'PCI-DSS', 'FFIEC', 'NYDFS-500', 'DORA', 'EU-AI-Act']
 
 export default function AgentsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [filterStatus, setFilterStatus] = useState('');
   const [filterRisk, setFilterRisk] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -34,7 +36,10 @@ export default function AgentsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteAgent,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agents'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      toast.success('Agent deleted');
+    },
   });
 
   const agents = data?.items ?? [];

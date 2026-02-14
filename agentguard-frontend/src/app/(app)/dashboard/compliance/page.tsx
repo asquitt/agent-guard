@@ -14,6 +14,7 @@ import {
 import { ComplianceScoreboard } from '@/components/dashboard/ComplianceScoreboard';
 import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
 import { REPORT_STATUS_COLORS, VERIFICATION_COLORS } from '@/lib/constants';
+import { useToast } from '@/hooks/useToast';
 
 const PAGE_SIZE = 20;
 
@@ -77,6 +78,7 @@ export default function CompliancePage() {
 }
 
 function AuditLogTab() {
+  const toast = useToast();
   const [filters, setFilters] = useState<AuditLogFilters>({ limit: PAGE_SIZE });
 
   const { data, isLoading } = useQuery({
@@ -84,7 +86,12 @@ function AuditLogTab() {
     queryFn: () => listAuditLogs(filters),
   });
 
-  const verifyMutation = useMutation({ mutationFn: verifyAuditChain });
+  const verifyMutation = useMutation({
+    mutationFn: verifyAuditChain,
+    onSuccess: (result) => {
+      toast.success(result.valid ? 'Audit chain verified' : 'Audit chain integrity broken');
+    },
+  });
 
   const logs = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -249,6 +256,7 @@ function AuditLogRow({ log }: { log: AuditLogEntry }) {
 
 function ReportsTab() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [reportType, setReportType] = useState('access_audit');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -261,7 +269,10 @@ function ReportsTab() {
 
   const createMutation = useMutation({
     mutationFn: createComplianceReport,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['complianceReports'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['complianceReports'] });
+      toast.success('Report generation started');
+    },
   });
 
   const reports = reportsData?.items ?? [];

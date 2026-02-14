@@ -10,6 +10,7 @@ import {
   deleteModel,
 } from '@/lib/api/model-registry';
 import type { AIModel, AIModelCreate } from '@/lib/api/model-registry';
+import { useToast } from '@/hooks/useToast';
 
 const RISK_COLORS: Record<string, string> = {
   low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -26,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function ModelRegistryPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [filterProvider, setFilterProvider] = useState('');
   const [filterRisk, setFilterRisk] = useState('');
@@ -74,15 +76,17 @@ export default function ModelRegistryPage() {
         risk_factors: [],
         compliance_frameworks: [],
       });
+      toast.success('Model registered');
     },
   });
 
   const approveMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       updateModel(id, { approval_status: status }),
-    onSuccess: () => {
+    onSuccess: (_data, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['model-registry'] });
       queryClient.invalidateQueries({ queryKey: ['model-registry-summary'] });
+      toast.success(`Model ${status}`);
     },
   });
 
@@ -91,6 +95,7 @@ export default function ModelRegistryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['model-registry'] });
       queryClient.invalidateQueries({ queryKey: ['model-registry-summary'] });
+      toast.success('Model deleted');
     },
   });
 

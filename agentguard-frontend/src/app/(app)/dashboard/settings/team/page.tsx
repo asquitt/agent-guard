@@ -13,6 +13,7 @@ import {
   inviteMember,
 } from '@/lib/api/organizations';
 import type { Member, RoleInfo } from '@/lib/api/organizations';
+import { useToast } from '@/hooks/useToast';
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   owner: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -23,6 +24,7 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
 
 export default function TeamSettingsPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const { user } = useAuth();
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -49,21 +51,26 @@ export default function TeamSettingsPage() {
       setShowInvite(false);
       setInviteEmail('');
       setInviteRole('member');
+      toast.success('Invite sent');
     },
   });
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       updateMemberRole(userId, role),
-    onSuccess: () => {
+    onSuccess: (_data, { role }) => {
       queryClient.invalidateQueries({ queryKey: ['team-members'] });
       setEditingId(null);
+      toast.success(`Role updated to ${role}`);
     },
   });
 
   const removeMutation = useMutation({
     mutationFn: removeMember,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['team-members'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+      toast.success('Member removed');
+    },
   });
 
   const roles = rolesData?.roles ?? [];
