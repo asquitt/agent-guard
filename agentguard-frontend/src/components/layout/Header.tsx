@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
-import { Sun, Moon, Search } from 'lucide-react';
+import { Sun, Moon, Search, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSidebar } from '@/hooks/useSidebar';
 
 export function Header() {
   const { user, organization, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { toggle: toggleSidebar } = useSidebar();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -37,8 +39,15 @@ export function Header() {
   );
 
   return (
-    <header className="fixed left-64 right-0 top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-sm" role="banner">
-      <div className="flex items-center gap-4">
+    <header className="fixed left-0 right-0 top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-sm md:left-64 md:px-6" role="banner">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={toggleSidebar}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+          aria-label="Open sidebar"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
         <span className="text-sm text-muted-foreground">
           {organization?.name ?? 'Organization'}
         </span>

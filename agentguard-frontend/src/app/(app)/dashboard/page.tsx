@@ -138,7 +138,9 @@ export default function DashboardPage() {
             </div>
 
             {metrics?.recentIncidents.length ? (
-              <IncidentTable incidents={metrics.recentIncidents} />
+              <div className="overflow-x-auto">
+                <IncidentTable incidents={metrics.recentIncidents} />
+              </div>
             ) : (
               <DashboardEmptyState />
             )}

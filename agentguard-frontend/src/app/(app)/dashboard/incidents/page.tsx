@@ -255,7 +255,7 @@ export default function IncidentsPage() {
             />
           </div>
         ) : (
-          <>
+          <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -318,7 +318,7 @@ export default function IncidentsPage() {
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
