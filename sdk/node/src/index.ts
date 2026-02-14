@@ -25,3 +25,6 @@ export type {
 
 export { wrapOpenAI, wrapAnthropic } from './wrap';
 export type { WrapOptions } from './wrap';
+
+export { AgentGuardCallbackHandler } from './langchain';
+export type { AgentGuardCallbackOptions } from './langchain';

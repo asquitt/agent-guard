@@ -27,6 +27,7 @@ from app.models.stripe_event import StripeEvent
 from app.models.sandbox import Sandbox
 from app.models.sandbox_audit_log import SandboxAuditLog
 from app.models.sandbox_execution import SandboxExecution
+from app.models.sdk_event import SDKEventRecord, SDKTraceSpan
 from app.models.user import ApiKey, Organization, User
 
 __all__ = [
@@ -54,6 +55,8 @@ __all__ = [
     "Sandbox",
     "SandboxAuditLog",
     "SandboxExecution",
+    "SDKEventRecord",
+    "SDKTraceSpan",
     "ShadowAIDiscovery",
     "SSOConfig",
     "StripeEvent",
