@@ -3,11 +3,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { listIncidents, bulkUpdateStatus } from '@/lib/api';
 import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { useToast } from '@/hooks/useToast';
+import { useListKeyNav } from '@/hooks/useListKeyNav';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
@@ -26,6 +28,7 @@ const PAGE_SIZE = 20;
 export default function IncidentsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const router = useRouter();
   const [filters, setFilters] = useState<IncidentFilters>({ limit: PAGE_SIZE });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -74,6 +77,15 @@ export default function IncidentsPage() {
     });
     return sorted;
   }, [rawIncidents, sortField, sortDir]);
+
+  const handleListSelect = useCallback(
+    (index: number) => {
+      const inc = incidents[index];
+      if (inc) router.push(`/dashboard/incidents/${inc.id}`);
+    },
+    [incidents, router],
+  );
+  const { focusedIndex } = useListKeyNav(incidents.length, handleListSelect);
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -290,11 +302,12 @@ export default function IncidentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {incidents.map((inc) => (
+                {incidents.map((inc, i) => (
                   <IncidentRow
                     key={inc.id}
                     incident={inc}
                     selected={selected.has(inc.id)}
+                    focused={i === focusedIndex}
                     onToggle={() => toggleSelect(inc.id)}
                   />
                 ))}
@@ -345,14 +358,16 @@ export default function IncidentsPage() {
 function IncidentRow({
   incident,
   selected,
+  focused,
   onToggle,
 }: {
   incident: Incident;
   selected: boolean;
+  focused: boolean;
   onToggle: () => void;
 }) {
   return (
-    <tr className={clsx('hover:bg-muted/50', selected && 'bg-primary/10')}>
+    <tr className={clsx('hover:bg-muted/50', selected && 'bg-primary/10', focused && 'ring-2 ring-inset ring-primary/50 bg-primary/5')}>
       <td className="px-4 py-3">
         <input
           type="checkbox"

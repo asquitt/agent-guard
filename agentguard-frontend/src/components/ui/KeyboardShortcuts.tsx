@@ -7,12 +7,22 @@ const SHORTCUTS = [
   { section: 'Navigation', items: [
     { keys: ['⌘', 'K'], desc: 'Open command palette' },
     { keys: ['?'], desc: 'Show keyboard shortcuts' },
+    { keys: ['/'], desc: 'Focus search / filter input' },
   ]},
   { section: 'Go to...', items: [
-    { keys: ['G', 'D'], desc: 'Go to Dashboard' },
-    { keys: ['G', 'I'], desc: 'Go to Incidents' },
-    { keys: ['G', 'A'], desc: 'Go to Analytics' },
-    { keys: ['G', 'S'], desc: 'Go to Settings' },
+    { keys: ['G', 'D'], desc: 'Dashboard' },
+    { keys: ['G', 'I'], desc: 'Incidents' },
+    { keys: ['G', 'A'], desc: 'Analytics' },
+    { keys: ['G', 'R'], desc: 'Reviews' },
+    { keys: ['G', 'T'], desc: 'Detectors' },
+    { keys: ['G', 'L'], desc: 'Alerts' },
+    { keys: ['G', 'K'], desc: 'Risk Score' },
+    { keys: ['G', 'S'], desc: 'Settings' },
+  ]},
+  { section: 'List navigation', items: [
+    { keys: ['J'], desc: 'Next item' },
+    { keys: ['K'], desc: 'Previous item' },
+    { keys: ['Enter'], desc: 'Open selected item' },
   ]},
   { section: 'Actions', items: [
     { keys: ['Esc'], desc: 'Close dialog / Cancel' },
@@ -23,6 +33,10 @@ const G_ROUTES: Record<string, string> = {
   d: '/dashboard',
   i: '/dashboard/incidents',
   a: '/dashboard/analytics',
+  r: '/dashboard/reviews',
+  t: '/dashboard/detectors',
+  l: '/dashboard/alerts',
+  k: '/dashboard/risk-score',
   s: '/dashboard/settings',
 };
 
@@ -43,6 +57,24 @@ export function KeyboardShortcuts() {
         return;
       }
       if (e.key === 'Escape') { setOpen(false); return; }
+
+      // / to focus search
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
+        const input = document.querySelector<HTMLInputElement>(
+          'input[type="text"][placeholder*="earch"], input[type="text"][placeholder*="ilter"]',
+        );
+        if (input) {
+          e.preventDefault();
+          input.focus();
+          return;
+        }
+      }
+
+      // J/K for list navigation
+      if (e.key === 'j' || e.key === 'k') {
+        window.dispatchEvent(new CustomEvent('keyboard:list-nav', { detail: { direction: e.key === 'j' ? 'next' : 'prev' } }));
+        return;
+      }
 
       // G+key two-step combo
       if (e.key === 'g' && !e.metaKey && !e.ctrlKey) {
