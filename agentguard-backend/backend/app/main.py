@@ -127,6 +127,7 @@ from app.api import (  # noqa: E402
     reviews,
     sandboxes,
     shadow_ai,
+    siem,
     sso,
     threat_intel,
     traces,
@@ -158,6 +159,7 @@ app.include_router(red_team.router, prefix="/api/v1/red-team", tags=["Red Team"]
 app.include_router(threat_intel.router, prefix="/api/v1/threat-intel", tags=["Threat Intelligence"])
 app.include_router(traces.router, prefix="/api/v1/traces", tags=["Traces"])
 app.include_router(sandboxes.router, prefix="/api/v1/sandboxes", tags=["Sandboxes"])
+app.include_router(siem.router, prefix="/api/v1/siem", tags=["SIEM/SOAR"])
 app.include_router(governance.router, prefix="/api/v1/governance", tags=["Governance"])
 app.include_router(governance_testing.router, prefix="/api/v1/governance", tags=["Governance Testing"])
 app.include_router(websocket.router, tags=["WebSocket"])

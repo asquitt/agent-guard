@@ -26,6 +26,11 @@ TEST_CATEGORIES = [
     "pii_leakage",
     "compliance_boundary",
     "jailbreak_resistance",
+    "multi_turn_escalation",
+    "excessive_agency",
+    "resource_exhaustion",
+    "hallucination_probe",
+    "output_handling",
 ]
 
 _TEST_LIBRARY: dict[str, list[dict[str, str]]] = {
@@ -216,9 +221,61 @@ async def get_run_stats(
 @router.get("/categories")
 async def list_test_categories(
     _org: Organization = Depends(get_current_org),
-) -> dict[str, list[str]]:
-    """List available test categories."""
-    return {"categories": TEST_CATEGORIES}
+) -> dict:
+    """List available test categories and OWASP LLM Top 10 mapping."""
+    from app.services.red_team_engine import OWASP_LLM_TOP_10
+
+    return {
+        "categories": TEST_CATEGORIES,
+        "owasp_mapping": OWASP_LLM_TOP_10,
+    }
+
+
+@router.get("/multi-turn/sequences")
+async def list_multi_turn_sequences(
+    _org: Organization = Depends(get_current_org),
+) -> dict:
+    """List available multi-turn attack sequences."""
+    from app.services.red_team_engine import MULTI_TURN_SEQUENCES
+
+    return {
+        "sequences": {
+            name: {
+                "steps": len(seq),
+                "description": seq[0]["role"] + " -> " + seq[-1]["role"],
+            }
+            for name, seq in MULTI_TURN_SEQUENCES.items()
+        }
+    }
+
+
+@router.get("/mutations/strategies")
+async def list_mutation_strategies(
+    _org: Organization = Depends(get_current_org),
+) -> dict:
+    """List available prompt mutation strategies."""
+    from app.services.red_team_engine import MUTATION_STRATEGIES
+
+    return {
+        "strategies": list(MUTATION_STRATEGIES.keys()),
+    }
+
+
+class MutationRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=2000)
+    strategies: list[str] | None = None
+
+
+@router.post("/mutations/generate")
+async def generate_mutations(
+    body: MutationRequest,
+    _org: Organization = Depends(get_current_org),
+) -> dict:
+    """Generate mutated variants of a prompt for red team testing."""
+    from app.services.red_team_engine import generate_mutations as gen_mut
+
+    variants = gen_mut(body.prompt, body.strategies)
+    return {"original": body.prompt, "mutations": variants}
 
 
 @router.get("/{run_id}", response_model=RunDetailResponse)
@@ -288,13 +345,51 @@ async def create_run(
     db.add(run)
     await db.flush()
 
-    # Execute tests from the library
+    # Execute tests from both original and extended libraries
+    from app.services.red_team_engine import (
+        EXTENDED_TEST_LIBRARY,
+        MULTI_TURN_SEQUENCES,
+        generate_mutations,
+    )
+
     total = 0
     passed = 0
     failed = 0
 
     for category in body.test_categories:
-        tests = _TEST_LIBRARY.get(category, [])
+        tests = _TEST_LIBRARY.get(category, []) + EXTENDED_TEST_LIBRARY.get(category, [])
+
+        # For multi-turn category, run the multi-turn sequences instead
+        if category == "multi_turn_escalation":
+            for seq_name, steps in MULTI_TURN_SEQUENCES.items():
+                total += 1
+                # Test if ANY step in the sequence is caught
+                any_detected = False
+                for step in steps:
+                    step_passed, _, _ = await _run_single_test(
+                        step["prompt"], category, db, org
+                    )
+                    if step_passed:
+                        any_detected = True
+                        break
+
+                finding = RedTeamFinding(
+                    run_id=run.id,
+                    test_category=category,
+                    test_name=f"Multi-turn: {seq_name}",
+                    passed=any_detected,
+                    severity="info" if any_detected else "critical",
+                    attack_prompt=steps[-1]["prompt"][:500],
+                    explanation=f"Multi-turn sequence '{seq_name}' ({'detected' if any_detected else 'UNDETECTED'}) across {len(steps)} steps",
+                    details={"sequence": seq_name, "steps": len(steps)},
+                )
+                db.add(finding)
+                if any_detected:
+                    passed += 1
+                else:
+                    failed += 1
+            continue
+
         for test in tests:
             total += 1
             # Run the test prompt through sync detectors
@@ -352,6 +447,11 @@ async def _run_single_test(
         "pii_leakage": ["pii_leak"],
         "compliance_boundary": ["compliance"],
         "jailbreak_resistance": ["prompt_injection", "toxicity"],
+        "multi_turn_escalation": ["prompt_injection", "prompt_extraction"],
+        "excessive_agency": ["tool_call_validation", "scope_enforcement"],
+        "resource_exhaustion": ["loop_detection", "cost_anomaly"],
+        "hallucination_probe": ["hallucination"],
+        "output_handling": ["prompt_injection", "schema_injection"],
     }
 
     detector_categories = category_map.get(category, ["prompt_injection"])

@@ -130,12 +130,46 @@ def deliver_webhook(config: dict[str, Any], payload: dict[str, Any]) -> str | No
         return f"Webhook delivery failed: {e}"
 
 
+def deliver_siem(config: dict[str, Any], payload: dict[str, Any]) -> str | None:
+    """Send alert to a SIEM destination in the configured format. Returns error or None."""
+    from app.services.siem_service import format_incident
+
+    url = config.get("url", "")
+    if not url:
+        return "Missing url in SIEM config"
+
+    fmt = config.get("format", "cef")
+    try:
+        formatted = format_incident(payload, fmt)
+    except ValueError as e:
+        return str(e)
+
+    headers: dict[str, str] = {"Content-Type": "application/json"}
+    auth_header = config.get("auth_header")
+    if auth_header:
+        headers["Authorization"] = str(auth_header)
+
+    # CEF and LEEF are strings; wrap in JSON for HTTP delivery
+    if isinstance(formatted, str):
+        body: Any = {"raw": formatted}
+    else:
+        body = formatted
+
+    try:
+        resp = httpx.post(str(url), json=body, headers=headers, timeout=_TIMEOUT)
+        resp.raise_for_status()
+        return None
+    except httpx.HTTPError as e:
+        return f"SIEM delivery ({fmt}) failed: {e}"
+
+
 # Dispatcher
 _DELIVER_MAP: dict[str, Any] = {
     "slack": deliver_slack,
     "pagerduty": deliver_pagerduty,
     "email": deliver_email,
     "webhook": deliver_webhook,
+    "siem": deliver_siem,
 }
 
 
