@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.models.enums import DetectorCategory
 from app.services.detection.base import AsyncDetector, SyncDetector
 from app.services.detection.compliance import ComplianceDetector
+from app.services.detection.confidence_hallucination import ConfidenceHallucinationDetector
 from app.services.detection.cost import CostAnomalyDetector
 from app.services.detection.hallucination import HallucinationDetector
 from app.services.detection.loop import LoopDetector
@@ -12,6 +13,7 @@ from app.services.detection.pii import PIIDetector
 from app.services.detection.prompt_extraction import PromptExtractionDetector
 from app.services.detection.prompt_injection import PromptInjectionDetector
 from app.services.detection.mcp_security import MCPSecurityDetector
+from app.services.detection.memory_exfiltration import MemoryExfiltrationDetector
 from app.services.detection.schema_injection import SchemaInjectionDetector
 from app.services.detection.scope_enforcement import ScopeEnforcementDetector
 from app.services.detection.sequential_action import SequentialActionDetector
@@ -31,6 +33,7 @@ SYNC_CATEGORIES: frozenset[str] = frozenset(
         DetectorCategory.MCP_SECURITY.value,
         DetectorCategory.SCHEMA_INJECTION.value,
         DetectorCategory.SCOPE_ENFORCEMENT.value,
+        DetectorCategory.MEMORY_EXFILTRATION.value,
     }
 )
 
@@ -104,6 +107,7 @@ _SYNC_REGISTRY: dict[str, SyncDetector] = {
     DetectorCategory.MCP_SECURITY.value: MCPSecurityDetector(),
     DetectorCategory.SCHEMA_INJECTION.value: SchemaInjectionDetector(),
     DetectorCategory.SCOPE_ENFORCEMENT.value: ScopeEnforcementDetector(),
+    DetectorCategory.MEMORY_EXFILTRATION.value: MemoryExfiltrationDetector(),
 }
 
 _ASYNC_REGISTRY: dict[str, AsyncDetector] = {
