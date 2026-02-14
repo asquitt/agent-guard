@@ -25,6 +25,7 @@ const SHORTCUTS = [
     { keys: ['Enter'], desc: 'Open selected item' },
   ]},
   { section: 'Actions', items: [
+    { keys: ['E'], desc: 'Quick status change' },
     { keys: ['Esc'], desc: 'Close dialog / Cancel' },
   ]},
 ];
@@ -68,6 +69,12 @@ export function KeyboardShortcuts() {
           input.focus();
           return;
         }
+      }
+
+      // E for quick status change
+      if (e.key === 'e' && !e.metaKey && !e.ctrlKey && !pendingG.current) {
+        window.dispatchEvent(new CustomEvent('keyboard:quick-status'));
+        return;
       }
 
       // J/K for list navigation

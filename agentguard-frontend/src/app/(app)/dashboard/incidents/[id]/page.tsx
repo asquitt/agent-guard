@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -78,6 +78,16 @@ export default function IncidentDetailPage() {
   const canResolve = incident.status === 'open' || incident.status === 'acknowledged';
   const canAcknowledge = incident.status === 'open';
   const [pendingAction, setPendingAction] = useState<'resolved' | 'dismissed' | null>(null);
+  const [quickStatusOpen, setQuickStatusOpen] = useState(false);
+
+  const handleQuickStatus = useCallback(() => {
+    if (incident) setQuickStatusOpen(true);
+  }, [incident]);
+
+  useEffect(() => {
+    window.addEventListener('keyboard:quick-status', handleQuickStatus);
+    return () => window.removeEventListener('keyboard:quick-status', handleQuickStatus);
+  }, [handleQuickStatus]);
 
   return (
     <div>
@@ -98,6 +108,18 @@ export default function IncidentDetailPage() {
           setPendingAction(null);
         }}
         onCancel={() => setPendingAction(null)}
+      />
+
+      {/* Quick status picker (E key) */}
+      <QuickStatusPicker
+        open={quickStatusOpen}
+        currentStatus={incident.status}
+        loading={statusMutation.isPending}
+        onSelect={(s) => {
+          statusMutation.mutate(s);
+          setQuickStatusOpen(false);
+        }}
+        onClose={() => setQuickStatusOpen(false)}
       />
 
       {/* Back link */}
@@ -339,6 +361,94 @@ function AddActionButton({
       >
         Cancel
       </button>
+    </div>
+  );
+}
+
+const STATUSES = [
+  { value: 'open', label: 'Open', key: '1' },
+  { value: 'acknowledged', label: 'Acknowledged', key: '2' },
+  { value: 'resolved', label: 'Resolved', key: '3' },
+  { value: 'dismissed', label: 'Dismissed', key: '4' },
+] as const;
+
+function QuickStatusPicker({
+  open,
+  currentStatus,
+  loading,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  currentStatus: string;
+  loading: boolean;
+  onSelect: (status: string) => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { onClose(); return; }
+      const match = STATUSES.find((s) => s.key === e.key);
+      if (match && match.value !== currentStatus) {
+        e.preventDefault();
+        onSelect(match.value);
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, currentStatus, onSelect, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-xs rounded-xl border border-border bg-popover p-4 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
+          Set Status
+        </p>
+        <div className="space-y-1">
+          {STATUSES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => s.value !== currentStatus && onSelect(s.value)}
+              disabled={loading || s.value === currentStatus}
+              className={clsx(
+                'flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors',
+                s.value === currentStatus
+                  ? 'bg-primary/10 text-primary font-medium cursor-default'
+                  : 'text-foreground hover:bg-muted',
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={clsx(
+                    'inline-block h-2 w-2 rounded-full',
+                    STATUS_COLORS[s.value]?.includes('red') ? 'bg-red-400' :
+                    STATUS_COLORS[s.value]?.includes('yellow') ? 'bg-yellow-400' :
+                    STATUS_COLORS[s.value]?.includes('green') ? 'bg-green-400' :
+                    'bg-zinc-400',
+                  )}
+                />
+                {s.label}
+              </span>
+              <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {s.key}
+              </kbd>
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-center text-[10px] text-muted-foreground">
+          Press 1–4 or click · Esc to close
+        </p>
+      </div>
     </div>
   );
 }
