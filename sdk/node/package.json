@@ -1,6 +1,6 @@
 {
   "name": "agentguard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AgentGuard Node.js SDK — AI agent security for financial services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
