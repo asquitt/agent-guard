@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import Logo from '@/components/ui/Logo';
 import { useSidebar } from '@/hooks/useSidebar';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { getDashboardMetrics } from '@/lib/api';
 import { clsx } from 'clsx';
 import {
   LayoutDashboard,
@@ -89,9 +92,24 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+/** Badge counts for nav items keyed by href */
+function useNavBadges(): Record<string, number> {
+  const { status: wsStatus } = useWebSocket();
+  const { data } = useQuery({
+    queryKey: ['dashboard', 'metrics'],
+    queryFn: getDashboardMetrics,
+    // Poll faster when WS is disconnected, slower when connected
+    refetchInterval: wsStatus === 'connected' ? 60_000 : 30_000,
+  });
+
+  const openCount = data?.openIncidents ?? 0;
+  return openCount > 0 ? { '/dashboard/incidents': openCount } : {};
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { open, close } = useSidebar();
+  const badges = useNavBadges();
 
   return (
     <>
@@ -139,6 +157,7 @@ export function Sidebar() {
                     : pathname.startsWith(item.href);
                 const Icon = item.icon;
 
+                const badge = badges[item.href];
                 return (
                   <Link
                     key={item.href}
@@ -153,6 +172,11 @@ export function Sidebar() {
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     {item.label}
+                    {badge != null && badge > 0 && (
+                      <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
