@@ -11,6 +11,8 @@ import {
 } from '@/lib/api';
 import type { RedTeamRun } from '@/lib/api';
 import { QueryError } from '@/components/ui/QueryError';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Shield } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<string, string> = {
   injection_resistance: 'Injection Resistance',
@@ -209,9 +211,12 @@ export default function RedTeamPage() {
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <p className="text-sm text-muted-foreground">No red team runs yet. Create one to get started.</p>
-            </div>
+            <EmptyState
+              icon={Shield}
+              title="No red team runs yet"
+              description="Create an adversarial test run to evaluate your AI security posture."
+              action={{ label: 'New Run', onClick: () => setShowCreate(true) }}
+            />
           ) : (
             items.map((run: RedTeamRun) => (
               <button

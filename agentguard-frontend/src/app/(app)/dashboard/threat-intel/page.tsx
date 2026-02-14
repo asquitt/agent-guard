@@ -11,6 +11,8 @@ import {
 } from '@/lib/api';
 import type { ThreatIndicator } from '@/lib/api';
 import { QueryError } from '@/components/ui/QueryError';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ShieldAlert } from 'lucide-react';
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'bg-red-100 text-red-700',
@@ -182,9 +184,12 @@ export default function ThreatIntelPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">No indicators found. Click &quot;Seed Platform Indicators&quot; to get started.</p>
-        </div>
+        <EmptyState
+          icon={ShieldAlert}
+          title="No indicators found"
+          description="Seed platform indicators to bootstrap your threat intelligence library, or adjust your filters."
+          action={{ label: 'Seed Platform Indicators', onClick: () => seedMutation.mutate() }}
+        />
       ) : (
         <div className="rounded-xl border border-border bg-card">
           <table className="w-full text-sm">

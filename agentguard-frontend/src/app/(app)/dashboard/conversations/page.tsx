@@ -11,6 +11,8 @@ import {
 } from '@/lib/api';
 import type { Conversation, ConversationDetail } from '@/lib/api';
 import { QueryError } from '@/components/ui/QueryError';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { MessageSquare } from 'lucide-react';
 
 const RISK_COLORS: Record<string, string> = {
   low: 'bg-green-100 text-green-700',
@@ -223,9 +225,15 @@ export default function ConversationsPage() {
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <p className="text-sm text-muted-foreground">No conversations found</p>
-            </div>
+            <EmptyState
+              icon={MessageSquare}
+              title="No conversations found"
+              description="No conversations match the current filters. Conversations appear as multi-turn sessions flow through the proxy."
+              hints={[
+                { label: 'View traces', href: '/dashboard/traces' },
+                { label: 'View incidents', href: '/dashboard/incidents' },
+              ]}
+            />
           ) : (
             items.map((conv: Conversation) => (
               <button
