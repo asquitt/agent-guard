@@ -10,6 +10,7 @@ import {
   deleteModel,
 } from '@/lib/api/model-registry';
 import type { AIModel, AIModelCreate } from '@/lib/api/model-registry';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/hooks/useToast';
 
 const RISK_COLORS: Record<string, string> = {
@@ -31,6 +32,7 @@ export default function ModelRegistryPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterProvider, setFilterProvider] = useState('');
   const [filterRisk, setFilterRisk] = useState('');
+  const [deletingModel, setDeletingModel] = useState<AIModel | null>(null);
 
   // Form state
   const [form, setForm] = useState<AIModelCreate>({
@@ -321,11 +323,7 @@ export default function ModelRegistryPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      if (confirm(`Delete ${m.modelName}?`)) {
-                        deleteMutation.mutate(m.id);
-                      }
-                    }}
+                    onClick={() => setDeletingModel(m)}
                     className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                   >
                     Delete
@@ -336,6 +334,23 @@ export default function ModelRegistryPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deletingModel}
+        title="Delete Model"
+        description={`Permanently delete "${deletingModel?.modelName ?? ''}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deletingModel) {
+            deleteMutation.mutate(deletingModel.id, {
+              onSuccess: () => setDeletingModel(null),
+            });
+          }
+        }}
+        onCancel={() => setDeletingModel(null)}
+      />
     </div>
   );
 }
