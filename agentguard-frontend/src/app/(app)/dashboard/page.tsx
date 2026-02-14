@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { getDashboardMetrics } from '@/lib/api';
+import { getDashboardMetrics, getRiskScore } from '@/lib/api';
 import { CostAnalyticsSection } from '@/components/dashboard/CostAnalytics';
 import { DetectionEfficacySection } from '@/components/dashboard/DetectionEfficacy';
 import { SlaMetricsSection } from '@/components/dashboard/SlaMetrics';
@@ -25,6 +25,11 @@ export default function DashboardPage() {
     queryKey: ['dashboard', 'metrics'],
     queryFn: getDashboardMetrics,
     refetchInterval: wsStatus === 'connected' ? undefined : 30_000,
+  });
+
+  const { data: riskData } = useQuery({
+    queryKey: ['risk-score', 30],
+    queryFn: () => getRiskScore(30),
   });
 
   // Toast for new critical/high incidents
@@ -97,6 +102,16 @@ export default function DashboardPage() {
               items={metrics?.incidentsByStatus ?? []}
             />
           </div>
+
+          {/* Risk score widget */}
+          {riskData && riskData.totalIncidents > 0 && (
+            <RiskWidget
+              grade={riskData.grade}
+              score={riskData.overallScore}
+              trend={riskData.trendDirection}
+              criticalOpen={riskData.criticalOpen}
+            />
+          )}
 
           {/* SLA metrics */}
           <SlaMetricsSection />
@@ -283,5 +298,67 @@ function DashboardEmptyState() {
         Incidents will appear here as your LLM traffic is analyzed
       </p>
     </div>
+  );
+}
+
+const GRADE_BG: Record<string, string> = {
+  A: 'border-green-500/30 bg-green-500/10 text-green-500',
+  B: 'border-blue-500/30 bg-blue-500/10 text-blue-500',
+  C: 'border-yellow-500/30 bg-yellow-500/10 text-yellow-500',
+  D: 'border-orange-500/30 bg-orange-500/10 text-orange-500',
+  F: 'border-red-500/30 bg-red-500/10 text-red-500',
+};
+
+const TREND_INFO: Record<string, { label: string; color: string; arrow: string }> = {
+  improving: { label: 'Improving', color: 'text-green-500', arrow: '↓' },
+  stable: { label: 'Stable', color: 'text-muted-foreground', arrow: '→' },
+  degrading: { label: 'Degrading', color: 'text-red-500', arrow: '↑' },
+};
+
+function RiskWidget({
+  grade,
+  score,
+  trend,
+  criticalOpen,
+}: {
+  grade: string;
+  score: number;
+  trend: string;
+  criticalOpen: number;
+}) {
+  const t = TREND_INFO[trend] ?? TREND_INFO.stable;
+  return (
+    <Link
+      href="/dashboard/risk-score"
+      className="mt-4 flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+    >
+      <div
+        className={clsx(
+          'flex h-12 w-12 items-center justify-center rounded-full border-2 text-xl font-bold',
+          GRADE_BG[grade] ?? 'text-muted-foreground',
+        )}
+      >
+        {grade}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">
+            Risk Score: {score}/100
+          </span>
+          <span className={clsx('text-xs font-medium', t.color)}>
+            {t.arrow} {t.label}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          30-day composite score (lower is better)
+          {criticalOpen > 0 && (
+            <span className="ml-2 text-red-400">
+              {criticalOpen} critical open
+            </span>
+          )}
+        </p>
+      </div>
+      <span className="text-xs font-medium text-primary">View details →</span>
+    </Link>
   );
 }
