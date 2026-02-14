@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
@@ -51,8 +51,8 @@ async def create_destination(
 
 @router.get("/destinations", response_model=AlertDestinationListResponse)
 async def list_destinations(
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AlertDestinationListResponse:
@@ -127,8 +127,8 @@ async def test_destination(
 
 @router.get("/", response_model=AlertListResponse)
 async def list_alerts(
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     incident_id: UUID | None = None,
     destination_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),

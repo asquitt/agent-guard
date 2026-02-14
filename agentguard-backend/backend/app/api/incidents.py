@@ -37,8 +37,8 @@ async def get_stats(
 
 @router.get("/", response_model=IncidentListResponse)
 async def list_incidents(
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     status_filter: str | None = Query(None, alias="status"),
     severity: str | None = None,
     category: str | None = None,

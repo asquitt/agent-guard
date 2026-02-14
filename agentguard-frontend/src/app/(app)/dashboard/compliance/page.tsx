@@ -8,8 +8,8 @@ import {
   verifyAuditChain,
   createComplianceReport,
   listComplianceReports,
-  getReportDownloadUrl,
-  getCefExportUrl,
+  downloadReport,
+  downloadCefExport,
 } from '@/lib/api';
 import { ComplianceScoreboard } from '@/components/dashboard/ComplianceScoreboard';
 import type { AuditLogEntry, AuditLogFilters, ComplianceReport } from '@/types';
@@ -130,12 +130,20 @@ function AuditLogTab() {
         >
           {verifyMutation.isPending ? 'Verifying...' : 'Verify Integrity'}
         </button>
-        <a
-          href={getCefExportUrl()}
+        <button
+          onClick={async () => {
+            const blob = await downloadCefExport();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'audit_logs.cef';
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
           className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
         >
           Export CEF
-        </a>
+        </button>
         {verifyMutation.data && (
           <span
             className={clsx(
@@ -362,12 +370,20 @@ function ReportRow({ report }: { report: ComplianceReport }) {
       </td>
       <td className="px-4 py-3">
         {report.status === 'completed' ? (
-          <a
-            href={getReportDownloadUrl(report.id)}
+          <button
+            onClick={async () => {
+              const blob = await downloadReport(report.id);
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${report.reportType}_${report.id}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
             className="text-sm font-medium text-primary hover:text-primary"
           >
             Download
-          </a>
+          </button>
         ) : report.status === 'failed' ? (
           <span className="text-sm text-red-500">{report.errorMessage}</span>
         ) : (

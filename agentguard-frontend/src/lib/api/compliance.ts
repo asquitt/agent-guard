@@ -42,14 +42,26 @@ export async function getFrameworkScores(days = 30): Promise<ComplianceScores> {
   return apiFetch<ComplianceScores>(`/compliance/frameworks/scores?days=${days}`);
 }
 
-export function getReportDownloadUrl(reportId: string): string {
+export async function downloadReport(reportId: string): Promise<Blob> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   const base = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${base}/api/v1/compliance/reports/${reportId}/download${token ? `?token=${token}` : ''}`;
+  const res = await fetch(`${base}/api/v1/compliance/reports/${reportId}/download`, {
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  return res.blob();
 }
 
-export function getCefExportUrl(): string {
+export async function downloadCefExport(): Promise<Blob> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   const base = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${base}/api/v1/compliance/audit-logs/export/cef${token ? `?token=${token}` : ''}`;
+  const res = await fetch(`${base}/api/v1/compliance/audit-logs/export/cef`, {
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  return res.blob();
 }

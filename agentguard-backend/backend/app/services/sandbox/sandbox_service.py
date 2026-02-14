@@ -105,6 +105,13 @@ async def list_sandboxes(
     return list(result.scalars().all()), total
 
 
+_SANDBOX_MUTABLE_FIELDS = frozenset({
+    "name", "description", "image", "capabilities", "resource_limits",
+    "network_policy", "environment", "metadata_", "status", "is_active",
+    "agent_id",
+})
+
+
 async def update_sandbox(
     db: AsyncSession, org_id: UUID, sandbox_id: UUID, updates: dict[str, Any]
 ) -> Sandbox | None:
@@ -114,6 +121,8 @@ async def update_sandbox(
         return None
 
     for key, value in updates.items():
+        if key not in _SANDBOX_MUTABLE_FIELDS:
+            continue
         if value is not None and hasattr(sandbox, key):
             setattr(sandbox, key, value)
     await db.flush()

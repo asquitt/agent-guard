@@ -49,9 +49,9 @@ export {
   verifyAuditChain,
   createComplianceReport,
   listComplianceReports,
-  getReportDownloadUrl,
+  downloadReport,
   getFrameworkScores,
-  getCefExportUrl,
+  downloadCefExport,
 } from './compliance';
 export {
   getRetentionPolicy,

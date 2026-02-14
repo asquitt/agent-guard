@@ -55,8 +55,8 @@ async def create_webhook(
 
 @router.get("/", response_model=WebhookListResponse)
 async def list_webhooks(
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> WebhookListResponse:
@@ -202,7 +202,7 @@ async def get_delivery_stats(
 @router.get("/{webhook_id}/deliveries", response_model=DeliveryListResponse)
 async def list_deliveries(
     webhook_id: UUID,
-    alert_status: str | None = Query(default=None, alias="status"),
+    alert_status: str | None = Query(default=None, alias="status", pattern="^(pending|sent|failed)$"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
@@ -256,13 +256,13 @@ async def replay_failed_deliveries(
     """Re-queue all failed deliveries for a webhook via Celery."""
     await _get_webhook_or_404(db, org, webhook_id)
 
-    # Find failed alerts for this webhook
+    # Find failed alerts for this webhook (lock rows to prevent duplicate replays)
     result = await db.execute(
         select(Alert).where(
             Alert.destination_id == webhook_id,
             Alert.org_id == org.id,
             Alert.status == AlertStatus.FAILED.value,
-        )
+        ).with_for_update(skip_locked=True)
     )
     failed_alerts = result.scalars().all()
 

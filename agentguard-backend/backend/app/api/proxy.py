@@ -515,9 +515,9 @@ async def _track_sandbox_tokens(
     if not execution:
         return
 
-    # Update token usage
+    # Update token usage (clamp to non-negative to prevent budget bypass)
     usage = execution.resource_usage or {}
-    usage["tokens_used"] = usage.get("tokens_used", 0) + tokens
+    usage["tokens_used"] = usage.get("tokens_used", 0) + max(0, tokens)
     execution.resource_usage = usage
     await db.flush()
 

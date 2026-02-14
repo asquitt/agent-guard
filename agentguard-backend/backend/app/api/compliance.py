@@ -1,6 +1,8 @@
 """Compliance audit logs and report generation routes."""
 
+import os
 from datetime import datetime
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -56,8 +58,8 @@ async def list_audit_logs(
     user_id: UUID | None = Query(None, alias="userId"),
     date_from: datetime | None = Query(None, alias="dateFrom"),
     date_to: datetime | None = Query(None, alias="dateTo"),
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AuditLogListResponse:
@@ -130,8 +132,8 @@ async def create_report(
 
 @router.get("/reports", response_model=ComplianceReportListResponse)
 async def list_reports(
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ComplianceReportListResponse:
@@ -173,8 +175,14 @@ async def download_report(
     if str(report.status) != "completed" or not str(report.file_path or ""):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report not ready for download")
 
+    # Path traversal defense: resolve and verify the file is within the reports directory
+    reports_dir = Path("/app/reports").resolve()
+    file_path = Path(str(report.file_path)).resolve()
+    if not str(file_path).startswith(str(reports_dir)) or not file_path.is_file():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid report file path")
+
     return FileResponse(
-        path=str(report.file_path),
+        path=str(file_path),
         filename=f"{report.report_type}_{report_id}.csv",
         media_type="text/csv",
     )
@@ -209,7 +217,7 @@ async def export_audit_logs_cef(
         ext_parts = [
             f"rt={entry.created_at.isoformat() if entry.created_at is not None else ''}",
             f"suser={entry.user_id or ''}",
-            f"cs1={entry.resource_type}",
+            f"cs1={entry.resource_type or ''}",
             f"cs1Label=resourceType",
             f"cs2={entry.resource_id or ''}",
             f"cs2Label=resourceId",
