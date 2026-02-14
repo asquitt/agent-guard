@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { getTimeSeries, getProviderComparison } from '@/lib/api';
 import type { TimeSeriesBucket, ProviderPerformance } from '@/lib/api';
 import { AnalyticsSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Download } from 'lucide-react';
 
 const TIME_RANGES = [
   { label: '1h', days: 0.04, granularity: 'hourly' },
@@ -46,7 +46,28 @@ export default function AnalyticsPage() {
   });
 
   const buckets = tsData?.buckets ?? [];
+  const providers = providerData?.providers ?? [];
   const metricConfig = METRIC_OPTIONS.find((m) => m.key === activeMetric)!;
+
+  const exportCsv = useCallback(() => {
+    if (!buckets.length) return;
+    const headers = ['Timestamp', ...METRIC_OPTIONS.map((m) => m.label)];
+    const rows = buckets.map((b) => [
+      b.bucket,
+      ...METRIC_OPTIONS.map((m) => {
+        const v = b[m.key];
+        return typeof v === 'number' ? v : 0;
+      }),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agentguard-analytics-${range.label}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [buckets, range.label]);
 
   // Compute summary stats
   const summary = useMemo(() => {
@@ -92,6 +113,15 @@ export default function AnalyticsPage() {
         <span className="ml-2 text-xs text-muted-foreground/60">
           Granularity: {tsData?.granularity ?? range.granularity}
         </span>
+        {buckets.length > 0 && (
+          <button
+            onClick={exportCsv}
+            className="ml-auto flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
+        )}
       </div>
 
       {/* Metric selector */}
@@ -113,7 +143,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="mb-6 grid grid-cols-4 gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard label="Total" value={metricConfig.format(summary.total)} />
         <SummaryCard label="Average / Bucket" value={metricConfig.format(summary.avg)} />
         <SummaryCard label="Peak" value={metricConfig.format(summary.max)} highlight />
@@ -134,8 +164,8 @@ export default function AnalyticsPage() {
       )}
 
       {/* Provider comparison table */}
-      {providerData && providerData.providers.length > 0 && (
-        <ProviderTable providers={providerData.providers} />
+      {providers.length > 0 && (
+        <ProviderTable providers={providers} />
       )}
     </div>
   );
