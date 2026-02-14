@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import type { Incident, IncidentFilters } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/lib/constants';
 import { useToast } from '@/hooks/useToast';
 import { useListKeyNav } from '@/hooks/useListKeyNav';
+import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueryError } from '@/components/ui/QueryError';
@@ -26,13 +27,29 @@ const STATUS_ORDER: Record<string, number> = { open: 3, acknowledged: 2, resolve
 const PAGE_SIZE = 20;
 
 export default function IncidentsPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={8} cols={6} />}>
+      <IncidentsContent />
+    </Suspense>
+  );
+}
+
+function IncidentsContent() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const router = useRouter();
-  const [filters, setFilters] = useState<IncidentFilters>({ limit: PAGE_SIZE });
+  const { filters, setFilter, setFilters } = useUrlFilters({
+    defaults: { limit: PAGE_SIZE, skip: 0 },
+    numericKeys: ['skip', 'limit'],
+  }) as {
+    filters: IncidentFilters;
+    setFilter: (key: keyof IncidentFilters & string, value: string | number | undefined) => void;
+    setFilters: (next: Partial<IncidentFilters>) => void;
+    resetFilters: () => void;
+  };
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const sortField = (filters.sort as SortField) || 'createdAt';
+  const sortDir = (filters.dir as SortDir) || 'desc';
   const [bulkAction, setBulkAction] = useState<'resolved' | 'dismissed' | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -89,23 +106,14 @@ export default function IncidentsPage() {
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      setFilter('dir', sortDir === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
-      setSortDir(field === 'createdAt' ? 'desc' : 'asc');
+      setFilters({ ...filters, sort: field, dir: field === 'createdAt' ? 'desc' : 'asc' });
     }
   }
   const total = data?.total ?? 0;
   const page = Math.floor((filters.skip ?? 0) / PAGE_SIZE);
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  function updateFilter(key: keyof IncidentFilters, value: string) {
-    setFilters((f) => ({
-      ...f,
-      [key]: value || undefined,
-      skip: 0,
-    }));
-  }
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -206,12 +214,12 @@ export default function IncidentsPage() {
           type="text"
           placeholder="Search incidents..."
           value={filters.q ?? ''}
-          onChange={(e) => updateFilter('q', e.target.value)}
+          onChange={(e) => setFilter('q', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <select
           value={filters.status ?? ''}
-          onChange={(e) => updateFilter('status', e.target.value)}
+          onChange={(e) => setFilter('status', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All statuses</option>
@@ -222,7 +230,7 @@ export default function IncidentsPage() {
         </select>
         <select
           value={filters.severity ?? ''}
-          onChange={(e) => updateFilter('severity', e.target.value)}
+          onChange={(e) => setFilter('severity', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All severities</option>
@@ -234,7 +242,7 @@ export default function IncidentsPage() {
         </select>
         <select
           value={filters.category ?? ''}
-          onChange={(e) => updateFilter('category', e.target.value)}
+          onChange={(e) => setFilter('category', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm"
         >
           <option value="">All categories</option>
@@ -252,14 +260,14 @@ export default function IncidentsPage() {
         <input
           type="date"
           value={filters.dateFrom ?? ''}
-          onChange={(e) => updateFilter('dateFrom', e.target.value)}
+          onChange={(e) => setFilter('dateFrom', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
           title="From date"
         />
         <input
           type="date"
           value={filters.dateTo ?? ''}
-          onChange={(e) => updateFilter('dateTo', e.target.value)}
+          onChange={(e) => setFilter('dateTo', e.target.value || undefined)}
           className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
           title="To date"
         />
@@ -321,10 +329,7 @@ export default function IncidentsPage() {
                   disabled={page === 0}
                   aria-label="Go to previous page"
                   onClick={() =>
-                    setFilters((f) => ({
-                      ...f,
-                      skip: Math.max(0, (f.skip ?? 0) - PAGE_SIZE),
-                    }))
+                    setFilter('skip', Math.max(0, (filters.skip ?? 0) - PAGE_SIZE))
                   }
                   className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >
@@ -337,10 +342,7 @@ export default function IncidentsPage() {
                   disabled={page >= totalPages - 1}
                   aria-label="Go to next page"
                   onClick={() =>
-                    setFilters((f) => ({
-                      ...f,
-                      skip: (f.skip ?? 0) + PAGE_SIZE,
-                    }))
+                    setFilter('skip', (filters.skip ?? 0) + PAGE_SIZE)
                   }
                   className="rounded-lg px-3 py-1.5 text-sm text-foreground hover:bg-muted disabled:opacity-50"
                 >

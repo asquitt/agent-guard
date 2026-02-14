@@ -77,6 +77,8 @@ export interface IncidentFilters {
   q?: string;
   dateFrom?: string;
   dateTo?: string;
+  sort?: string;
+  dir?: string;
   skip?: number;
   limit?: number;
 }
