@@ -3,13 +3,14 @@
 # pyright: reportGeneralTypeIssues=false
 
 import ipaddress
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin, require_permission
+from app.core.deps import get_current_org, get_current_user, get_db, require_admin, require_permission
 from app.models.enums import ROLE_PERMISSIONS, Environment, UserRole
 from app.models.user import Organization, User
 from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
@@ -140,7 +141,9 @@ class RolesResponse(BaseModel):
 
 
 @router.get("/roles", response_model=RolesResponse)
-async def list_roles() -> RolesResponse:
+async def list_roles(
+    _user: User = Depends(get_current_user),
+) -> RolesResponse:
     """List all available roles and their permissions."""
     return RolesResponse(
         roles=[
@@ -163,17 +166,15 @@ class UpdateMemberRoleRequest(BaseModel):
 
 @router.patch("/current/members/{user_id}", response_model=MemberResponse)
 async def update_member_role(
-    user_id: str,
+    user_id: UUID,
     body: UpdateMemberRoleRequest,
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
 ) -> MemberResponse:
     """Update a member's role. Admin/owner only."""
-    from uuid import UUID as PyUUID
-
     result = await db.execute(
-        select(User).where(User.id == PyUUID(user_id), User.org_id == org.id)
+        select(User).where(User.id == user_id, User.org_id == org.id)
     )
     member = result.scalar_one_or_none()
     if not member:
@@ -194,7 +195,7 @@ async def update_member_role(
 
 @router.delete("/current/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_member(
-    user_id: str,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
     admin_user: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
@@ -203,19 +204,15 @@ async def remove_member(
 
     Cannot remove yourself or the last owner.
     """
-    from uuid import UUID as PyUUID
-
-    target_id = PyUUID(user_id)
-
     # Prevent self-removal
-    if target_id == admin_user.id:
+    if user_id == admin_user.id:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Cannot remove yourself from the organization",
         )
 
     result = await db.execute(
-        select(User).where(User.id == target_id, User.org_id == org.id)
+        select(User).where(User.id == user_id, User.org_id == org.id)
     )
     member = result.scalar_one_or_none()
     if not member:
