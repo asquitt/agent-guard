@@ -3,7 +3,7 @@
 | # | Detector | Status | Tests Added | Bypasses Fixed | Notes |
 |---|----------|--------|-------------|----------------|-------|
 | 1 | prompt_injection | DONE | 22 | 12 | Added text normalization (NFKC + zero-width strip + homoglyph transliteration), base64 decoding, leet speak decoding, multiline collapsing. New pattern categories: multilingual_injection, encoding_evasion, roleplay jailbreaks. Broadened direct_override and financial_bypass patterns. |
-| 2 | prompt_extraction | TODO | - | - | |
+| 2 | prompt_extraction | DONE | 18 | 6 | Added patterns for debug mode extraction, format conversion, story/creative writing extraction, first-letter extraction with optional possessives, compliance framework extraction with "configured to", broader repeat/everything pattern. |
 | 3 | financial_pii | TODO | - | - | |
 | 4 | pii | TODO | - | - | |
 | 5 | compliance | TODO | - | - | |
