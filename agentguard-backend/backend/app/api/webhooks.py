@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin, require_permission
 from app.core.exceptions import NotFoundError
 from app.models.alert import Alert, AlertDestination
 from app.models.enums import AlertStatus
@@ -58,6 +58,7 @@ async def list_webhooks(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("alerts:read")),
     org: Organization = Depends(get_current_org),
 ) -> WebhookListResponse:
     """List webhooks for the current org."""
@@ -72,6 +73,7 @@ async def list_webhooks(
 async def get_webhook(
     webhook_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("alerts:read")),
     org: Organization = Depends(get_current_org),
 ) -> WebhookResponse:
     """Get a single webhook."""
@@ -171,6 +173,7 @@ class DeliveryListResponse(BaseModel):
 async def get_delivery_stats(
     webhook_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("alerts:read")),
     org: Organization = Depends(get_current_org),
 ) -> DeliveryStatsResponse:
     """Get delivery statistics for a webhook."""
@@ -206,6 +209,7 @@ async def list_deliveries(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("alerts:read")),
     org: Organization = Depends(get_current_org),
 ) -> DeliveryListResponse:
     """List delivery attempts for a webhook with optional status filter."""

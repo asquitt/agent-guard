@@ -70,3 +70,63 @@
   - SAML response validated via python3-saml library
   - Secrets masked in response (oidc_client_secret_set bool, not raw)
   - JIT user provisioning with org tenant isolation
+
+## incidents.py
+- Status: CLEAN
+- Endpoints: 7
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`incidents:read`, `incidents:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Path parameter IDs validated as UUID type
+  - Bulk operations filter by org ownership
+  - Pydantic schemas for all request bodies
+
+## detectors.py
+- Status: CLEAN
+- Endpoints: 6
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`detectors:read`, `detectors:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Path parameter IDs validated as UUID type
+  - Pydantic schemas for all request bodies
+
+## alerts.py
+- Status: CLEAN
+- Endpoints: 7
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`alerts:read`, `alerts:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Path parameter IDs validated as UUID type
+  - Pydantic schemas for all request bodies
+
+## dashboard.py
+- Status: FIXED
+- Endpoints: 7
+- Issues found: 7
+- Issues fixed: 7
+- Details:
+  - FIXED: All 7 endpoints had NO RBAC permission checks -- added `require_permission("incidents:read")` to all endpoints
+  - Tenant isolation was already correct (all queries filter by `org_id`)
+  - Query parameters have proper bounds (days: ge=1, le=365)
+  - Pydantic response schemas for all endpoints
+
+## webhooks.py
+- Status: FIXED
+- Endpoints: 8
+- Issues found: 4
+- Issues fixed: 4
+- Details:
+  - FIXED: `list_webhooks` had no RBAC -- added `require_permission("alerts:read")`
+  - FIXED: `get_webhook` had no RBAC -- added `require_permission("alerts:read")`
+  - FIXED: `get_delivery_stats` had no RBAC -- added `require_permission("alerts:read")`
+  - FIXED: `list_deliveries` had no RBAC -- added `require_permission("alerts:read")`
+  - Write endpoints correctly use `require_admin`
+  - Tenant isolation: all queries filter by `org_id`
+  - Webhook ownership validated via `_get_webhook_or_404` helper
+  - Pagination with proper bounds
