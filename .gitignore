@@ -39,3 +39,9 @@ alembic/versions/__pycache__/
 
 # Security audit reports
 security-audit/reports/*.md
+
+# Claude Code / Codex artifacts
+CLAUDE.md
+AGENTS.md
+.claude/
+.codex/
