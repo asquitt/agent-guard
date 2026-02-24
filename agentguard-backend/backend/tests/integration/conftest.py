@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import create_access_token
+from app.models.incident import Incident
 from app.models.user import ApiKey, Organization, User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -145,3 +146,46 @@ async def api_key(db_session: AsyncSession, org: Organization) -> tuple[ApiKey, 
     db_session.add(key)
     await db_session.flush()
     return key, full_key
+
+
+# --------------- Incident fixtures ---------------
+
+
+@pytest.fixture
+async def incident(db_session: AsyncSession, org: Organization) -> Incident:
+    """Create a test incident in the primary org."""
+    inc = Incident(
+        id=uuid.uuid4(),
+        org_id=org.id,
+        severity="high",
+        category="pii_leak",
+        title="Test PII leak incident",
+        description="SSN detected in model output",
+        status="open",
+        action_taken="monitor",
+        metadata_={},
+    )
+    db_session.add(inc)
+    await db_session.flush()
+    return inc
+
+
+@pytest.fixture
+async def other_org_incident(
+    db_session: AsyncSession, other_org: Organization
+) -> Incident:
+    """Create a test incident in the OTHER org."""
+    inc = Incident(
+        id=uuid.uuid4(),
+        org_id=other_org.id,
+        severity="medium",
+        category="compliance",
+        title="Other org compliance incident",
+        description="SOX violation detected",
+        status="open",
+        action_taken="monitor",
+        metadata_={},
+    )
+    db_session.add(inc)
+    await db_session.flush()
+    return inc
