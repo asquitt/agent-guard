@@ -29,10 +29,11 @@
 - [x] All tests pass
 
 ## TASK 3: Frontend Component Tests
-- [ ] UI components (EmptyState, QueryError, Skeleton, StatusBadge)
-- [ ] Dashboard components
-- [ ] Incident components
-- [ ] API hooks
+- [x] UI components (EmptyState, QueryError, Skeleton)
+- [x] Dashboard components (DetectionEfficacy, ActivityFeed)
+- [x] Incident components (IncidentRow, IncidentCard)
+- [x] Utility tests (format.ts - timeAgo, formatNumber, formatUsd, formatDate)
+- [x] All 92 tests pass (11 test files)
 
 ## TASK 4: Integration Test Split + Tech Debt
 - [ ] Split functional_test.py into modules
