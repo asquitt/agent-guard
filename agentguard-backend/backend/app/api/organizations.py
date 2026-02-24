@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.models.enums import ROLE_PERMISSIONS, Environment, UserRole
 from app.models.user import Organization, User
 from app.schemas.organizations import MemberListResponse, MemberResponse, OrgDetailResponse, OrgUpdateRequest
@@ -32,6 +32,7 @@ router = APIRouter()
 
 @router.get("/current", response_model=OrgDetailResponse)
 async def get_current_organization(
+    _user: User = Depends(require_permission("settings:read")),
     org: Organization = Depends(get_current_org),
 ) -> OrgDetailResponse:
     """Get current organization details."""
@@ -60,6 +61,7 @@ async def update_organization(
 async def list_members(
     skip: int = 0,
     limit: int = 50,
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> MemberListResponse:
@@ -95,6 +97,7 @@ def _validate_ip_entry(entry: str) -> str:
 
 @router.get("/current/ip-allowlist", response_model=IpAllowlistResponse)
 async def get_ip_allowlist(
+    _user: User = Depends(require_permission("settings:read")),
     org: Organization = Depends(get_current_org),
 ) -> IpAllowlistResponse:
     """Get the current IP allowlist for proxy access."""
@@ -307,6 +310,7 @@ class EnvironmentsResponse(BaseModel):
 
 @router.get("/environments", response_model=EnvironmentsResponse)
 async def list_environments(
+    _user: User = Depends(require_permission("settings:read")),
     org: Organization = Depends(get_current_org),
 ) -> EnvironmentsResponse:
     """List available environments and the org's default."""
@@ -375,6 +379,7 @@ class DataResidencyUpdateRequest(BaseModel):
 
 @router.get("/current/data-residency", response_model=DataResidencyResponse)
 async def get_data_residency(
+    _user: User = Depends(require_permission("settings:read")),
     org: Organization = Depends(get_current_org),
 ) -> DataResidencyResponse:
     """Get the organization's data residency configuration."""

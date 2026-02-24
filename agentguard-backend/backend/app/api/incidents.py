@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_client_ip, get_current_org, get_current_user, get_db
+from app.core.deps import get_client_ip, get_current_org, get_db, require_permission
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.incidents import (
@@ -27,6 +27,7 @@ router = APIRouter()
 
 @router.get("/stats", response_model=IncidentStatsResponse)
 async def get_stats(
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> IncidentStatsResponse:
@@ -46,6 +47,7 @@ async def list_incidents(
     search: str | None = Query(None, alias="q"),
     date_from: datetime | None = Query(None, alias="dateFrom"),
     date_to: datetime | None = Query(None, alias="dateTo"),
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> IncidentListResponse:
@@ -72,6 +74,7 @@ async def list_incidents(
 @router.get("/{incident_id}", response_model=IncidentDetailResponse)
 async def get_incident(
     incident_id: UUID,
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> IncidentDetailResponse:
@@ -88,7 +91,7 @@ async def update_incident(
     incident_id: UUID,
     body: IncidentUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
     client_ip: str = Depends(get_client_ip),
 ) -> IncidentResponse:
@@ -116,7 +119,7 @@ async def add_action(
     incident_id: UUID,
     body: IncidentActionCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
     client_ip: str = Depends(get_client_ip),
 ) -> IncidentActionResponse:
@@ -143,7 +146,7 @@ async def add_action(
 async def bulk_update_status(
     body: BulkStatusUpdateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
     client_ip: str = Depends(get_client_ip),
 ) -> BulkStatusUpdateResponse:

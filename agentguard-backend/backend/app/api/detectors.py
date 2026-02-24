@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin, require_permission
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.detectors import (
@@ -56,6 +56,7 @@ async def create_detector(
 async def list_detectors(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("detectors:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> DetectorListResponse:
@@ -70,6 +71,7 @@ async def list_detectors(
 @router.get("/{detector_id}", response_model=DetectorResponse)
 async def get_detector(
     detector_id: UUID,
+    _user: User = Depends(require_permission("detectors:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> DetectorResponse:

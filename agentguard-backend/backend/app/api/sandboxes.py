@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
-from app.models.user import Organization
+from app.core.deps import get_current_org, get_db, require_permission
+from app.models.user import Organization, User
 from app.schemas.sandbox import (
     CapabilityAddRequest,
     ChainVerificationResponse,
@@ -41,6 +41,7 @@ router = APIRouter()
 
 @router.get("/stats", response_model=SandboxStats)
 async def sandbox_stats(
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxStats:
@@ -55,6 +56,7 @@ async def list_sandboxes(
     agent_id: UUID | None = Query(default=None, alias="agentId"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxListResponse:
@@ -71,6 +73,7 @@ async def list_sandboxes(
 @router.post("", response_model=SandboxResponse, status_code=status.HTTP_201_CREATED)
 async def create_sandbox(
     body: SandboxCreateRequest,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -98,7 +101,9 @@ async def create_sandbox(
 
 
 @router.get("/templates", response_model=list[SandboxTemplateResponse])
-async def list_templates() -> list[SandboxTemplateResponse]:
+async def list_templates(
+    _user: User = Depends(require_permission("sandboxes:read")),
+) -> list[SandboxTemplateResponse]:
     """List available sandbox templates for quick creation."""
     from app.services.sandbox.templates import TEMPLATES
 
@@ -124,6 +129,7 @@ async def list_templates() -> list[SandboxTemplateResponse]:
 @router.get("/executions/{execution_id}", response_model=SandboxExecutionResponse)
 async def get_execution(
     execution_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxExecutionResponse:
@@ -137,6 +143,7 @@ async def get_execution(
 @router.post("/executions/{execution_id}/stop", response_model=SandboxExecutionResponse)
 async def stop_execution(
     execution_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxExecutionResponse:
@@ -151,6 +158,7 @@ async def stop_execution(
 @router.post("/executions/{execution_id}/terminate", response_model=SandboxExecutionResponse)
 async def terminate_execution(
     execution_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxExecutionResponse:
@@ -168,6 +176,7 @@ async def get_execution_audit(
     action_type: str | None = Query(default=None, alias="actionType"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxAuditLogListResponse:
@@ -186,6 +195,7 @@ async def get_execution_incidents(
     execution_id: UUID,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> dict:
@@ -217,6 +227,7 @@ async def get_execution_incidents(
 @router.get("/{sandbox_id}", response_model=SandboxResponse)
 async def get_sandbox(
     sandbox_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -231,6 +242,7 @@ async def get_sandbox(
 async def update_sandbox(
     sandbox_id: UUID,
     body: SandboxUpdateRequest,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -260,6 +272,7 @@ async def update_sandbox(
 @router.delete("/{sandbox_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sandbox(
     sandbox_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> None:
@@ -274,6 +287,7 @@ async def delete_sandbox(
 async def set_capabilities(
     sandbox_id: UUID,
     capabilities: list[CapabilityAddRequest],
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -291,6 +305,7 @@ async def set_capabilities(
 async def add_capability(
     sandbox_id: UUID,
     body: CapabilityAddRequest,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -308,6 +323,7 @@ async def add_capability(
 async def remove_capability(
     sandbox_id: UUID,
     index: int,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -326,6 +342,7 @@ async def remove_capability(
 async def start_execution(
     sandbox_id: UUID,
     body: SandboxExecutionCreateRequest | None = None,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxExecutionResponse:
@@ -344,6 +361,7 @@ async def list_executions(
     exec_status: str | None = Query(default=None, alias="status"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxExecutionListResponse:
@@ -363,6 +381,7 @@ async def get_sandbox_audit(
     action_type: str | None = Query(default=None, alias="actionType"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxAuditLogListResponse:
@@ -380,6 +399,7 @@ async def get_sandbox_audit(
 async def clone_sandbox(
     sandbox_id: UUID,
     body: SandboxCloneRequest,
+    _user: User = Depends(require_permission("sandboxes:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SandboxResponse:
@@ -395,6 +415,7 @@ async def clone_sandbox(
 async def export_audit_logs(
     sandbox_id: UUID,
     fmt: str = Query(default="json", alias="format", pattern="^(json|csv)$"),
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> StreamingResponse:
@@ -420,6 +441,7 @@ async def export_audit_logs(
 @router.get("/{sandbox_id}/audit/verify", response_model=ChainVerificationResponse)
 async def verify_audit_chain(
     sandbox_id: UUID,
+    _user: User = Depends(require_permission("sandboxes:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ChainVerificationResponse:

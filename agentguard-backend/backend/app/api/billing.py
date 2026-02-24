@@ -5,8 +5,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
-from app.models.user import Organization
+from app.core.deps import get_current_org, get_db, require_permission
+from app.models.user import Organization, User
 from app.schemas.billing import (
     BillingStatusResponse,
     CheckoutSessionRequest,
@@ -22,6 +22,7 @@ router = APIRouter()
 
 @router.get("/status", response_model=BillingStatusResponse)
 async def get_billing_status(
+    _user: User = Depends(require_permission("billing:read")),
     org: Organization = Depends(get_current_org),
 ) -> BillingStatusResponse:
     """Get current billing status: plan, usage, limits."""
@@ -32,6 +33,7 @@ async def get_billing_status(
 @router.post("/checkout", response_model=CheckoutSessionResponse)
 async def create_checkout(
     body: CheckoutSessionRequest,
+    _user: User = Depends(require_permission("billing:write")),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> CheckoutSessionResponse:
@@ -47,6 +49,7 @@ async def create_checkout(
 
 @router.post("/portal", response_model=CustomerPortalResponse)
 async def create_portal(
+    _user: User = Depends(require_permission("billing:write")),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> CustomerPortalResponse:

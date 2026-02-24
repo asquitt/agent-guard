@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.agent import Agent
 from app.models.agent_policy import AgentPolicy
-from app.models.user import Organization
+from app.models.user import Organization, User
 from app.schemas.agent_policies import (
     PolicyCreateRequest,
     PolicyListResponse,
@@ -214,6 +214,7 @@ _TEMPLATES: list[dict[str, object]] = [
 
 @router.get("/templates", response_model=list[PolicyTemplateResponse])
 async def list_policy_templates(
+    _user: User = Depends(require_permission("agents:read")),
     _org: Organization = Depends(get_current_org),
 ) -> list[PolicyTemplateResponse]:
     """List available policy templates for common financial agent types."""
@@ -225,6 +226,7 @@ async def list_policies(
     agent_id: UUID,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("agents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> PolicyListResponse:
@@ -257,6 +259,7 @@ async def list_policies(
 async def create_policy(
     agent_id: UUID,
     body: PolicyCreateRequest,
+    _user: User = Depends(require_permission("agents:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> PolicyResponse:
@@ -300,6 +303,7 @@ async def create_policy(
 async def get_policy(
     agent_id: UUID,
     policy_id: UUID,
+    _user: User = Depends(require_permission("agents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> PolicyResponse:
@@ -316,6 +320,7 @@ async def update_policy(
     agent_id: UUID,
     policy_id: UUID,
     body: PolicyUpdateRequest,
+    _user: User = Depends(require_permission("agents:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> PolicyResponse:
@@ -364,6 +369,7 @@ async def update_policy(
 async def delete_policy(
     agent_id: UUID,
     policy_id: UUID,
+    _user: User = Depends(require_permission("agents:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> None:

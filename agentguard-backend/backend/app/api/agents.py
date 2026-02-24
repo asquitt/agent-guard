@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.models.agent import Agent
 from app.models.user import Organization, User
 from app.schemas.agents import (
@@ -28,6 +28,7 @@ async def list_agents(
     q: str | None = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("agents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AgentListResponse:
@@ -83,6 +84,7 @@ async def create_agent(
 @router.get("/{agent_id}", response_model=AgentResponse)
 async def get_agent(
     agent_id: UUID,
+    _user: User = Depends(require_permission("agents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AgentResponse:

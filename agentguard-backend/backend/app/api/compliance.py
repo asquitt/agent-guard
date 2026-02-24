@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_client_ip, get_current_org, get_current_user, get_db
+from app.core.deps import get_client_ip, get_current_org, get_db, require_permission
 from app.models.compliance_report import ComplianceReport
 from app.models.user import Organization, User
 from app.schemas.compliance import (
@@ -32,6 +32,7 @@ router = APIRouter()
 @router.get("/frameworks/scores", response_model=ComplianceScoreResponse)
 async def get_scores(
     days: int = Query(default=30, ge=1, le=365),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ComplianceScoreResponse:
@@ -60,6 +61,7 @@ async def list_audit_logs(
     date_to: datetime | None = Query(None, alias="dateTo"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AuditLogListResponse:
@@ -75,6 +77,7 @@ async def list_audit_logs(
 
 @router.get("/audit-logs/verify", response_model=ChainVerificationResponse)
 async def verify_audit_chain(
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ChainVerificationResponse:
@@ -86,6 +89,7 @@ async def verify_audit_chain(
 @router.get("/audit-logs/{audit_log_id}", response_model=AuditLogResponse)
 async def get_audit_log(
     audit_log_id: UUID,
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AuditLogResponse:
@@ -100,7 +104,7 @@ async def get_audit_log(
 async def create_report(
     body: ComplianceReportRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("compliance:write")),
     org: Organization = Depends(get_current_org),
     client_ip: str = Depends(get_client_ip),
 ) -> ComplianceReportResponse:
@@ -134,6 +138,7 @@ async def create_report(
 async def list_reports(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ComplianceReportListResponse:
@@ -160,6 +165,7 @@ async def list_reports(
 @router.get("/reports/{report_id}/download")
 async def download_report(
     report_id: UUID,
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> FileResponse:
@@ -193,6 +199,7 @@ async def export_audit_logs_cef(
     date_from: datetime | None = Query(None, alias="dateFrom"),
     date_to: datetime | None = Query(None, alias="dateTo"),
     limit: int = Query(default=10000, le=50000),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> Response:

@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_client_ip, get_current_org, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin, require_permission
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.alerts import (
@@ -53,6 +53,7 @@ async def create_destination(
 async def list_destinations(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("alerts:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AlertDestinationListResponse:
@@ -131,6 +132,7 @@ async def list_alerts(
     limit: int = Query(default=50, ge=1, le=200),
     incident_id: UUID | None = None,
     destination_id: UUID | None = None,
+    _user: User = Depends(require_permission("alerts:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AlertListResponse:
