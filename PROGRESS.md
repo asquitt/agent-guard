@@ -36,6 +36,6 @@
 - [x] All 92 tests pass (11 test files)
 
 ## TASK 4: Integration Test Split + Tech Debt
-- [ ] Split functional_test.py into modules
-- [ ] Add stubs for untested endpoints
-- [ ] No file exceeds 800 lines
+- [x] Split functional_test.py (899 lines) into 10 modules under tests/functional/
+- [x] Add stubs for untested endpoints (sandbox, governance, red_team_advanced, sso, siem, organizations_advanced)
+- [x] No file exceeds 800 lines (largest: test_advanced.py at 396 lines)
