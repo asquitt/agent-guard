@@ -1,6 +1,7 @@
 """Comprehensive test fixtures for AgentGuard backend tests."""
 
 import uuid
+import uuid as _uuid_mod
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -36,6 +37,48 @@ def _compile_uuid_sqlite(type_, compiler, **kw):  # type: ignore[no-untyped-def]
 @compiles(ARRAY, "sqlite")
 def _compile_array_sqlite(type_, compiler, **kw):  # type: ignore[no-untyped-def]
     return "JSON"
+
+
+# --- SQLite UUID bind parameter fix ---
+# PostgreSQL UUID columns with as_uuid=True use a bind_processor that calls .hex
+# on values. In SQLite we store UUIDs as VARCHAR(36), so we need to override
+# the bind_processor to convert both UUID objects and strings to plain strings.
+_original_uuid_bind_processor = UUID.bind_processor
+
+
+def _sqlite_uuid_bind_processor(self, dialect):  # type: ignore[no-untyped-def]
+    """Override UUID bind_processor to handle strings for SQLite."""
+    if dialect.name == "sqlite":
+        def process(value):  # type: ignore[no-untyped-def]
+            if value is None:
+                return value
+            if isinstance(value, _uuid_mod.UUID):
+                return str(value)
+            return str(value)
+        return process
+    return _original_uuid_bind_processor(self, dialect)
+
+
+UUID.bind_processor = _sqlite_uuid_bind_processor  # type: ignore[assignment]
+
+# Also fix result_processor to convert strings back to UUID objects
+_original_uuid_result_processor = UUID.result_processor
+
+
+def _sqlite_uuid_result_processor(self, dialect, coltype):  # type: ignore[no-untyped-def]
+    """Override UUID result_processor to return UUID objects from strings."""
+    if dialect.name == "sqlite":
+        def process(value):  # type: ignore[no-untyped-def]
+            if value is None:
+                return value
+            if isinstance(value, _uuid_mod.UUID):
+                return value
+            return _uuid_mod.UUID(str(value))
+        return process
+    return _original_uuid_result_processor(self, dialect, coltype)
+
+
+UUID.result_processor = _sqlite_uuid_result_processor  # type: ignore[assignment]
 
 
 # In-memory SQLite async engine for tests
