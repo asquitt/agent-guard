@@ -28,3 +28,9 @@ export type { WrapOptions } from './wrap';
 
 export { AgentGuardCallbackHandler } from './langchain';
 export type { AgentGuardCallbackOptions } from './langchain';
+
+export { AgentGuardLangGraphHandler } from './langgraph';
+export type { AgentGuardLangGraphOptions } from './langgraph';
+
+export { AgentGuardCrewAIHandler } from './crewai';
+export type { AgentGuardCrewAIOptions } from './crewai';
