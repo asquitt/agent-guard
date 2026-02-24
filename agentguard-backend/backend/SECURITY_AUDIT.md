@@ -188,3 +188,58 @@
   - `decide_review_item` already had `get_current_user` (reviewer identity tracking)
   - Tenant isolation: all queries filter by `org_id`
   - Status validation on decide (only pending/escalated allowed)
+
+## sandboxes.py
+- Status: CLEAN
+- Endpoints: 7
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`sandboxes:read`, `sandboxes:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Pydantic schemas for all request bodies
+
+## red_team.py
+- Status: FIXED
+- Endpoints: 9
+- Issues found: 9
+- Issues fixed: 9
+- Details:
+  - FIXED: All 9 endpoints had NO RBAC -- added `require_permission("detectors:read")` to reads, `require_permission("detectors:write")` to writes
+  - `create_run` is expensive (runs detection pipeline) -- now requires `detectors:write` permission
+  - Tenant isolation was already correct (all queries filter by `org_id`)
+  - Test categories validated against allowlist
+  - Pydantic schemas for request bodies
+
+## threat_intel.py
+- Status: FIXED
+- Endpoints: 6
+- Issues found: 6
+- Issues fixed: 6
+- Details:
+  - FIXED: All 6 endpoints had NO RBAC -- added `require_permission("detectors:read")` to reads, `require_permission("detectors:write")` to writes
+  - FIXED: `seed_platform_indicators` now requires `require_admin` (creates platform-level org_id=None records)
+  - Tenant isolation correct (queries include `org_id == org.id OR org_id IS NULL` for platform indicators)
+  - `indicator_type` validated against allowlist
+
+## shadow_ai.py
+- Status: FIXED
+- Endpoints: 5
+- Issues found: 5
+- Issues fixed: 5
+- Details:
+  - FIXED: All 5 endpoints had NO RBAC -- added `require_permission("incidents:read")` to reads, `require_permission("incidents:write")` to writes
+  - Tenant isolation was already correct (all queries filter by `org_id`)
+  - Status updates validated via regex pattern
+  - Pydantic schemas with field constraints
+
+## conversations.py
+- Status: FIXED
+- Endpoints: 6
+- Issues found: 6
+- Issues fixed: 6
+- Details:
+  - FIXED: All 6 endpoints had NO RBAC -- added `require_permission("incidents:read")` to reads, `require_permission("incidents:write")` to writes
+  - Tenant isolation was already correct (all queries filter by `org_id`)
+  - Risk score clamped to 0-100 range
+  - Auto-escalation on critical risk threshold
