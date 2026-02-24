@@ -18,15 +18,15 @@
 - [x] tool_call
 
 ## TASK 2: Python SDK
-- [ ] Read Node SDK for API surface
-- [ ] Create package structure
-- [ ] Implement client.py
-- [ ] Implement wrap.py
-- [ ] Implement errors.py
-- [ ] Implement types.py
-- [ ] Implement langchain_callback.py
-- [ ] Write tests
-- [ ] All tests pass
+- [x] Read Node SDK for API surface
+- [x] Create package structure
+- [x] Implement client.py
+- [x] Implement wrap.py
+- [x] Implement errors.py
+- [x] Implement types.py
+- [x] Implement langchain_callback.py
+- [x] Write tests (96 tests across 6 test files)
+- [x] All tests pass
 
 ## TASK 3: Frontend Component Tests
 - [ ] UI components (EmptyState, QueryError, Skeleton, StatusBadge)
