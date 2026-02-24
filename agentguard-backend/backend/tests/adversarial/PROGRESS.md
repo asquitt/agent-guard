@@ -5,7 +5,7 @@
 | 1 | prompt_injection | DONE | 22 | 12 | Added text normalization (NFKC + zero-width strip + homoglyph transliteration), base64 decoding, leet speak decoding, multiline collapsing. New pattern categories: multilingual_injection, encoding_evasion, roleplay jailbreaks. Broadened direct_override and financial_bypass patterns. |
 | 2 | prompt_extraction | DONE | 18 | 6 | Added patterns for debug mode extraction, format conversion, story/creative writing extraction, first-letter extraction with optional possessives, compliance framework extraction with "configured to", broader repeat/everything pattern. |
 | 3 | financial_pii | DONE | 23 | 2 | Added credit card pattern (spaces/dashes) to financial PII detector since it was only in the generic PII detector. All SWIFT, IBAN, CVV, wire transfer, trade, MNPI, EIN, CUSIP, ISIN patterns solid. |
-| 4 | pii | TODO | - | - | |
+| 4 | pii | DONE | 19 | 7 | SSN: added space/no-dash formats. Credit card: added Amex 4-6-5 format. Email: added obfuscated patterns (at/[at]/dot/[dot]). Phone: added dot separators. Bank account: fixed lookbehind to also check preceding context. |
 | 5 | compliance | TODO | - | - | |
 | 6 | memory_exfiltration | TODO | - | - | |
 | 7 | tool_call | TODO | - | - | |
