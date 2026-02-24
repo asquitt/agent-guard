@@ -44,3 +44,29 @@
   - Tenant isolation: all member queries filter by `org_id`
   - IP allowlist validation uses `ipaddress` stdlib (safe)
   - Pydantic schemas with field constraints on all request bodies
+
+## api_keys.py
+- Status: CLEAN
+- Endpoints: 5
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints require `require_admin` + `get_current_org`
+  - Rate limiting on create (10/min)
+  - API key hashed (SHA-256) before storage, never stored plaintext
+  - Key prefix shown only on creation, masked after
+  - Tenant isolation: all queries filter by `org_id`
+  - Pydantic schemas for all request bodies
+
+## sso.py
+- Status: FIXED
+- Endpoints: 10
+- Issues found: 1
+- Issues fixed: 1
+- Details:
+  - FIXED: OIDC callback did NOT validate `state` parameter (CSRF risk) -- now stores state in Redis on initiate, validates + deletes on callback (one-time use, 5-min TTL)
+  - Admin endpoints correctly use `require_admin`
+  - Public endpoints (check, initiate, ACS, callback, metadata) are intentionally public for SSO flow
+  - SAML response validated via python3-saml library
+  - Secrets masked in response (oidc_client_secret_set bool, not raw)
+  - JIT user provisioning with org tenant isolation
