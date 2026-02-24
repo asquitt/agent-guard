@@ -130,3 +130,61 @@
   - Tenant isolation: all queries filter by `org_id`
   - Webhook ownership validated via `_get_webhook_or_404` helper
   - Pagination with proper bounds
+
+## governance.py
+- Status: FIXED
+- Endpoints: 10
+- Issues found: 10
+- Issues fixed: 10
+- Details:
+  - FIXED: All 10 endpoints had NO RBAC permission checks -- added `require_permission("compliance:read")` to all endpoints
+  - Endpoints: owasp-compliance, threat-mapping, compliance-matrix, framework-summary, enforcement-timeline, dora-report, dora-classify, dora-timeline, article12-logs, article12-summary
+  - Tenant isolation was already correct (all queries filter by `org_id`)
+  - Query parameters have proper bounds
+  - Pydantic response schemas for all endpoints
+
+## agents.py
+- Status: CLEAN
+- Endpoints: 5
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`agents:read`, `agents:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Path parameter IDs validated as UUID type
+  - Pydantic schemas for all request bodies
+
+## agent_policies.py
+- Status: CLEAN
+- Endpoints: 5
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`agents:read`, `agents:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Pydantic schemas for all request bodies
+
+## compliance.py
+- Status: CLEAN
+- Endpoints: 7
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All endpoints use RBAC permissions (`compliance:read`, `compliance:write`)
+  - Tenant isolation: all queries filter by `org_id`
+  - Path traversal defense on report download (filename sanitization)
+  - Pydantic schemas for all request bodies
+
+## reviews.py
+- Status: FIXED
+- Endpoints: 5
+- Issues found: 4
+- Issues fixed: 4
+- Details:
+  - FIXED: `list_review_items` had no RBAC -- added `require_permission("incidents:read")`
+  - FIXED: `get_review_stats` had no RBAC -- added `require_permission("incidents:read")`
+  - FIXED: `create_review_item` had no RBAC -- added `require_permission("incidents:write")`
+  - FIXED: `escalate_review_item` had no RBAC -- added `require_permission("incidents:write")`
+  - `decide_review_item` already had `get_current_user` (reviewer identity tracking)
+  - Tenant isolation: all queries filter by `org_id`
+  - Status validation on decide (only pending/escalated allowed)

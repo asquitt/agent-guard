@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_current_user, get_db
+from app.core.deps import get_current_org, get_current_user, get_db, require_permission
 from app.models.review_queue import ReviewItem
 from app.models.user import Organization, User
 
@@ -92,6 +92,7 @@ async def list_review_items(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ReviewListResponse:
     """List review queue items with optional filtering."""
@@ -120,6 +121,7 @@ async def list_review_items(
 async def get_review_stats(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ReviewStatsResponse:
     """Get review queue statistics."""
@@ -166,6 +168,7 @@ async def get_review_stats(
 async def create_review_item(
     body: ReviewCreateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> ReviewItemResponse:
     """Manually queue an item for human review."""
@@ -227,6 +230,7 @@ async def decide_review_item(
 async def escalate_review_item(
     item_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> ReviewItemResponse:
     """Manually escalate a review item."""
