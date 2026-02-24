@@ -42,5 +42,5 @@ class AgentPolicy(TimestampMixin, Base):
 
     __table_args__ = (
         Index("ix_agent_policies_agent_id_version", "agent_id", "version"),
-        Index("ix_agent_policies_org_id", "org_id"),
+        # org_id index is already created by index=True on the column
     )

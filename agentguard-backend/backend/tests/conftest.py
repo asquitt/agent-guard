@@ -6,7 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 from sqlalchemy import JSON, StaticPool, String, event
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -31,6 +31,11 @@ def _compile_jsonb_sqlite(type_, compiler, **kw):  # type: ignore[no-untyped-def
 @compiles(UUID, "sqlite")
 def _compile_uuid_sqlite(type_, compiler, **kw):  # type: ignore[no-untyped-def]
     return "VARCHAR(36)"
+
+
+@compiles(ARRAY, "sqlite")
+def _compile_array_sqlite(type_, compiler, **kw):  # type: ignore[no-untyped-def]
+    return "JSON"
 
 
 # In-memory SQLite async engine for tests
