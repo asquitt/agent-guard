@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.incident import Incident
 from app.models.proxy import ProxyRequest
-from app.models.user import Organization
+from app.models.user import Organization, User
 from app.schemas.traces import (
     TraceDetailResponse,
     TraceIncident,
@@ -30,6 +30,7 @@ async def list_traces(
     q: str | None = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> TraceListResponse:
@@ -98,6 +99,7 @@ async def list_traces(
 @router.get("/{trace_id}", response_model=TraceDetailResponse)
 async def get_trace_detail(
     trace_id: UUID,
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> TraceDetailResponse:
