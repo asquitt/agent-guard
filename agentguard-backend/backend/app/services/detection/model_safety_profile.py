@@ -69,7 +69,7 @@ _FACTUAL_CLAIM_RE = re.compile(
 
 _ADVERSARIAL_RE = re.compile(
     r"\b(?:ignore|disregard|forget|override)\s+"
-    r"(?:all|any|previous|prior|your)\s+"
+    r"(?:(?:all|any|previous|prior|your)\s+)+"
     r"(?:instructions|rules|guidelines|restrictions)\b"
     r"|\b(?:jailbreak|DAN\s+mode|developer\s+mode|bypass\s+safety)\b"
     r"|\b(?:pretend|act\s+as\s+if)\s+(?:you\s+have\s+)?no\s+"

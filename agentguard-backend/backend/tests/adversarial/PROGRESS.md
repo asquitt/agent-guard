@@ -12,14 +12,22 @@
 | 8 | mcp_security | DONE | 12 | 0 | All adversarial tests passed on first run. Filesystem access, command execution, credential access, network access, package install, webhook/ngrok exfiltration, unauthorized/localhost/private servers, blocked capabilities all detected. |
 | 9 | schema_injection | DONE | 11 | 0 | All adversarial tests passed on first run. Description field injection, role assumption, adversarial enums, suspicious field names, excessive required fields, default value injection, response format injection all detected. |
 | 10 | instruction_hierarchy | DONE | 13 | 3 | Fixed: added "highest" to priority_escalation pattern; added "says" separator to tool_output_injection pattern; added -ing verb forms and "original" to response compliance patterns. |
-| 11 | toxicity | TODO | - | - | |
-| 12 | hallucination + confidence_hallucination | TODO | - | - | |
-| 13 | sycophancy | TODO | - | - | |
-| 14 | reasoning_trace | TODO | - | - | |
-| 15 | sequential_action | TODO | - | - | |
-| 16 | cost | TODO | - | - | |
-| 17 | loop | TODO | - | - | |
-| 18 | scope_enforcement | TODO | - | - | |
-| 19 | capability_monitor | TODO | - | - | |
-| 20 | model_safety_profile | TODO | - | - | |
-| 21 | tiered | TODO | - | - | |
+| 11 | toxicity | DONE | 16 | 3 | Fixed: declined/denied verb forms in discriminatory_lending; "because of" preposition support; possessive (your/their/the) before financial terms in harmful_advice. |
+| 12 | hallucination | DONE | 12 | 0 | All adversarial tests passed on first run. Impossible rates, fake regulators, fake SOX sections, fake Basel versions, impossible percentages, LLM detection. |
+| 13 | confidence_hallucination | DONE | 12 | 0 | All adversarial tests passed on first run. Unsourced financial claims, high-confidence logprob flagging, regulatory citations, statistical claims, date deadlines. |
+| 14 | sycophancy | DONE | 15 | 1 | Fixed: deception guarantee pattern now allows up to 4 intervening words between "guarantee that" and "is safe/secure/protected". |
+| 15 | reasoning_trace | DONE | 13 | 0 | All adversarial tests passed on first run. Self-preservation, oversight probing, goal divergence, deceptive alignment, manipulation planning, capability hiding, LLM override, disabled categories. |
+| 16 | sequential_action | DONE | 11 | 0 | All adversarial tests passed on first run. Data exfiltration, privilege escalation, reconnaissance, financial manipulation, cross-turn detection, Anthropic format. |
+| 17 | cost | DONE | 12 | 0 | All adversarial tests passed on first run. Ceiling violations, spike detection, Anthropic usage, edge cases (no usage, malformed JSON, zero average). |
+| 18 | loop | DONE | 11 | 0 | All adversarial tests passed on first run. Response similarity, tool call loops, custom thresholds, edge cases. |
+| 19 | scope_enforcement | DONE | 14 | 0 | All adversarial tests passed on first run. Blocked/unauthorized tools, domain restrictions, resource limits, irreversible actions, Anthropic format. |
+| 20 | capability_monitor | DONE | 14 | 0 | All adversarial tests passed. Unauthorized capabilities, limit violations, persuasion in financial context, autonomous planning, strict mode. |
+| 21 | model_safety_profile | DONE | 14 | 1 | Fixed: adversarial regex now handles multi-word sequences like "ignore all previous instructions" (was only matching single qualifier word). |
+| 22 | tiered | DONE | 14 | 0 | All adversarial tests passed on first run. Tier short-circuiting, exception handling, timing, stats collection. |
+
+## Summary
+
+- **Total detectors hardened:** 22
+- **Total adversarial tests:** 316
+- **Total bypasses found and fixed:** 35
+- **All 316 tests pass.**
