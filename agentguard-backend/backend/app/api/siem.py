@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.models.alert import AlertDestination
 from app.models.user import Organization, User
 from app.services import siem_service
@@ -80,6 +80,7 @@ class FormatPreviewResponse(BaseModel):
 
 @router.get("/formats")
 async def list_siem_formats(
+    _user: User = Depends(require_permission("alerts:read")),
     _org: Organization = Depends(get_current_org),
 ) -> dict:
     """List supported SIEM output formats."""
@@ -97,6 +98,7 @@ async def list_siem_formats(
 @router.post("/preview", response_model=FormatPreviewResponse)
 async def preview_format(
     fmt: str = Query(description="SIEM format to preview"),
+    _user: User = Depends(require_permission("alerts:read")),
     _org: Organization = Depends(get_current_org),
 ) -> FormatPreviewResponse:
     """Preview a sample incident in the requested SIEM format."""
@@ -171,6 +173,7 @@ async def create_siem_destination(
 async def list_siem_destinations(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("alerts:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> SiemDestinationListResponse:
