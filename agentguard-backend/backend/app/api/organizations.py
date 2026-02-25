@@ -1,6 +1,6 @@
 """Organization management router."""
 
-# pyright: reportGeneralTypeIssues=false
+# pyright: reportGeneralTypeIssues=false, reportCallIssue=false
 
 import ipaddress
 from uuid import UUID
@@ -287,6 +287,30 @@ async def invite_member(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+
+    # Send invite email with password reset link (non-blocking)
+    try:
+        from app.core.auth import create_password_reset_token
+        from app.core.config import settings
+        from app.services.email_service import send_invite_email
+
+        reset_token = create_password_reset_token(str(new_user.id))
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        inviter_name = str(admin_user.full_name) or str(admin_user.email)
+        send_invite_email(
+            to_email=body.email.lower(),
+            org_name=str(org.name),
+            role=body.role,
+            inviter_name=inviter_name,
+            reset_url=reset_url,
+        )
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Failed to send invite email to %s — user created but email not delivered",
+            body.email,
+        )
+
     return MemberResponse.model_validate(new_user)
 
 

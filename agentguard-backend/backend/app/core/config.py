@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     STRIPE_PRO_PRICE_ID: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Email (SendGrid)
+    SENDGRID_API_KEY: str = ""
+    EMAIL_FROM_ADDRESS: str = "noreply@agentguard.app"
+    EMAIL_FROM_NAME: str = "AgentGuard"
+
     # SSO
     SSO_SP_ENTITY_ID_BASE: str = ""  # e.g. https://agentguard.app/saml/sp
     SSO_ACS_URL_BASE: str = ""  # e.g. https://agentguard.app/api/v1/auth/saml/acs

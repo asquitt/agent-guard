@@ -213,24 +213,23 @@ async def forgot_password(
     """Request a password reset link.
 
     Always returns 200 to prevent email enumeration.
-    In production, this would send an email with the reset link.
     """
     import logging
 
     from app.core.auth import create_password_reset_token
+    from app.core.config import settings
+    from app.services.email_service import send_password_reset_email
 
     logger = logging.getLogger(__name__)
 
     user = await auth_service.get_user_by_email(db, body.email)
     if user is not None and user.is_active is True:  # type: ignore[comparison-overlap]
         token = create_password_reset_token(str(user.id))
-        # In production: send email with reset link containing this token
-        # For now, log the token (visible in server logs for dev/testing)
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        send_password_reset_email(str(user.email), reset_url)
         logger.info(
-            "Password reset requested for user_id=%s — token=%s (expires in %d min)",
+            "Password reset requested for user_id=%s",
             user.id,
-            token[:20] + "...",
-            15,
         )
         await write_audit(
             db, UUID(str(user.org_id)), UUID(str(user.id)),
