@@ -81,6 +81,46 @@ def _sqlite_uuid_result_processor(self, dialect, coltype):  # type: ignore[no-un
 UUID.result_processor = _sqlite_uuid_result_processor  # type: ignore[assignment]
 
 
+# --- SQLite ARRAY bind/result parameter fix ---
+# ARRAY columns are compiled to JSON for SQLite, but the ARRAY type's bind_processor
+# doesn't serialize Python lists to JSON strings. Override to handle this.
+import json as _json
+
+_original_array_bind_processor = ARRAY.bind_processor
+
+
+def _sqlite_array_bind_processor(self, dialect):  # type: ignore[no-untyped-def]
+    """Override ARRAY bind_processor to serialize lists as JSON strings for SQLite."""
+    if dialect.name == "sqlite":
+        def process(value):  # type: ignore[no-untyped-def]
+            if value is None:
+                return value
+            return _json.dumps(value)
+        return process
+    return _original_array_bind_processor(self, dialect)
+
+
+ARRAY.bind_processor = _sqlite_array_bind_processor  # type: ignore[assignment]
+
+_original_array_result_processor = ARRAY.result_processor
+
+
+def _sqlite_array_result_processor(self, dialect, coltype):  # type: ignore[no-untyped-def]
+    """Override ARRAY result_processor to deserialize JSON strings to lists for SQLite."""
+    if dialect.name == "sqlite":
+        def process(value):  # type: ignore[no-untyped-def]
+            if value is None:
+                return value
+            if isinstance(value, str):
+                return _json.loads(value)
+            return value
+        return process
+    return _original_array_result_processor(self, dialect, coltype)
+
+
+ARRAY.result_processor = _sqlite_array_result_processor  # type: ignore[assignment]
+
+
 # In-memory SQLite async engine for tests
 TEST_ENGINE = create_async_engine(
     "sqlite+aiosqlite://",
