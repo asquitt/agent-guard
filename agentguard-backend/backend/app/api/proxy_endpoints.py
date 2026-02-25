@@ -7,7 +7,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.core.exceptions import NotFoundError
 from app.models.user import Organization, User
 from app.schemas.proxy_endpoints import (
@@ -51,6 +51,7 @@ async def create_proxy_endpoint(
 async def list_proxy_endpoints(
     skip: int = 0,
     limit: int = 50,
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ProxyEndpointListResponse:
@@ -65,6 +66,7 @@ async def list_proxy_endpoints(
 @router.get("/{endpoint_id}", response_model=ProxyEndpointResponse)
 async def get_proxy_endpoint(
     endpoint_id: UUID,
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ProxyEndpointResponse:
