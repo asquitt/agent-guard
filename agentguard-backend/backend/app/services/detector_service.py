@@ -113,8 +113,11 @@ async def update_detector(
         detector.config = config  # type: ignore[assignment]
     await write_audit(db, org_id, user_id, "detector.updated", "detector", detector_id, {"name": name}, ip_address)
     await db.commit()
-    await db.refresh(detector)
-    return detector
+    # Re-fetch with eager-loaded rules to avoid MissingGreenlet in async serialization
+    result = await db.execute(
+        select(Detector).options(selectinload(Detector.rules)).where(Detector.id == detector_id)
+    )
+    return result.scalar_one()
 
 
 async def delete_detector(
