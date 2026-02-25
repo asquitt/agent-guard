@@ -32,15 +32,18 @@ _SEVERITY_RANK: dict[str, int] = {s: i for i, s in enumerate(_SEVERITY_ORDER)}
 _INPUT_PATTERNS: dict[str, tuple[list[str], str]] = {
     "extraction_attempt": (
         [
-            r"repeat\s+(?:your|the|all)\s+(?:instructions|prompt|rules|system\s+prompt)",
+            r"repeat\s+(?:your|the|all|everything\s+(?:you\s+know\s+)?(?:about\s+)?(?:your\s+)?)\s*(?:instructions|prompt|rules|system\s+prompt|configuration)",
             r"what\s+(?:were\s+you|are\s+your)\s+(?:told|instructions|system\s+prompt)",
             r"show\s+(?:me\s+)?(?:your|the)\s+(?:system\s+)?(?:prompt|instructions|rules|configuration)",
             r"print\s+(?:your|the)\s+(?:system|internal)\s+(?:instructions|prompt|rules)",
             r"output\s+(?:your|the)\s+original\s+(?:prompt|instructions)",
-            r"(?:reveal|display|echo|dump)\s+(?:your|the)\s+(?:system\s+)?(?:prompt|instructions)",
+            r"(?:reveal|display|echo|dump)\s+(?:your|the)\s+(?:full\s+)?(?:system\s+)?(?:prompt|instructions)",
             r"what\s+is\s+your\s+system\s+(?:prompt|message)",
             r"tell\s+me\s+(?:your|the)\s+(?:exact\s+)?(?:instructions|rules|prompt)",
             r"copy\s+(?:and\s+paste\s+)?your\s+(?:system\s+)?(?:prompt|instructions)",
+            # Debug/diagnostic extraction
+            r"(?:enter|activate|enable)\s+(?:debug|diagnostic)\s+mode\s+(?:and\s+)?(?:display|show|output|print|reveal)",
+            r"(?:display|show)\s+(?:your\s+)?(?:full\s+)?(?:system\s+)?(?:prompt|configuration|instructions)\s+(?:and\s+)?(?:config(?:uration)?|settings?)",
         ],
         IncidentSeverity.MEDIUM.value,
     ),
@@ -48,17 +51,19 @@ _INPUT_PATTERNS: dict[str, tuple[list[str], str]] = {
         [
             r"translate\s+your\s+(?:instructions|rules|prompt)\s+(?:to|into)",
             r"summarize\s+(?:your|the)\s+(?:system\s+)?(?:instructions|prompt|rules)",
-            r"write\s+(?:a\s+)?poem\s+(?:about|using)\s+your\s+(?:instructions|prompt)",
+            r"write\s+(?:a\s+)?(?:\w+\s+)?(?:poem|story|song|essay)\s+(?:about|using|where|that\s+(?:incorporates?|includes?|follows?))\s+.*?(?:instructions|prompt|rules)",
             r"encode\s+your\s+(?:instructions|prompt)\s+(?:in|as)\s+(?:base64|hex|binary)",
-            r"(?:first|initial)\s+(?:letter|word)\s+of\s+each\s+(?:instruction|rule)",
+            r"(?:first|initial)\s+(?:letter|word)\s+of\s+(?:each\s+(?:of\s+)?)?(?:your\s+)?(?:instructions?|rules?)",
             r"rephrase\s+(?:your|the)\s+(?:system\s+)?(?:instructions|prompt|rules)",
+            # Format conversion
+            r"convert\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions|rules)\s+(?:to|into)\s+(?:json|xml|yaml|csv|markdown|code)",
         ],
         IncidentSeverity.HIGH.value,
     ),
     "financial_extraction": (
         [
             r"(?:show|reveal|tell|what\s+are)\s+(?:me\s+)?(?:your|the)\s+compliance\s+rules",
-            r"what\s+regulations?\s+(?:are\s+you|do\s+you)\s+follow",
+            r"what\s+regulations?\s+(?:are\s+you|do\s+you)\s+(?:configured\s+to\s+)?follow",
             r"(?:list|show|display)\s+(?:your|the)\s+(?:risk|compliance|regulatory)\s+(?:policies|rules|guidelines)",
             r"what\s+(?:transaction|trading|lending)\s+(?:limits?|rules?|restrictions?)\s+(?:are|do)\s+you",
             r"(?:reveal|show)\s+(?:the\s+)?(?:approval|authorization)\s+(?:rules|workflow|process)",

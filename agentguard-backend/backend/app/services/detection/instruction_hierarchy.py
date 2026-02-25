@@ -27,14 +27,14 @@ _HIERARCHY_PATTERNS: dict[str, tuple[list[str], str]] = {
         r"\[SYSTEM\].*?(?:within|inside)\s+(?:tool|function)\s+(?:output|result)",
         r"\[INST\].*?(?:within|inside)\s+(?:tool|function)\s+(?:output|result)",
         r"<\|system\|>.*?(?:within|inside)\s+(?:content|data|result)",
-        r"(?:tool_result|function_result|tool_output)\s*[:\"].*?(?:ignore|override|disregard)",
+        r"(?:tool_result|function_result|tool_output)\s*(?:says\s*)?[:\"].*?(?:ignore|override|disregard)",
         r"\"content\"\s*:\s*\"[^\"]*(?:ignore\s+previous|override\s+system|new\s+instructions)",
         r"(?:tool|function)\s+(?:says|instructs|commands)\s+(?:you\s+)?(?:to|must|should)",
     ], IncidentSeverity.HIGH.value),
     "priority_escalation": ([
         r"(?:as|i\s+am)\s+(?:the\s+)?system\s+(?:administrator|admin|operator)",
         r"with\s+(?:admin|system|root|elevated)\s+privileges?",
-        r"this\s+(?:instruction|message)\s+has\s+(?:higher|top|maximum)\s+priority",
+        r"this\s+(?:instruction|message)\s+has\s+(?:higher|highest|top|maximum)\s+priority",
         r"priority\s*:\s*(?:highest|system|critical|override)",
         r"escalat(?:e|ing)\s+(?:to\s+)?(?:system|admin)\s+(?:level|priority|context)",
         r"(?:this|these)\s+instructions?\s+(?:override|supersede|replace)\s+(?:all|system|previous)",
@@ -77,7 +77,7 @@ _RESPONSE_COMPLIANCE_PATTERNS: list[re.Pattern[str]] = [re.compile(p, re.IGNOREC
     r"(?:following|obeying|executing)\s+(?:the\s+)?(?:instructions?|directives?)\s+(?:from|in)\s+(?:the\s+)?(?:tool|function|data|results?)",
     r"(?:the\s+)?(?:tool|function|data)\s+(?:told|asked|instructed)\s+me\s+to",
     r"(?:overriding|ignoring|bypassing)\s+(?:my\s+)?(?:system|safety|original)\s+(?:instructions?|rules?|guidelines?)",
-    r"(?:i'?(?:ll|ve|m)\s+)?(?:now\s+)?(?:disregard|ignore|override)\s+(?:my\s+)?(?:previous|system|safety)",
+    r"(?:i'?(?:ll|ve|m)\s+)?(?:now\s+)?(?:disregard(?:ing)?|ignor(?:e|ing)|overrid(?:e|ing)|bypass(?:ing)?)\s+(?:my\s+)?(?:previous|system|safety|original)",
 ]]
 
 # LLM verification prompt

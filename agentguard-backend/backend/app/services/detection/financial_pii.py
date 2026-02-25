@@ -27,6 +27,16 @@ _FINANCIAL_PATTERNS: list[
     tuple[str, re.Pattern[str], re.Pattern[str] | None, str, str]
 ] = [
     (
+        "Credit Card",
+        re.compile(
+            r"\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))"
+            r"[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b"
+        ),
+        None,
+        IncidentSeverity.CRITICAL.value,
+        "Credit card number detected",
+    ),
+    (
         "Routing Number",
         re.compile(r"\b[0-9]{9}\b"),
         re.compile(r"routing|aba|transit", re.IGNORECASE),
