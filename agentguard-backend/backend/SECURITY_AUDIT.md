@@ -243,3 +243,136 @@
   - Tenant isolation was already correct (all queries filter by `org_id`)
   - Risk score clamped to 0-100 range
   - Auto-escalation on critical risk threshold
+
+## traces.py
+- Status: FIXED
+- Endpoints: 2
+- Issues found: 2
+- Issues fixed: 2
+- Details:
+  - FIXED: `list_traces` had no RBAC -- added `require_permission("incidents:read")`
+  - FIXED: `get_trace_detail` had no RBAC -- added `require_permission("incidents:read")`
+  - Tenant isolation correct (all queries filter by `org_id`)
+  - Path parameter `trace_id` validated as UUID type
+  - Query params have proper bounds (skip ge=0, limit ge=1 le=200)
+  - Pydantic response schemas for all endpoints
+
+## siem.py
+- Status: FIXED
+- Endpoints: 6
+- Issues found: 3
+- Issues fixed: 3
+- Details:
+  - FIXED: `list_siem_formats` had no RBAC -- added `require_permission("alerts:read")`
+  - FIXED: `preview_format` had no RBAC -- added `require_permission("alerts:read")`
+  - FIXED: `list_siem_destinations` had no RBAC -- added `require_permission("alerts:read")`
+  - Write endpoints (create, update, delete) correctly use `require_admin`
+  - Tenant isolation correct (all queries filter by `org_id`)
+  - Format validated against allowlist
+  - Pydantic schemas for all request bodies
+
+## billing.py
+- Status: CLEAN
+- Endpoints: 4
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - All user endpoints use RBAC permissions (`billing:read`, `billing:write`)
+  - Stripe webhook uses signature verification (no JWT auth -- correct for webhooks)
+  - Tenant isolation: org-scoped via `get_current_org`
+  - Pydantic schemas for all request bodies
+
+## model_registry.py
+- Status: FIXED
+- Endpoints: 6
+- Issues found: 3
+- Issues fixed: 3
+- Details:
+  - FIXED: `list_models` had no RBAC -- added `require_permission("compliance:read")`
+  - FIXED: `get_model_summary` had no RBAC -- added `require_permission("compliance:read")`
+  - FIXED: `get_model` had no RBAC -- added `require_permission("compliance:read")`
+  - Write endpoints (register, update, delete) correctly use `require_admin`
+  - Tenant isolation correct (all queries filter by `org_id`)
+  - Path parameter `model_id` validated as UUID type
+  - Pydantic schemas for all request bodies
+
+## playground.py
+- Status: FIXED
+- Endpoints: 2
+- Issues found: 2
+- Issues fixed: 2
+- Details:
+  - FIXED: `test_detectors` had no RBAC -- added `require_permission("detectors:read")`
+  - FIXED: `list_categories` had no RBAC -- added `require_permission("detectors:read")`
+  - Tenant isolation: org passed to detection pipeline
+  - Pydantic schemas for request/response bodies
+
+## ingest.py
+- Status: CLEAN
+- Endpoints: 2
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - Both endpoints use API key auth via `get_current_org_from_api_key` (correct for SDK ingestion)
+  - Tenant isolation: `org.id` set on all created records
+  - Pydantic schemas for all request bodies (SDKEvent, TraceSpan batches)
+  - No RBAC needed -- SDK endpoints use API key auth, not user roles
+
+## retention.py
+- Status: FIXED
+- Endpoints: 5
+- Issues found: 4
+- Issues fixed: 4
+- Details:
+  - FIXED: `get_retention_policy` had no RBAC -- added `require_permission("settings:read")`
+  - FIXED: `list_archives` had no RBAC -- added `require_permission("settings:read")`
+  - FIXED: `get_archive` had no RBAC -- added `require_permission("settings:read")`
+  - FIXED: `retrieve_archive` used `get_current_user` (no RBAC) -- upgraded to `require_permission("settings:read")`
+  - `update_retention_policy` correctly uses `require_admin`
+  - Tenant isolation correct (all queries filter by `org_id`)
+  - Path parameter `archive_id` validated as UUID type
+  - Audit logging on policy update and archive retrieval
+
+## proxy_endpoints.py
+- Status: FIXED
+- Endpoints: 5
+- Issues found: 2
+- Issues fixed: 2
+- Details:
+  - FIXED: `list_proxy_endpoints` had no RBAC -- added `require_permission("settings:read")`
+  - FIXED: `get_proxy_endpoint` had no RBAC -- added `require_permission("settings:read")`
+  - Write endpoints (create, update, delete) correctly use `require_admin`
+  - Rate limiting on create (10/min)
+  - Tenant isolation correct (org_id passed to service layer)
+  - Path parameter `endpoint_id` validated as UUID type
+  - Pydantic schemas for all request bodies
+
+## governance_testing.py
+- Status: FIXED
+- Endpoints: 8
+- Issues found: 8
+- Issues fixed: 8
+- Details:
+  - FIXED: `get_stress_test_suite` had no RBAC -- added `require_permission("detectors:read")`
+  - FIXED: `get_readiness_score` had no RBAC -- added `require_permission("detectors:read")`
+  - FIXED: `run_stress_test` had no RBAC -- added `require_permission("detectors:write")`
+  - FIXED: `get_investigation_summary` had no RBAC -- added `require_permission("incidents:read")`
+  - FIXED: `get_investigation` had no RBAC -- added `require_permission("incidents:read")`
+  - FIXED: `get_policies` had no RBAC -- added `require_permission("compliance:read")`
+  - FIXED: `classify_interaction` had no RBAC -- added `require_permission("compliance:read")`
+  - FIXED: `get_policy_compliance` had no RBAC -- added `require_permission("compliance:read")`
+  - Tenant isolation correct (all queries filter by `org_id`)
+  - Query params have proper bounds (days ge=1 le=365)
+  - Pydantic schemas for all request/response bodies
+
+## websocket.py
+- Status: CLEAN
+- Endpoints: 1
+- Issues found: 0
+- Issues fixed: 0
+- Details:
+  - JWT validation via `_authenticate_ws` (verifies token type, user active status, org membership)
+  - Tenant isolation: subscribes only to org-specific Redis channel (`org:{org_id}:events`)
+  - Proper connection rejection on auth failure (close code 4001)
+  - No RBAC needed -- WebSocket event streaming is read-only, user auth is sufficient
+  - Redis pub/sub cleanup in finally block (unsubscribe, close)
