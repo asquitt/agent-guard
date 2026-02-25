@@ -128,10 +128,10 @@ def member_headers(member_user: User) -> dict[str, str]:
 @pytest.fixture
 async def api_key(db_session: AsyncSession, org: Organization) -> tuple[ApiKey, str]:
     """Create an API key for the primary org. Returns (ApiKey, full_key)."""
-    import hashlib
+    from app.services.api_key_service import hash_api_key
 
     full_key = f"ag_live_{uuid.uuid4().hex}"
-    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    key_hash = hash_api_key(full_key)
 
     key = ApiKey(
         id=uuid.uuid4(),
