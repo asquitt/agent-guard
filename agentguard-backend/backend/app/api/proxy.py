@@ -1,7 +1,5 @@
 """LLM proxy router — forwards requests to upstream providers."""
 
-# pyright: reportGeneralTypeIssues=false
-
 import asyncio
 import ipaddress
 import json
@@ -190,8 +188,9 @@ async def _parse_and_resolve(
 
     # Usage limit enforcement (monthly billing cap)
     limit = get_request_limit(org.plan_tier)  # type: ignore[arg-type]
-    current_count = org.monthly_request_count or 0
-    if limit is not None and current_count >= limit:
+    _raw_count = org.monthly_request_count
+    current_count: int = _raw_count if isinstance(_raw_count, int) else 0
+    if limit is not None and current_count >= limit:  # type: ignore[reportGeneralTypeIssues]
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail={
@@ -546,9 +545,10 @@ async def _track_sandbox_tokens(
         return
 
     # Update token usage (clamp to non-negative to prevent budget bypass)
-    usage = execution.resource_usage or {}
+    raw_usage = execution.resource_usage
+    usage: dict[str, Any] = dict(raw_usage) if isinstance(raw_usage, dict) else {}
     usage["tokens_used"] = usage.get("tokens_used", 0) + max(0, tokens)
-    execution.resource_usage = usage
+    execution.resource_usage = usage  # type: ignore[assignment]
     await db.flush()
 
     # Check if token budget exceeded

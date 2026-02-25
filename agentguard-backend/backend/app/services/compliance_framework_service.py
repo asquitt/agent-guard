@@ -7,6 +7,7 @@ SOC 2, ISO 42001, OWASP LLM Top 10, MITRE ATLAS, PCI-DSS, FFIEC.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -173,7 +174,7 @@ async def get_compliance_matrix(
     db: AsyncSession,
     org_id: UUID,
     days: int = 30,
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Return the full compliance matrix with per-category incident counts."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
@@ -200,7 +201,7 @@ async def get_framework_summary(
     db: AsyncSession,
     org_id: UUID,
     days: int = 30,
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Return per-framework summary: total violations and covered categories."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 

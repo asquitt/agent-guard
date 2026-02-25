@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -207,7 +208,7 @@ async def get_threat_mapping(
     db: AsyncSession,
     org_id: UUID,
     days: int = 30,
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Return ATLAS techniques enriched with incident counts for the org."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 

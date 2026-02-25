@@ -1,6 +1,5 @@
 """Governance API router — OWASP, MITRE ATLAS, cross-framework, DORA, EU AI Act."""
 
-# pyright: reportGeneralTypeIssues=false, reportArgumentType=false, reportCallIssue=false, reportOperatorIssue=false
 
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
