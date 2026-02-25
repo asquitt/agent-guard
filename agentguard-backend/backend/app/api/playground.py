@@ -8,8 +8,8 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
-from app.models.user import Organization
+from app.core.deps import get_current_org, get_db, require_permission
+from app.models.user import Organization, User
 from app.schemas.playground import (
     PlaygroundDetectionHit,
     PlaygroundTestRequest,
@@ -30,6 +30,7 @@ router = APIRouter()
 @router.post("/test", response_model=PlaygroundTestResponse)
 async def test_detectors(
     body: PlaygroundTestRequest,
+    _user: User = Depends(require_permission("detectors:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> PlaygroundTestResponse:
@@ -85,6 +86,7 @@ async def test_detectors(
 
 @router.get("/categories")
 async def list_categories(
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> dict[str, list[str]]:
     """List available detector categories grouped by execution type."""
