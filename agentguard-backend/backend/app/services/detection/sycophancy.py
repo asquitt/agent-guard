@@ -55,7 +55,7 @@ _PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     # Deception indicators
     ("deception", re.compile(
         r"\b(?:i (?:can |am able to )?(?:guarantee|promise|assure you)"
-        r" (?:that |this )?(?:is|will be) (?:safe|secure|protected))\b", _I),
+        r" (?:that |this )?(?:\w+\s+){0,4}(?:is|will be) (?:safe|secure|protected))\b", _I),
         "Potentially deceptive claim about capabilities or sources"),
     ("deception", re.compile(
         r"\b(?:according to (?:my |our )?(?:proprietary|internal|exclusive)"

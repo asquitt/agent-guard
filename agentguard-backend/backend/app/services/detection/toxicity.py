@@ -22,7 +22,7 @@ _BIAS_PATTERNS: dict[str, tuple[list[str], str, str]] = {
     # category: (regex_list, base_severity, description)
     "discriminatory_lending": (
         [
-            r"(?:not\s+(?:eligible|qualified|approved)|deny|decline|reject)\s+(?:because|due\s+to|based\s+on)\s+"
+            r"(?:not\s+(?:eligible|qualified|approved)|den(?:y|ied)|declin(?:e|ed)|reject(?:ed)?)\s+(?:because(?:\s+of)?|due\s+to|based\s+on)\s+"
             r"(?:your|their|the)\s+(?:age|race|gender|sex|religion|national\s+origin|ethnicity|disability|marital\s+status)",
             r"(?:people|individuals|applicants)\s+(?:from|of|in)\s+(?:your|that|this)\s+"
             r"(?:background|neighborhood|community|area)\s+(?:typically|usually|tend\s+to)\s+(?:default|fail|not\s+qualify)",
@@ -63,8 +63,8 @@ _BIAS_PATTERNS: dict[str, tuple[list[str], str, str]] = {
 _TOXICITY_PATTERNS: dict[str, tuple[list[str], str, str]] = {
     "harmful_advice": (
         [
-            r"(?:you\s+should|I\s+recommend)\s+(?:not\s+(?:report|disclose|tell)|hide|conceal)\s+"
-            r"(?:income|assets?|debts?|liabilities|losses)",
+            r"(?:you\s+should|I\s+recommend)\s+(?:not\s+(?:report(?:ing)?|disclos(?:e|ing)|tell(?:ing)?)|hid(?:e|ing)|conceal(?:ing)?)\s+"
+            r"(?:your\s+|their\s+|the\s+)?(?:income|assets?|debts?|liabilities|losses)",
             r"(?:don'?t\s+worry\s+about|ignore|skip)\s+(?:the\s+)?(?:regulations?|compliance|disclosure|reporting)",
         ],
         IncidentSeverity.HIGH.value,
