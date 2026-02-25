@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db, require_admin
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.models.model_registry import AIModel
 from app.models.user import Organization, User
 
@@ -124,6 +124,7 @@ async def list_models(
     q: str | None = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AIModelListResponse:
@@ -157,6 +158,7 @@ async def list_models(
 
 @router.get("/summary", response_model=ModelSummary)
 async def get_model_summary(
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ModelSummary:
@@ -212,6 +214,7 @@ async def get_model_summary(
 @router.get("/{model_id}", response_model=AIModelResponse)
 async def get_model(
     model_id: UUID,
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> AIModelResponse:
