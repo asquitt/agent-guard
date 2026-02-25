@@ -63,6 +63,11 @@ class User(TimestampMixin, Base):
     token_version = Column(Integer, nullable=False, server_default="0")
     password_changed_at = Column(DateTime(timezone=True), nullable=True)
 
+    # MFA / TOTP
+    mfa_enabled = Column(Boolean, nullable=False, server_default="false")
+    totp_secret = Column(String(255), nullable=True)  # Encrypted TOTP secret
+    mfa_backup_codes = Column(JSONB, nullable=True)  # Hashed backup codes
+
     # Notification preferences (JSONB)
     notification_preferences = Column(JSONB, nullable=False, server_default="{}")
 

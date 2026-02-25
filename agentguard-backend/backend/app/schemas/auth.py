@@ -59,6 +59,7 @@ class UserResponse(BaseModel):
     role: str
     org_id: UUID = Field(serialization_alias="organizationId")
     is_active: bool = Field(serialization_alias="isActive")
+    mfa_enabled: bool = Field(default=False, serialization_alias="mfaEnabled")
     created_at: datetime = Field(serialization_alias="createdAt")
 
 
@@ -104,3 +105,32 @@ class UpdateProfileRequest(BaseModel):
 class MeResponse(BaseModel):
     user: UserResponse
     organization: OrgResponse
+
+
+# ---------------------------------------------------------------------------
+# MFA schemas
+# ---------------------------------------------------------------------------
+
+
+class LoginResponse(BaseModel):
+    """Login response — may include tokens or require MFA verification."""
+    access_token: str | None = None
+    refresh_token: str | None = None
+    token_type: str = "bearer"
+    mfa_required: bool = False
+    mfa_token: str | None = None  # Temporary token for MFA verification step
+
+
+class MfaSetupResponse(BaseModel):
+    secret: str
+    qr_code: str  # base64 PNG
+    backup_codes: list[str]
+
+
+class MfaVerifyRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=8)  # 6-digit TOTP or 8-char backup code
+
+
+class MfaLoginVerifyRequest(BaseModel):
+    mfa_token: str
+    code: str = Field(min_length=6, max_length=8)

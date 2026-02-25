@@ -12,6 +12,14 @@ export interface AuthTokens {
   token_type: string;
 }
 
+export interface LoginResponse {
+  access_token: string | null;
+  refresh_token: string | null;
+  token_type: string;
+  mfa_required: boolean;
+  mfa_token: string | null;
+}
+
 export interface AuthUser {
   id: UUID;
   email: string;
@@ -19,7 +27,15 @@ export interface AuthUser {
   role: string;
   organizationId: UUID;
   isActive: boolean;
+  mfaEnabled: boolean;
   createdAt: string;
+}
+
+// MFA
+export interface MfaSetupResponse {
+  secret: string;
+  qr_code: string;
+  backup_codes: string[];
 }
 
 export interface AuthOrganization {

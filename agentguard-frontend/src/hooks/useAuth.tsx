@@ -12,11 +12,20 @@ import {
 import type { AuthUser, AuthOrganization } from '@/types';
 import {
   loginApi,
+  verifyMfaLoginApi,
   registerApi,
   getMeApi,
   logoutApi,
 } from '@/lib/api';
 import { ApiError, tryRefreshToken } from '@/lib/api/client';
+
+/** Thrown when login requires MFA verification. */
+export class MfaRequiredError extends Error {
+  constructor(public mfaToken: string) {
+    super('MFA verification required');
+    this.name = 'MfaRequiredError';
+  }
+}
 
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes of inactivity
 
@@ -29,6 +38,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
+  verifyMfaLogin: (mfaToken: string, code: string) => Promise<void>;
   register: (
     email: string,
     password: string,
@@ -116,7 +126,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const tokens = await loginApi(email, password);
+      const response = await loginApi(email, password);
+      if (response.mfa_required && response.mfa_token) {
+        throw new MfaRequiredError(response.mfa_token);
+      }
+      if (response.access_token && response.refresh_token) {
+        storeTokens(response.access_token, response.refresh_token);
+        await fetchMe();
+      }
+    },
+    [fetchMe],
+  );
+
+  const verifyMfaLogin = useCallback(
+    async (mfaToken: string, code: string) => {
+      const tokens = await verifyMfaLoginApi(mfaToken, code);
       storeTokens(tokens.access_token, tokens.refresh_token);
       await fetchMe();
     },
@@ -176,8 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.isAuthenticated, logout]);
 
   const value = useMemo(
-    () => ({ ...state, login, register, logout, fetchMe }),
-    [state, login, register, logout, fetchMe],
+    () => ({ ...state, login, verifyMfaLogin, register, logout, fetchMe }),
+    [state, login, verifyMfaLogin, register, logout, fetchMe],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

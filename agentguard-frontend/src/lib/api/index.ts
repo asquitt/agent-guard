@@ -5,6 +5,10 @@
 export { apiFetch, ApiError, buildQueryString } from './client';
 export {
   loginApi,
+  verifyMfaLoginApi,
+  setupMfaApi,
+  confirmMfaSetupApi,
+  disableMfaApi,
   registerApi,
   refreshTokenApi,
   getMeApi,

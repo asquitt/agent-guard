@@ -69,3 +69,29 @@ def decode_password_reset_token(token: str) -> str:
         raise ValueError("Invalid reset token: missing subject")
 
     return user_id
+
+
+def create_mfa_token(user_id: str) -> str:
+    """Create a short-lived JWT for MFA verification step (5 min)."""
+    expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+    to_encode = {"exp": expire, "sub": user_id, "type": "mfa_pending"}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_mfa_token(token: str) -> str:
+    """Decode an MFA pending token. Returns user_id or raises ValueError."""
+    from jose import JWTError
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError as e:
+        raise ValueError(f"Invalid or expired MFA token: {e}")
+
+    if payload.get("type") != "mfa_pending":
+        raise ValueError("Invalid token type: expected mfa_pending")
+
+    user_id: str | None = payload.get("sub")
+    if not user_id:
+        raise ValueError("Invalid MFA token: missing subject")
+
+    return user_id

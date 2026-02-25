@@ -15,7 +15,11 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
+    LoginResponse,
     MeResponse,
+    MfaLoginVerifyRequest,
+    MfaSetupResponse,
+    MfaVerifyRequest,
     OrgResponse,
     RefreshRequest,
     RegisterRequest,
@@ -25,7 +29,7 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.schemas.notifications import NotificationPreferences, NotificationPreferencesResponse
-from app.services import auth_service
+from app.services import auth_service, mfa_service
 from app.services.audit_service import write_audit
 
 router = APIRouter()
@@ -66,17 +70,18 @@ async def register(
     return TokenResponse(access_token=access, refresh_token=refresh)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 @limiter.limit("5/minute")
 async def login(
     request: Request,
     body: LoginRequest,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
-    """Authenticate user and return tokens.
+) -> LoginResponse:
+    """Authenticate user and return tokens (or MFA challenge).
 
     Returns 403 if the user's organization enforces SSO.
     Returns 401 with lockout message if too many failed attempts.
+    If MFA is enabled, returns mfa_required=True with a temporary mfa_token.
     """
     client_ip = get_client_ip(request)
     try:
@@ -108,11 +113,20 @@ async def login(
                 headers={"X-SSO-Org-Slug": str(org.slug)},
             )
 
+    # If MFA is enabled, return a temporary token instead of full access
+    if user.mfa_enabled is True:  # type: ignore[comparison-overlap]
+        from app.core.auth import create_mfa_token
+
+        mfa_token = create_mfa_token(str(user.id))
+        await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.mfa_challenge", "user", UUID(str(user.id)), ip_address=client_ip)
+        await db.commit()
+        return LoginResponse(mfa_required=True, mfa_token=mfa_token)
+
     await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip)
     await db.commit()
     token_ver: int = user.token_version or 0  # type: ignore[assignment]
     access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
-    return TokenResponse(access_token=access, refresh_token=refresh)
+    return LoginResponse(access_token=access, refresh_token=refresh)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -208,7 +222,7 @@ async def forgot_password(
     logger = logging.getLogger(__name__)
 
     user = await auth_service.get_user_by_email(db, body.email)
-    if user is not None and user.is_active:
+    if user is not None and user.is_active is True:  # type: ignore[comparison-overlap]
         token = create_password_reset_token(str(user.id))
         # In production: send email with reset link containing this token
         # For now, log the token (visible in server logs for dev/testing)
@@ -350,3 +364,150 @@ async def update_notification_preferences(
     )
     await db.commit()
     return NotificationPreferencesResponse(preferences=body)
+
+
+# ---------------------------------------------------------------------------
+# MFA endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/mfa/verify-login", response_model=TokenResponse)
+@limiter.limit("5/minute")
+async def mfa_verify_login(
+    request: Request,
+    body: MfaLoginVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Complete login by verifying TOTP code after password authentication.
+
+    Accepts either a 6-digit TOTP code or an 8-char backup code.
+    """
+    from app.core.auth import decode_mfa_token
+
+    client_ip = get_client_ip(request)
+    try:
+        user_id = decode_mfa_token(body.mfa_token)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired MFA token",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active.is_(True)))
+    user = result.scalar_one_or_none()
+    if user is None or user.mfa_enabled is not True or user.totp_secret is None:  # type: ignore[comparison-overlap]
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid MFA session",
+        )
+
+    # Try TOTP code first, then backup code
+    if mfa_service.verify_totp_code(str(user.totp_secret), body.code):
+        pass  # Valid TOTP
+    elif mfa_service.verify_backup_code(user, body.code):
+        await mfa_service.consume_backup_code(db, user, body.code)
+    else:
+        await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.mfa_failed", "user", UUID(str(user.id)), ip_address=client_ip)
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid MFA code",
+        )
+
+    await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip)
+    await db.commit()
+    token_ver: int = user.token_version or 0  # type: ignore[assignment]
+    access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
+    return TokenResponse(access_token=access, refresh_token=refresh)
+
+
+@router.post("/mfa/setup", response_model=MfaSetupResponse)
+async def mfa_setup(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MfaSetupResponse:
+    """Start MFA enrollment — returns QR code and backup codes.
+
+    Does NOT enable MFA until confirmed with a valid TOTP code via /mfa/confirm-setup.
+    """
+    if current_user.mfa_enabled is True:  # type: ignore[comparison-overlap]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+
+    secret, qr_b64, backup_codes = await mfa_service.setup_totp(db, current_user)
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "auth.mfa_setup_started", "user", UUID(str(current_user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    return MfaSetupResponse(secret=secret, qr_code=qr_b64, backup_codes=backup_codes)
+
+
+@router.post("/mfa/confirm-setup", status_code=status.HTTP_200_OK)
+async def mfa_confirm_setup(
+    request: Request,
+    body: MfaVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Confirm MFA setup by verifying a TOTP code from the authenticator app."""
+    if current_user.mfa_enabled is True:  # type: ignore[comparison-overlap]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is already enabled",
+        )
+
+    success = await mfa_service.confirm_totp_setup(db, current_user, body.code)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid TOTP code — please try again",
+        )
+
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "auth.mfa_enabled", "user", UUID(str(current_user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    return {"message": "MFA has been enabled successfully"}
+
+
+@router.post("/mfa/disable", status_code=status.HTTP_200_OK)
+async def mfa_disable(
+    request: Request,
+    body: MfaVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Disable MFA. Requires a valid TOTP code for verification."""
+    if current_user.mfa_enabled is not True:  # type: ignore[comparison-overlap]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA is not enabled",
+        )
+
+    if current_user.totp_secret is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MFA configuration is invalid",
+        )
+
+    if not mfa_service.verify_totp_code(str(current_user.totp_secret), body.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid TOTP code",
+        )
+
+    await mfa_service.disable_mfa(db, current_user)
+    await write_audit(
+        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
+        "auth.mfa_disabled", "user", UUID(str(current_user.id)),
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    return {"message": "MFA has been disabled"}

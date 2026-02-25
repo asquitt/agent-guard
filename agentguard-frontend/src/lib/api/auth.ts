@@ -2,7 +2,7 @@
  * Auth API client functions.
  */
 
-import type { AuthTokens, MeResponse } from '@/types';
+import type { AuthTokens, LoginResponse, MeResponse, MfaSetupResponse } from '@/types';
 import { apiFetch, ApiError } from './client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -11,10 +11,40 @@ const API_PREFIX = '/api/v1';
 export async function loginApi(
   email: string,
   password: string,
-): Promise<AuthTokens> {
-  return apiFetch<AuthTokens>('/auth/login', {
+): Promise<LoginResponse> {
+  return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function verifyMfaLoginApi(
+  mfaToken: string,
+  code: string,
+): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>('/auth/mfa/verify-login', {
+    method: 'POST',
+    body: JSON.stringify({ mfa_token: mfaToken, code }),
+  });
+}
+
+export async function setupMfaApi(): Promise<MfaSetupResponse> {
+  return apiFetch<MfaSetupResponse>('/auth/mfa/setup', {
+    method: 'POST',
+  });
+}
+
+export async function confirmMfaSetupApi(code: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/auth/mfa/confirm-setup', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function disableMfaApi(code: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>('/auth/mfa/disable', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
   });
 }
 
