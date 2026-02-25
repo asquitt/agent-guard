@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import SessionLocal
-from app.core.deps import get_client_ip, get_current_org, get_current_user, get_db, require_admin
+from app.core.deps import get_client_ip, get_current_org, get_db, require_admin, require_permission
 from app.models.user import Organization, User
 from app.schemas.retention import (
     DataArchiveListResponse,
@@ -22,6 +22,7 @@ router = APIRouter()
 
 @router.get("/policy", response_model=RetentionPolicyResponse)
 async def get_retention_policy(
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> RetentionPolicyResponse:
@@ -69,6 +70,7 @@ async def list_archives(
     table_name: str | None = Query(None, alias="tableName"),
     skip: int = 0,
     limit: int = 50,
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> DataArchiveListResponse:
@@ -86,6 +88,7 @@ async def list_archives(
 @router.get("/archives/{archive_id}", response_model=DataArchiveResponse)
 async def get_archive(
     archive_id: UUID,
+    _user: User = Depends(require_permission("settings:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> DataArchiveResponse:
@@ -101,7 +104,7 @@ async def get_archive(
 async def retrieve_archive(
     archive_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("settings:read")),
     org: Organization = Depends(get_current_org),
     client_ip: str = Depends(get_client_ip),
 ) -> dict[str, str]:
