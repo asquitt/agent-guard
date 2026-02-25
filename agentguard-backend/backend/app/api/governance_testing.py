@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
-from app.models.user import Organization
+from app.core.deps import get_current_org, get_db, require_permission
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -97,6 +97,7 @@ class StressTestRunResponse(BaseModel):
 
 @router.get("/stress-test/suite", response_model=StressTestSuiteResponse)
 async def get_stress_test_suite(
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> StressTestSuiteResponse:
     """Return all available adversarial test cases."""
@@ -116,6 +117,7 @@ async def get_stress_test_suite(
 
 @router.get("/stress-test/readiness", response_model=ReadinessScoreResponse)
 async def get_readiness_score(
+    _user: User = Depends(require_permission("detectors:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ReadinessScoreResponse:
@@ -134,6 +136,7 @@ async def get_readiness_score(
 @router.post("/stress-test/run", response_model=StressTestRunResponse)
 async def run_stress_test(
     body: StressTestRunRequest,
+    _user: User = Depends(require_permission("detectors:write")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> StressTestRunResponse:
@@ -207,6 +210,7 @@ class InvestigationSummaryResponse(BaseModel):
 @router.get("/investigations/summary", response_model=InvestigationSummaryResponse)
 async def get_investigation_summary(
     days: int = Query(default=30, ge=1, le=365),
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> InvestigationSummaryResponse:
@@ -228,6 +232,7 @@ async def get_investigation_summary(
 @router.get("/investigations/{incident_id}", response_model=InvestigationResponse)
 async def get_investigation(
     incident_id: UUID,
+    _user: User = Depends(require_permission("incidents:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> InvestigationResponse:
@@ -316,6 +321,7 @@ class ComplianceStatsResponse(BaseModel):
 
 @router.get("/policies", response_model=PoliciesResponse)
 async def get_policies(
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> PoliciesResponse:
     """Return all available built-in compliance policies."""
@@ -328,6 +334,7 @@ async def get_policies(
 @router.post("/policies/classify", response_model=ClassifyResponse)
 async def classify_interaction(
     body: ClassifyRequest,
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> ClassifyResponse:
     """Run policy classification on an LLM request/response pair."""
@@ -356,6 +363,7 @@ async def classify_interaction(
 @router.get("/policies/compliance", response_model=ComplianceStatsResponse)
 async def get_policy_compliance(
     days: int = Query(default=30, ge=1, le=365),
+    _user: User = Depends(require_permission("compliance:read")),
     db: AsyncSession = Depends(get_db),
     org: Organization = Depends(get_current_org),
 ) -> ComplianceStatsResponse:
