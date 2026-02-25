@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
-from app.models.user import Organization
+from app.core.deps import get_current_org, get_db, require_permission
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -47,6 +47,7 @@ class OWASPComplianceResponse(BaseModel):
 async def get_owasp_compliance(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> OWASPComplianceResponse:
     """Get OWASP Top 10 for LLM Applications compliance status."""
@@ -94,6 +95,7 @@ class ThreatMappingResponse(BaseModel):
 async def get_threat_mapping(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> ThreatMappingResponse:
     """Get MITRE ATLAS threat technique mapping with incident counts."""
@@ -154,6 +156,7 @@ class ComplianceMatrixResponse(BaseModel):
 async def get_compliance_matrix(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> ComplianceMatrixResponse:
     """Get full cross-framework compliance matrix (SOX, PCI-DSS, EU AI Act, DORA)."""
@@ -213,6 +216,7 @@ class FrameworkSummaryResponse(BaseModel):
 async def get_framework_summary(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> FrameworkSummaryResponse:
     """Get per-framework violation summary."""
@@ -267,6 +271,7 @@ class EnforcementTimelineResponse(BaseModel):
 
 @router.get("/enforcement-timeline", response_model=EnforcementTimelineResponse)
 async def get_enforcement_timeline(
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> EnforcementTimelineResponse:
     """Get upcoming regulatory enforcement deadlines."""
@@ -364,6 +369,7 @@ class DORAIncidentTimeline(BaseModel):
 async def get_dora_report(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> DORAReportResponse:
     """Get DORA incident summary with Major/Non-Major classification."""
@@ -386,6 +392,7 @@ async def get_dora_report(
 async def classify_dora_incident(
     incident_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> DORAClassification:
     """Classify a single incident per DORA Major/Non-Major criteria."""
@@ -406,6 +413,7 @@ async def classify_dora_incident(
 async def get_dora_timeline(
     incident_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> DORAIncidentTimeline:
     """Get DORA reporting timeline status for a single incident."""
@@ -482,6 +490,7 @@ async def get_article12_logs(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> Article12LogsResponse:
     """Get EU AI Act Article 12 compliance logs for LLM interactions."""
@@ -504,6 +513,7 @@ async def get_article12_logs(
 async def get_article12_summary(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("compliance:read")),
     org: Organization = Depends(get_current_org),
 ) -> Article12SummaryResponse:
     """Get EU AI Act Article 12 compliance summary statistics."""

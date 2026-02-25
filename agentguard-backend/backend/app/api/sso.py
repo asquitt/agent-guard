@@ -285,11 +285,34 @@ async def oidc_callback(
 
     Exchanges the code for tokens, fetches user info,
     performs JIT provisioning, and redirects to frontend.
+    Validates the state parameter to prevent CSRF attacks.
     """
     if error:
         return _redirect_with_error(f"OIDC error: {error}")
     if not code:
         return _redirect_with_error("Missing authorization code")
+
+    # Validate OIDC state parameter (CSRF protection)
+    if not state:
+        return _redirect_with_error("Missing state parameter")
+
+    import redis.asyncio as aioredis
+
+    from app.core.config import settings as app_settings
+
+    r = aioredis.from_url(app_settings.REDIS_URL)
+    try:
+        stored_slug = await r.get(f"oidc_state:{state}")
+        if stored_slug is None:
+            return _redirect_with_error("Invalid or expired OIDC state — possible CSRF attack")
+        # Delete used state (one-time use)
+        await r.delete(f"oidc_state:{state}")
+    finally:
+        await r.aclose()
+
+    # Verify the state was issued for this org
+    if stored_slug.decode() != org_slug:
+        return _redirect_with_error("OIDC state mismatch — possible CSRF attack")
 
     org = await sso_service.get_org_by_slug(db, org_slug)
     if org is None:
@@ -444,5 +467,17 @@ async def _initiate_oidc_login(config, org_slug: str) -> RedirectResponse:  # ty
         )
 
     state = secrets.token_urlsafe(32)
+
+    # Store state in Redis for CSRF validation in the callback (5 min TTL)
+    import redis.asyncio as aioredis
+
+    from app.core.config import settings as app_settings
+
+    r = aioredis.from_url(app_settings.REDIS_URL)
+    try:
+        await r.setex(f"oidc_state:{state}", 300, org_slug)
+    finally:
+        await r.aclose()
+
     redirect_url = build_authorization_url(config, discovery, org_slug, state)
     return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)

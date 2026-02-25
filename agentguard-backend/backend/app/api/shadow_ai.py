@@ -10,10 +10,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.proxy import ProxyRequest
 from app.models.shadow_ai import ShadowAIDiscovery
-from app.models.user import Organization
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -107,6 +107,7 @@ async def list_discoveries(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> DiscoveryListResponse:
     """List discovered AI services."""
@@ -137,6 +138,7 @@ async def list_discoveries(
 async def get_discovery_summary(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> DiscoverySummaryResponse:
     """Get shadow AI discovery summary with coverage metrics."""
@@ -216,6 +218,7 @@ async def get_discovery_summary(
 async def report_discovery(
     body: ReportDiscoveryRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> DiscoveryResponse:
     """Report a discovered AI service usage (from network proxy integration)."""
@@ -265,6 +268,7 @@ async def update_discovery_status(
     discovery_id: UUID,
     body: UpdateStatusRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> DiscoveryResponse:
     """Update the status of a discovered AI service."""
@@ -286,6 +290,7 @@ async def update_discovery_status(
 
 @router.get("/providers", response_model=list[dict[str, str]])
 async def list_known_providers(
+    _user: User = Depends(require_permission("incidents:read")),
     _org: Organization = Depends(get_current_org),
 ) -> list[dict[str, str]]:
     """List known AI provider domains for network proxy configuration."""

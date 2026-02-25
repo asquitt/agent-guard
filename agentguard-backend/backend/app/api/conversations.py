@@ -10,9 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.conversation import Conversation, ConversationTurn
-from app.models.user import Organization
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -118,6 +118,7 @@ async def list_conversations(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ConversationListResponse:
     """List conversations with optional filters."""
@@ -144,6 +145,7 @@ async def list_conversations(
 async def get_conversation_stats(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ConversationStatsResponse:
     """Aggregate conversation statistics."""
@@ -196,6 +198,7 @@ async def get_conversation_stats(
 async def get_conversation(
     conversation_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ConversationDetailResponse:
     """Get conversation detail with all turns."""
@@ -238,6 +241,7 @@ async def get_conversation(
 async def create_conversation(
     body: ConversationCreateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> ConversationResponse:
     """Start a new conversation session."""
@@ -260,6 +264,7 @@ async def add_turn(
     conversation_id: UUID,
     body: TurnCreateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> TurnResponse:
     """Add a turn to a conversation, updating risk scores."""
@@ -312,6 +317,7 @@ async def update_conversation_status(
     conversation_id: UUID,
     body: ConversationStatusUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:write")),
     org: Organization = Depends(get_current_org),
 ) -> ConversationResponse:
     """Update conversation status (complete, flag, escalate)."""

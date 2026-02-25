@@ -10,9 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.red_team import RedTeamFinding, RedTeamRun
-from app.models.user import Organization
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -144,6 +144,7 @@ async def list_runs(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> RunListResponse:
     """List red team runs."""
@@ -161,6 +162,7 @@ async def list_runs(
 async def get_run_stats(
     days: int = Query(default=90, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> RunStatsResponse:
     """Aggregate red team statistics."""
@@ -220,6 +222,7 @@ async def get_run_stats(
 
 @router.get("/categories")
 async def list_test_categories(
+    _user: User = Depends(require_permission("detectors:read")),
     _org: Organization = Depends(get_current_org),
 ) -> dict:
     """List available test categories and OWASP LLM Top 10 mapping."""
@@ -233,6 +236,7 @@ async def list_test_categories(
 
 @router.get("/multi-turn/sequences")
 async def list_multi_turn_sequences(
+    _user: User = Depends(require_permission("detectors:read")),
     _org: Organization = Depends(get_current_org),
 ) -> dict:
     """List available multi-turn attack sequences."""
@@ -251,6 +255,7 @@ async def list_multi_turn_sequences(
 
 @router.get("/mutations/strategies")
 async def list_mutation_strategies(
+    _user: User = Depends(require_permission("detectors:read")),
     _org: Organization = Depends(get_current_org),
 ) -> dict:
     """List available prompt mutation strategies."""
@@ -269,6 +274,7 @@ class MutationRequest(BaseModel):
 @router.post("/mutations/generate")
 async def generate_mutations(
     body: MutationRequest,
+    _user: User = Depends(require_permission("detectors:write")),
     _org: Organization = Depends(get_current_org),
 ) -> dict:
     """Generate mutated variants of a prompt for red team testing."""
@@ -282,6 +288,7 @@ async def generate_mutations(
 async def get_run(
     run_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> RunDetailResponse:
     """Get run detail with all findings."""
@@ -317,6 +324,7 @@ async def get_run(
 async def create_run(
     body: RunCreateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:write")),
     org: Organization = Depends(get_current_org),
 ) -> RunResponse:
     """Create and execute a red team run.

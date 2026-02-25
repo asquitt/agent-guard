@@ -10,9 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_admin, require_permission
 from app.models.threat_intel import ThreatIndicator
-from app.models.user import Organization
+from app.models.user import Organization, User
 
 router = APIRouter()
 
@@ -178,6 +178,7 @@ async def list_indicators(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> IndicatorListResponse:
     """List threat indicators (org-specific + platform-level)."""
@@ -208,6 +209,7 @@ async def list_indicators(
 async def get_threat_summary(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:read")),
     org: Organization = Depends(get_current_org),
 ) -> ThreatSummaryResponse:
     """Aggregate threat intelligence summary."""
@@ -262,6 +264,7 @@ async def get_threat_summary(
 
 @router.get("/types")
 async def list_indicator_types(
+    _user: User = Depends(require_permission("detectors:read")),
     _org: Organization = Depends(get_current_org),
 ) -> dict[str, list[str]]:
     """List available indicator types."""
@@ -272,6 +275,7 @@ async def list_indicator_types(
 async def create_indicator(
     body: IndicatorCreateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:write")),
     org: Organization = Depends(get_current_org),
 ) -> IndicatorResponse:
     """Create a custom threat indicator for this organization."""
@@ -303,6 +307,7 @@ async def update_indicator(
     indicator_id: UUID,
     body: IndicatorUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("detectors:write")),
     org: Organization = Depends(get_current_org),
 ) -> IndicatorResponse:
     """Update a threat indicator (toggle active, update pattern, etc.)."""
@@ -328,6 +333,7 @@ async def update_indicator(
 @router.post("/seed", status_code=status.HTTP_201_CREATED)
 async def seed_platform_indicators(
     db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
     org: Organization = Depends(get_current_org),
 ) -> dict[str, int]:
     """Seed platform-level threat indicators (idempotent)."""

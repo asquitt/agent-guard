@@ -9,10 +9,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Float, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_org, get_db
+from app.core.deps import get_current_org, get_db, require_permission
 from app.models.incident import Incident
 from app.models.proxy import ProxyRequest
-from app.models.user import Organization
+from app.models.user import Organization, User
 from app.schemas.cost_analytics import CostAnalyticsResponse, CostByModel, DailyCost
 from app.schemas.dashboard import (
     CategoryEfficacy,
@@ -35,6 +35,7 @@ router = APIRouter()
 @router.get("/metrics", response_model=DashboardMetricsResponse)
 async def get_dashboard_metrics(
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> DashboardMetricsResponse:
     """Get aggregate dashboard metrics."""
@@ -52,6 +53,7 @@ async def get_dashboard_metrics(
 async def get_cost_analytics(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> CostAnalyticsResponse:
     """Get cost analytics for the organization."""
@@ -71,6 +73,7 @@ async def get_cost_analytics(
 async def get_sla_metrics(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> SlaMetricsResponse:
     """Get SLA metrics (latency percentiles, error rates, throughput)."""
@@ -92,6 +95,7 @@ async def get_sla_metrics(
 async def get_detection_efficacy(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> DetectionEfficacyResponse:
     """Get detection efficacy analytics (FP rates, MTTR, trends)."""
@@ -136,6 +140,7 @@ class ProviderComparisonResponse(BaseModel):
 async def get_provider_comparison(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> ProviderComparisonResponse:
     """Compare performance across models/providers."""
@@ -246,6 +251,7 @@ async def get_time_series(
     days: int = Query(default=7, ge=1, le=365),
     granularity: str = Query(default="auto", pattern="^(hourly|daily|auto)$"),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> TimeSeriesResponse:
     """Get time-series analytics data bucketed by hour or day."""
@@ -342,6 +348,7 @@ async def get_time_series(
 async def get_risk_score(
     days: int = Query(default=30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_permission("incidents:read")),
     org: Organization = Depends(get_current_org),
 ) -> RiskScoreResponse:
     """Get composite risk score for the organization."""
