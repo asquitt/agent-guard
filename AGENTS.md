@@ -1,5 +1,15 @@
 # AgentGuard — Multi-Agent Workflow Guide
 
+## Portfolio Status Invariant
+
+AgentGuard is mothballed as a standalone product. `PROJECT_STATUS.json` is the machine-readable authority and `docs/ARCHIVE_AND_ASSET_MAP.md` is the human-readable extraction plan.
+
+- Allowed work is limited to preservation, security fixes needed to keep archived assets safe, and bounded extraction into RedTeamAI or an active product with a named consumer.
+- Do not add standalone features, resume customer acquisition, deploy AgentGuard, or incur runtime/provider spend without an explicit reactivation decision that satisfies every gate in `PROJECT_STATUS.json`.
+- Do not describe the repository, historical workflows, screenshots, tests, or fixtures as a production-ready service or a customer-validated product.
+- Historical product and workflow material under `docs/historical/` is reference-only and must not be reactivated wholesale.
+- Preserve the unfinished `codex/p0-release-truth` lane unless its owner explicitly supersedes or extracts it.
+
 ## Autonomous Delivery Standard
 
 These rules govern implementation, diagnosis, review, release, and handoff. More specific project invariants below remain binding.
