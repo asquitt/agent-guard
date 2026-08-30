@@ -12,7 +12,7 @@ This is a source-control disposition, not production teardown evidence. Public e
 |---|---|---|---|---|
 | 1 | Attack mutations, multi-turn sequences, and attack taxonomy | `agentguard-backend/backend/app/services/red_team_engine.py` | Mostly standard-library code. Taxonomy labels and attack prompts can become stale or produce unsafe test output. | Copy only with provenance, deterministic mutation tests, current taxonomy review, and an authorized-target boundary. |
 | 2 | Adversarial stress corpus | `agentguard-backend/backend/app/services/stress_test_service.py` | Test cases share a module with SQLAlchemy, detector registries, organization state, and an unvalidated readiness score. | Extract corpus records into data fixtures. Do not copy the readiness score or database path without separate validation. |
-| 3 | Detector implementations and common result types | `agentguard-backend/backend/app/services/detection/` | Implementations depend on AgentGuard enums, models, Celery paths, and registry behavior. The registry contains pass-through stub fallbacks that can hide missing implementations. | Adopt one detector at a time behind measured attack and benign corpora. Fail closed on missing registrations and record false-positive rates. |
+| 3 | Detector implementations and common result types | `agentguard-backend/backend/app/services/detection/` | Implementations depend on AgentGuard enums, models, Celery paths, and registry behavior. Several detectors send payload-derived prompts through `app/services/llm_service.py` to configured OpenAI or Anthropic endpoints; this adds secret, privacy, provider-egress, spend, and provider-failure boundaries. The registry also contains pass-through stub fallbacks that can hide missing implementations. | Default to extracting pure rule-based portions only. An LLM-backed detector additionally requires an approved destination adapter, payload redaction policy, no-egress test, hard spend limit, deterministic provider-failure behavior, measured attack/benign corpora, and fail-closed registration. |
 | 4 | Finance policy rules | `agentguard-backend/backend/app/services/policy_classifier_service.py` | Pure regex rules are mixed with incident queries and reporting. Rules are heuristics, not regulatory determinations. | Extract rule definitions and unit tests only. Label results as signals requiring review, not compliance proof. |
 | 5 | Red-team API and persistence concepts | `agentguard-backend/backend/app/api/red_team.py`, `agentguard-backend/backend/app/models/red_team.py` | Coupled to AgentGuard authentication, RBAC, tenancy, database schema, and detection pipeline. | Use as design reference. Do not copy endpoints or tables without a destination-specific ownership and authorization model. |
 | 6 | Threat-intelligence and governance concepts | `agentguard-backend/backend/app/api/threat_intel.py`, `agentguard-backend/backend/app/models/threat_intel.py`, `agentguard-backend/backend/app/api/governance_testing.py` | Product-specific lifecycle and tenant assumptions. External feed provenance is not established by this archive. | Re-derive the destination contract and provenance requirements before implementation. |
@@ -28,8 +28,9 @@ Every extraction must:
 2. Copy the smallest useful asset rather than importing the AgentGuard application or database model.
 3. Preserve license and source provenance and remove secrets, customer data, and generated reports.
 4. Add attack and benign fixtures, deterministic replay where applicable, and explicit false-positive or failure behavior.
-5. Run the destination repository's security, quality, and independent-review gates.
-6. Record the source commit and destination commit so later fixes can be traced.
+5. For any LLM-backed path, prove redaction before egress, credential isolation, a no-egress mode, a hard spend limit, and deterministic timeout/provider-error behavior.
+6. Run the destination repository's security, quality, and independent-review gates.
+7. Record the source commit and destination commit so later fixes can be traced.
 
 ## Frozen and Unshipped Work
 
