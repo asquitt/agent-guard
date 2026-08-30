@@ -235,10 +235,12 @@ const { data } = useQuery({ queryKey: ['incidents'], queryFn: () => listIncident
 
 ## Pre-commit Verification (MANDATORY)
 
-Before ANY commit:
-1. Type check: `pyright app/` (backend) or `npx tsc --noEmit` (frontend)
-2. Pre-commit hooks run automatically
-3. Functional verification: curl endpoints, check logs
+Before any commit, run verification in proportion to the changed boundary:
+1. Backend changes: focused pytest plus `pyright app/` under `agentguard-backend/backend`.
+2. Frontend changes: focused tests plus lint, `npx tsc --noEmit`, and build under `agentguard-frontend`.
+3. Product or runtime behavior changes: exercise the affected API, worker, WebSocket, or browser path and inspect its produced state and logs.
+4. Policy, documentation, or hook-only changes: run focused syntax, schema, contract, and portability checks; record product-stack and runtime probes as not applicable with the reason.
+5. Run configured pre-commit hooks for the files being committed.
 
 ## Debug
 ```bash

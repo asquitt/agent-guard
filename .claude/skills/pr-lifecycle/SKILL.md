@@ -66,9 +66,21 @@ gh pr edit "$PR_NUMBER" --body-file "<completed-body-file>"
 
 - Keep the PR draft while any required test, preview, runtime proof, rollback plan, cleanup, or exact-commit review is missing.
 - Fetch the remote refs and verify that the PR's remote head equals the candidate SHA before review.
-- For material changes, obtain one read-only independent xhigh review of the exact current base-to-head diff. Hosted checks, CI, or deployment previews do not replace it.
+- Capture the PR's base, head, and merge-candidate identities immediately before review. A missing merge candidate blocks review and merge:
+
+```bash
+PR_REVIEW_IDENTITY="$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid,potentialMergeCommit)"
+REVIEWED_BASE_SHA="$(jq -r '.baseRefOid' <<<"$PR_REVIEW_IDENTITY")"
+REVIEWED_HEAD_SHA="$(jq -r '.headRefOid' <<<"$PR_REVIEW_IDENTITY")"
+REVIEWED_MERGE_COMMIT_SHA="$(jq -r '.potentialMergeCommit.oid // empty' <<<"$PR_REVIEW_IDENTITY")"
+test "$REVIEWED_BASE_SHA" = "$PR_BASE_SHA"
+test "$REVIEWED_HEAD_SHA" = "$PR_HEAD_SHA"
+test -n "$REVIEWED_MERGE_COMMIT_SHA"
+```
+
+- For material changes, give those three identities to one read-only independent xhigh reviewer and obtain review of the exact current base-to-head diff plus the named merge candidate. Hosted checks, CI, or deployment previews do not replace it.
 - HIGH or MEDIUM findings block readiness and merge. Fix only admitted blockers in a new commit, rerun affected gates, push once, freeze the new head, update the PR evidence, and request bounded re-review.
-- If the base or head changes after review, the prior verdict does not approve the new diff or merge tree. Freeze and review the new exact candidate.
+- If the base, head, or merge candidate changes after review, the prior verdict does not approve the new diff or merge tree. Freeze and review the new exact candidate.
 
 ## 5. Ready and merge
 
@@ -78,16 +90,22 @@ gh pr edit "$PR_NUMBER" --body-file "<completed-body-file>"
 gh pr ready "$PR_NUMBER"
 ```
 
-2. Immediately before merge, refresh the PR and default branch. Verify head identity, mergeability, and that no required evidence has gone stale.
+2. Immediately before merge, refresh the PR and default branch. Verify the reviewed base, head, and merge-candidate identities, mergeability, and required evidence. Any identity drift blocks the merge and requires a new review.
 
 ```bash
-gh pr view "$PR_NUMBER" --json headRefOid,isDraft,mergeStateStatus,reviewDecision,statusCheckRollup
+CURRENT_PR_IDENTITY="$(gh pr view "$PR_NUMBER" --json baseRefOid,headRefOid,potentialMergeCommit,isDraft,mergeStateStatus,reviewDecision,statusCheckRollup)"
+CURRENT_BASE_SHA="$(jq -r '.baseRefOid' <<<"$CURRENT_PR_IDENTITY")"
+CURRENT_HEAD_SHA="$(jq -r '.headRefOid' <<<"$CURRENT_PR_IDENTITY")"
+CURRENT_MERGE_COMMIT_SHA="$(jq -r '.potentialMergeCommit.oid // empty' <<<"$CURRENT_PR_IDENTITY")"
+test "$CURRENT_BASE_SHA" = "$REVIEWED_BASE_SHA"
+test "$CURRENT_HEAD_SHA" = "$REVIEWED_HEAD_SHA"
+test "$CURRENT_MERGE_COMMIT_SHA" = "$REVIEWED_MERGE_COMMIT_SHA"
 ```
 
 3. Merge only when the task includes merge or release authority:
 
 ```bash
-gh pr merge "$PR_NUMBER" --merge
+gh pr merge "$PR_NUMBER" --match-head-commit "$REVIEWED_HEAD_SHA" --merge
 ```
 
 Do not squash, rebase, force, or use `--delete-branch`. The merge commit preserves the candidate commits and review identities.
