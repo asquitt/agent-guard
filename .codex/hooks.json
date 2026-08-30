@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/Users/demarioasquitt/Desktop/Projects/Entrepreneurial/agent-guard/.codex/hooks/arch-review-inject.sh'",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/arch-review-inject.sh\"",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/Users/demarioasquitt/Desktop/Projects/Entrepreneurial/agent-guard/.codex/hooks/stop-quality-prompt.sh'",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/stop-quality-prompt.sh\"",
             "timeout": 30
           }
         ]
