@@ -1,0 +1,16 @@
+name: Verify Mothball Contract
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify archive state
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify repository disposition
+        run: ./scripts/verify-mothball.sh

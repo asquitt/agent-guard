@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "project": "AgentGuard",
+  "effective_date": "2026-08-30",
+  "status": "mothballed",
+  "standalone_product": {
+    "development": "frozen",
+    "customer_acquisition": "stopped",
+    "deployments": "not_authorized",
+    "runtime_state": "unverified"
+  },
+  "allowed_work": [
+    "preservation",
+    "archive_security_fix",
+    "read_only_evaluation",
+    "bounded_asset_extraction_with_named_consumer"
+  ],
+  "prohibited_without_reactivation": [
+    "standalone_feature_development",
+    "customer_or_pilot_claims",
+    "deployment",
+    "provider_or_runtime_spend",
+    "wholesale_workflow_restoration"
+  ],
+  "asset_destination": {
+    "primary": "RedTeamAI assurance tooling and services",
+    "secondary": "active products with a concrete shared contract",
+    "copy_whole_application": false
+  },
+  "reactivation_gates": [
+    {
+      "id": "design_partner",
+      "requirement": "A named design partner commits to a bounded paid or signed pilot."
+    },
+    {
+      "id": "differentiation",
+      "requirement": "Current market validation proves a specific wedge not met by active platform vendors."
+    },
+    {
+      "id": "security_baseline",
+      "requirement": "The customer journey and security boundaries pass exact-commit independent review."
+    },
+    {
+      "id": "unit_economics",
+      "requirement": "Pilot workload evidence supports sustainable delivery and support costs."
+    }
+  ]
+}
