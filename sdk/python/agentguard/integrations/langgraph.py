@@ -1,15 +1,17 @@
 """LangGraph callback handler for AgentGuard.
 
-Captures LLM calls, tool invocations, and graph node/edge transitions
-within LangGraph workflows and forwards them through the AgentGuard
-ingest API for security monitoring.
+Buffers selected LLM, tool, and graph callback events and attempts best-effort
+delivery to the AgentGuard ingest API.
 
 Usage::
 
     from langgraph.graph import StateGraph
-    from agentguard.langgraph import AgentGuardLangGraphHandler
+    from agentguard.integrations.langgraph import AgentGuardLangGraphHandler
 
-    handler = AgentGuardLangGraphHandler(api_key="ag_live_...")
+    handler = AgentGuardLangGraphHandler(
+        api_key="ag_live_...",
+        base_url="http://localhost:8001",
+    )
     app = graph.compile()
     result = app.invoke(inputs, config={"callbacks": [handler]})
 """
@@ -19,9 +21,11 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any, Sequence
+from typing import Any
 
 import httpx
+
+from agentguard._base_url import normalize_base_url
 
 logger = logging.getLogger("agentguard.langgraph")
 
@@ -49,14 +53,14 @@ class AgentGuardLangGraphHandler:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
         metadata: dict[str, str] | None = None,
         flush_on_chain_end: bool = True,
         timeout: float = 10.0,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self.metadata = metadata or {}
         self.flush_on_chain_end = flush_on_chain_end
@@ -84,10 +88,10 @@ class AgentGuardLangGraphHandler:
             event["current_node"] = self._node_stack[-1]
         self._events.append(event)
 
-    def _flush(self) -> None:
+    def _flush(self, *, raise_on_error: bool = False) -> bool:
         """Send buffered events to the AgentGuard ingest API."""
         if not self._events:
-            return
+            return True
         batch = list(self._events)
         self._events.clear()
         headers: dict[str, str] = {
@@ -97,14 +101,20 @@ class AgentGuardLangGraphHandler:
         if self.endpoint_id:
             headers["X-AgentGuard-Endpoint-Id"] = self.endpoint_id
         try:
-            httpx.post(
+            response = httpx.post(
                 f"{self.base_url}/api/v1/ingest/events",
                 json={"events": batch},
                 headers=headers,
                 timeout=self.timeout,
             )
+            response.raise_for_status()
+            return True
         except Exception:
+            self._events[0:0] = batch
             logger.debug("Failed to flush events to AgentGuard", exc_info=True)
+            if raise_on_error:
+                raise
+            return False
 
     # -- LLM events --------------------------------------------------------
 
@@ -364,5 +374,5 @@ class AgentGuardLangGraphHandler:
     # -- Lifecycle ---------------------------------------------------------
 
     def manual_flush(self) -> None:
-        """Manually flush any buffered events."""
-        self._flush()
+        """Flush buffered events, raising on transport or HTTP failure."""
+        self._flush(raise_on_error=True)

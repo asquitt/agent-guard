@@ -4,9 +4,16 @@
 
 import type { AuthTokens, LoginResponse, MeResponse, MfaSetupResponse } from '@/types';
 import { apiFetch, ApiError } from './client';
+import { apiUrl } from './url';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const API_PREFIX = '/api/v1';
+export interface RegisterInput {
+  email: string;
+  password: string;
+  fullName: string;
+  orgName: string;
+  controlledEvaluationAccepted: true;
+  accessCode?: string;
+}
 
 export async function loginApi(
   email: string,
@@ -48,19 +55,16 @@ export async function disableMfaApi(code: string): Promise<{ message: string }> 
   });
 }
 
-export async function registerApi(
-  email: string,
-  password: string,
-  fullName: string,
-  orgName: string,
-): Promise<AuthTokens> {
+export async function registerApi(input: RegisterInput): Promise<AuthTokens> {
   return apiFetch<AuthTokens>('/auth/register', {
     method: 'POST',
     body: JSON.stringify({
-      email,
-      password,
-      full_name: fullName,
-      org_name: orgName,
+      email: input.email,
+      password: input.password,
+      full_name: input.fullName,
+      org_name: input.orgName,
+      controlled_evaluation_accepted: input.controlledEvaluationAccepted,
+      access_code: input.accessCode || undefined,
     }),
   });
 }
@@ -69,7 +73,7 @@ export async function refreshTokenApi(
   refreshToken: string,
 ): Promise<AuthTokens> {
   // Use raw fetch to avoid apiFetch's 401 interceptor triggering a recursive refresh
-  const res = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
+  const res = await fetch(apiUrl('/auth/refresh'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken }),

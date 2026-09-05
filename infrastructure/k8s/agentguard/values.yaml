@@ -141,6 +141,9 @@ externalSecrets:
 config:
   appName: AgentGuard
   debug: "false"
+  registrationEnabled: "false"
+  localRegistrationBypassEnabled: "false"
+  globalProviderCredentialFallbackEnabled: "false"
   apiPrefix: /api/v1
   logLevel: info
   accessTokenExpireMinutes: "30"

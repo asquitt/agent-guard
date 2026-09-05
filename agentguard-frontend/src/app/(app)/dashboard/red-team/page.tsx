@@ -159,16 +159,17 @@ export default function RedTeamPage() {
         <div className="mb-6 rounded-xl border border-primary/20 bg-primary/10 p-6">
           <h2 className="mb-4 text-sm font-semibold text-foreground">Create Red Team Run</h2>
           <div className="mb-4">
-            <label className="mb-1 block text-xs text-muted-foreground">Run Name</label>
+            <label htmlFor="red-team-run-name" className="mb-1 block text-xs text-muted-foreground">Run Name</label>
             <input
+              id="red-team-run-name"
               value={runName}
               onChange={(e) => setRunName(e.target.value)}
               placeholder="e.g. Weekly security assessment"
               className="w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
             />
           </div>
-          <div className="mb-4">
-            <label className="mb-2 block text-xs text-muted-foreground">Test Categories</label>
+          <fieldset className="mb-4">
+            <legend className="mb-2 block text-xs text-muted-foreground">Test Categories</legend>
             <div className="flex flex-wrap gap-2">
               {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
                 <button
@@ -185,7 +186,7 @@ export default function RedTeamPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
           <button
             onClick={() =>
               createMutation.mutate({

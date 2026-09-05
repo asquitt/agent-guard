@@ -1,22 +1,28 @@
 {
   "name": "agentguard",
   "version": "0.2.0",
-  "description": "AgentGuard Node.js SDK — AI agent security for financial services",
+  "private": true,
+  "description": "Archived source preview client for an explicit AgentGuard deployment",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],
+  "engines": { "node": ">=18" },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.js"
   },
-  "keywords": ["ai", "security", "llm", "agent", "fintech", "compliance"],
-  "license": "MIT",
+  "keywords": ["ai", "security", "llm", "proxy", "detection"],
+  "license": "UNLICENSED",
   "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@anthropic-ai/sdk": "^0.122.0",
+    "openai": "^7.8.0",
     "typescript": "^5.4.0"
   },
   "peerDependencies": {
-    "openai": ">=4.0.0",
-    "@anthropic-ai/sdk": ">=0.18.0"
+    "openai": ">=7.8.0 <8",
+    "@anthropic-ai/sdk": ">=0.122.0 <0.123"
   },
   "peerDependenciesMeta": {
     "openai": { "optional": true },

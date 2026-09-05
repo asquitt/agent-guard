@@ -21,9 +21,20 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import limiter as registration_limiter
+from app.core.config import settings
 from app.models.user import Organization, User
 
 PREFIX = "/api/v1/auth"
+
+
+@pytest.fixture(autouse=True)
+def _enable_local_registration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep existing auth lifecycle tests inside the explicit test bypass."""
+    registration_limiter.reset()
+    monkeypatch.setattr(settings, "ENVIRONMENT", "test")
+    monkeypatch.setattr(settings, "REGISTRATION_ENABLED", True)
+    monkeypatch.setattr(settings, "LOCAL_REGISTRATION_BYPASS_ENABLED", True)
 
 
 # ── Register ─────────────────────────────────────────────────────────
@@ -41,6 +52,7 @@ class TestRegister:
                 "password": "StrongPass1!xx",
                 "full_name": "New User",
                 "org_name": "New Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         assert resp.status_code == 201
@@ -57,6 +69,7 @@ class TestRegister:
             "password": "StrongPass1!xx",
             "full_name": "Dupe User",
             "org_name": "Dupe Org",
+            "controlled_evaluation_accepted": True,
         }
         resp1 = await client.post(f"{PREFIX}/register", json=payload)
         assert resp1.status_code == 201
@@ -75,6 +88,7 @@ class TestRegister:
                 "password": "short",
                 "full_name": "Weak User",
                 "org_name": "Weak Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         assert resp.status_code == 422
@@ -93,6 +107,7 @@ class TestRegister:
                 "password": "StrongPass1!xx",
                 "full_name": "Bad Email",
                 "org_name": "Some Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         assert resp.status_code == 422
@@ -114,6 +129,7 @@ class TestLogin:
                 "password": "StrongPass1!xx",
                 "full_name": "Login User",
                 "org_name": "Login Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         resp = await client.post(
@@ -125,9 +141,7 @@ class TestLogin:
         assert "access_token" in body
         assert "refresh_token" in body
 
-    async def test_login_wrong_password(
-        self, client: AsyncClient, user: User
-    ):
+    async def test_login_wrong_password(self, client: AsyncClient, user: User):
         """Wrong password -> 401."""
         resp = await client.post(
             f"{PREFIX}/login",
@@ -165,6 +179,7 @@ class TestRefresh:
                 "password": "StrongPass1!xx",
                 "full_name": "Refresh User",
                 "org_name": "Refresh Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         refresh_token = reg.json()["refresh_token"]
@@ -198,9 +213,7 @@ class TestRefresh:
 class TestChangePassword:
     """POST /api/v1/auth/change-password"""
 
-    async def test_change_password_success(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_change_password_success(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.post(
             f"{PREFIX}/change-password",
             json={
@@ -214,9 +227,7 @@ class TestChangePassword:
         assert "access_token" in body
         assert "refresh_token" in body
 
-    async def test_change_password_wrong_current(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_change_password_wrong_current(self, client: AsyncClient, auth_headers: dict[str, str]):
         """Wrong current password -> 401."""
         resp = await client.post(
             f"{PREFIX}/change-password",
@@ -239,9 +250,7 @@ class TestChangePassword:
         )
         assert resp.status_code == 401
 
-    async def test_change_password_weak_new(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_change_password_weak_new(self, client: AsyncClient, auth_headers: dict[str, str]):
         """Weak new password -> 422."""
         resp = await client.post(
             f"{PREFIX}/change-password",
@@ -260,9 +269,7 @@ class TestChangePassword:
 class TestForgotPassword:
     """POST /api/v1/auth/forgot-password"""
 
-    async def test_forgot_password_existing_email(
-        self, client: AsyncClient, user: User
-    ):
+    async def test_forgot_password_existing_email(self, client: AsyncClient, user: User):
         """Always returns 200 (prevents email enumeration)."""
         resp = await client.post(
             f"{PREFIX}/forgot-password",
@@ -295,9 +302,7 @@ class TestForgotPassword:
 class TestResetPassword:
     """POST /api/v1/auth/reset-password"""
 
-    async def test_reset_password_success(
-        self, client: AsyncClient, user: User
-    ):
+    async def test_reset_password_success(self, client: AsyncClient, user: User):
         """Valid reset token + strong password -> 200 with new tokens."""
         from app.core.auth import create_password_reset_token
 
@@ -319,9 +324,7 @@ class TestResetPassword:
         )
         assert resp.status_code == 400
 
-    async def test_reset_password_weak_password(
-        self, client: AsyncClient, user: User
-    ):
+    async def test_reset_password_weak_password(self, client: AsyncClient, user: User):
         """Weak new password -> 422."""
         from app.core.auth import create_password_reset_token
 
@@ -339,9 +342,7 @@ class TestResetPassword:
 class TestGetMe:
     """GET /api/v1/auth/me"""
 
-    async def test_get_me_success(
-        self, client: AsyncClient, auth_headers: dict[str, str], user: User
-    ):
+    async def test_get_me_success(self, client: AsyncClient, auth_headers: dict[str, str], user: User):
         resp = await client.get(f"{PREFIX}/me", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
@@ -369,9 +370,7 @@ class TestGetMe:
 class TestUpdateProfile:
     """PATCH /api/v1/auth/me"""
 
-    async def test_update_profile_success(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_profile_success(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.patch(
             f"{PREFIX}/me",
             json={"full_name": "Updated Name"},
@@ -397,9 +396,7 @@ class TestUpdateProfile:
 class TestLogout:
     """POST /api/v1/auth/logout"""
 
-    async def test_logout_success(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_logout_success(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.post(f"{PREFIX}/logout", headers=auth_headers)
         assert resp.status_code == 204
 
@@ -417,9 +414,7 @@ class TestNotificationPreferences:
     PUT /api/v1/auth/me/notifications
     """
 
-    async def test_get_notifications_default(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_get_notifications_default(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.get(f"{PREFIX}/me/notifications", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
@@ -428,9 +423,7 @@ class TestNotificationPreferences:
         assert "email_enabled" in prefs
         assert "min_severity" in prefs
 
-    async def test_update_notifications(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_notifications(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.put(
             f"{PREFIX}/me/notifications",
             json={

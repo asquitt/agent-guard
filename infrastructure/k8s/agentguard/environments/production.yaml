@@ -93,6 +93,9 @@ ingress:
 
 config:
   debug: "false"
+  registrationEnabled: "false"
+  localRegistrationBypassEnabled: "false"
+  globalProviderCredentialFallbackEnabled: "false"
   logLevel: warning
   accessTokenExpireMinutes: "15"
   refreshTokenExpireDays: "7"

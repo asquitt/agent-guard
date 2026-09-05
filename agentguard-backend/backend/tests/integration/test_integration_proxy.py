@@ -18,12 +18,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.proxy import ProxyEndpoint, ProxyRequest
 from app.models.user import ApiKey, Organization
 
 PREFIX = "/api/v1/proxy"
+
+
+@pytest.fixture(autouse=True)
+def _enable_local_provider_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Proxy lifecycle tests use the explicit local-only credential path."""
+    monkeypatch.setattr(settings, "ENVIRONMENT", "test")
+    monkeypatch.setattr(settings, "GLOBAL_PROVIDER_CREDENTIAL_FALLBACK_ENABLED", True)
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", "local-openai-test-key")
+    monkeypatch.setattr(settings, "ANTHROPIC_API_KEY", "local-anthropic-test-key")
+
 
 # Reusable payloads
 OPENAI_CHAT_BODY = {
@@ -93,9 +105,7 @@ ANTHROPIC_MESSAGES_RESPONSE = {
 
 
 @pytest.fixture
-async def proxy_endpoint(
-    db_session: AsyncSession, org: Organization
-) -> ProxyEndpoint:
+async def proxy_endpoint(db_session: AsyncSession, org: Organization) -> ProxyEndpoint:
     """Active OpenAI proxy endpoint for the primary org."""
     ep = ProxyEndpoint(
         id=uuid.uuid4(),
@@ -104,7 +114,7 @@ async def proxy_endpoint(
         provider="openai",
         target_url="https://api.openai.com",
         is_active=True,
-        config={"api_key": "sk-test-fake-key-12345"},
+        config={},
     )
     db_session.add(ep)
     await db_session.flush()
@@ -112,9 +122,7 @@ async def proxy_endpoint(
 
 
 @pytest.fixture
-async def anthropic_endpoint(
-    db_session: AsyncSession, org: Organization
-) -> ProxyEndpoint:
+async def anthropic_endpoint(db_session: AsyncSession, org: Organization) -> ProxyEndpoint:
     """Active Anthropic proxy endpoint for the primary org."""
     ep = ProxyEndpoint(
         id=uuid.uuid4(),
@@ -123,7 +131,7 @@ async def anthropic_endpoint(
         provider="anthropic",
         target_url="https://api.anthropic.com",
         is_active=True,
-        config={"api_key": "sk-ant-test-fake-key"},
+        config={},
     )
     db_session.add(ep)
     await db_session.flush()
@@ -131,9 +139,7 @@ async def anthropic_endpoint(
 
 
 @pytest.fixture
-async def inactive_endpoint(
-    db_session: AsyncSession, org: Organization
-) -> ProxyEndpoint:
+async def inactive_endpoint(db_session: AsyncSession, org: Organization) -> ProxyEndpoint:
     """Inactive proxy endpoint."""
     ep = ProxyEndpoint(
         id=uuid.uuid4(),
@@ -142,7 +148,7 @@ async def inactive_endpoint(
         provider="openai",
         target_url="https://api.openai.com",
         is_active=False,
-        config={"api_key": "sk-inactive"},
+        config={},
     )
     db_session.add(ep)
     await db_session.flush()
@@ -150,9 +156,7 @@ async def inactive_endpoint(
 
 
 @pytest.fixture
-async def other_org_endpoint(
-    db_session: AsyncSession, other_org: Organization
-) -> ProxyEndpoint:
+async def other_org_endpoint(db_session: AsyncSession, other_org: Organization) -> ProxyEndpoint:
     """Proxy endpoint belonging to a DIFFERENT org."""
     ep = ProxyEndpoint(
         id=uuid.uuid4(),
@@ -161,7 +165,7 @@ async def other_org_endpoint(
         provider="openai",
         target_url="https://api.openai.com",
         is_active=True,
-        config={"api_key": "sk-other-org-key"},
+        config={},
     )
     db_session.add(ep)
     await db_session.flush()
@@ -169,9 +173,24 @@ async def other_org_endpoint(
 
 
 @pytest.fixture
-async def org_with_ip_allowlist(
-    db_session: AsyncSession, org: Organization
-) -> Organization:
+async def malicious_endpoint(db_session: AsyncSession, org: Organization) -> ProxyEndpoint:
+    """Model a legacy endpoint row that bypassed write-time validation."""
+    ep = ProxyEndpoint(
+        id=uuid.uuid4(),
+        org_id=org.id,
+        name="Malicious Endpoint",
+        provider="openai",
+        target_url="http://127.0.0.1:8000",
+        is_active=True,
+        config={},
+    )
+    db_session.add(ep)
+    await db_session.flush()
+    return ep
+
+
+@pytest.fixture
+async def org_with_ip_allowlist(db_session: AsyncSession, org: Organization) -> Organization:
     """Configure the primary org with an IP allowlist."""
     org.settings = {"ip_allowlist": ["10.0.0.1", "192.168.1.0/24"]}
     await db_session.flush()
@@ -179,9 +198,7 @@ async def org_with_ip_allowlist(
 
 
 @pytest.fixture
-async def org_with_rate_limits(
-    db_session: AsyncSession, org: Organization
-) -> Organization:
+async def org_with_rate_limits(db_session: AsyncSession, org: Organization) -> Organization:
     """Configure the primary org with custom rate limits."""
     org.settings = {"rate_limits": {"rpm": 5, "rph": 100, "rpd": 1000}}
     await db_session.flush()
@@ -189,9 +206,7 @@ async def org_with_rate_limits(
 
 
 @pytest.fixture
-async def org_at_billing_cap(
-    db_session: AsyncSession, org: Organization
-) -> Organization:
+async def org_at_billing_cap(db_session: AsyncSession, org: Organization) -> Organization:
     """Set org to exactly at the billing request cap (starter = 10,000)."""
     org.plan_tier = "starter"
     org.monthly_request_count = 10000
@@ -200,9 +215,7 @@ async def org_at_billing_cap(
 
 
 @pytest.fixture
-async def enterprise_org(
-    db_session: AsyncSession, org: Organization
-) -> Organization:
+async def enterprise_org(db_session: AsyncSession, org: Organization) -> Organization:
     """Enterprise tier org with unlimited requests."""
     org.plan_tier = "enterprise"
     org.monthly_request_count = 999999
@@ -285,7 +298,7 @@ class _ProxyTestBase:
             headers.update(extra_headers)
 
         # Apply all patches
-        contexts = {k: v.__enter__() if hasattr(v, '__enter__') else v.start() for k, v in patches.items()}
+        contexts = {k: v.__enter__() if hasattr(v, "__enter__") else v.start() for k, v in patches.items()}
         try:
             # Make sure metric mocks return something chainable
             for key in ("metrics_total", "metrics_latency"):
@@ -299,7 +312,7 @@ class _ProxyTestBase:
             )
         finally:
             for v in patches.values():
-                if hasattr(v, '__exit__'):
+                if hasattr(v, "__exit__"):
                     v.__exit__(None, None, None)
                 else:
                     v.stop()
@@ -322,9 +335,7 @@ class TestProxyAuth:
             ("/v1/messages", ANTHROPIC_MESSAGES_BODY),
         ],
     )
-    async def test_no_auth_returns_401_or_403(
-        self, client: AsyncClient, path: str, body: dict
-    ):
+    async def test_no_auth_returns_401_or_403(self, client: AsyncClient, path: str, body: dict):
         resp = await client.post(f"{PREFIX}{path}", json=body)
         assert resp.status_code in (401, 403)
 
@@ -337,9 +348,7 @@ class TestProxyAuth:
             ("/v1/messages", ANTHROPIC_MESSAGES_BODY),
         ],
     )
-    async def test_invalid_api_key_returns_401(
-        self, client: AsyncClient, path: str, body: dict
-    ):
+    async def test_invalid_api_key_returns_401(self, client: AsyncClient, path: str, body: dict):
         resp = await client.post(
             f"{PREFIX}{path}",
             json=body,
@@ -347,9 +356,7 @@ class TestProxyAuth:
         )
         assert resp.status_code in (401, 403)
 
-    async def test_expired_api_key_rejected(
-        self, client: AsyncClient, db_session: AsyncSession, org: Organization
-    ):
+    async def test_expired_api_key_rejected(self, client: AsyncClient, db_session: AsyncSession, org: Organization):
         """An expired API key should be rejected."""
         from datetime import datetime, timedelta, timezone
         from app.services.api_key_service import hash_api_key
@@ -376,9 +383,7 @@ class TestProxyAuth:
         )
         assert resp.status_code in (401, 403)
 
-    async def test_inactive_api_key_rejected(
-        self, client: AsyncClient, db_session: AsyncSession, org: Organization
-    ):
+    async def test_inactive_api_key_rejected(self, client: AsyncClient, db_session: AsyncSession, org: Organization):
         """A deactivated API key should be rejected."""
         from app.services.api_key_service import hash_api_key
 
@@ -403,9 +408,7 @@ class TestProxyAuth:
         )
         assert resp.status_code in (401, 403)
 
-    async def test_jwt_token_not_accepted_for_proxy(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_jwt_token_not_accepted_for_proxy(self, client: AsyncClient, auth_headers: dict[str, str]):
         """Proxy endpoints use API key auth, NOT JWT Bearer tokens."""
         resp = await client.post(
             f"{PREFIX}/v1/chat/completions",
@@ -422,9 +425,7 @@ class TestProxyAuth:
 class TestEndpointResolution:
     """Test proxy endpoint resolution logic."""
 
-    async def test_no_endpoint_configured_returns_error(
-        self, client: AsyncClient, api_key: tuple[ApiKey, str]
-    ):
+    async def test_no_endpoint_configured_returns_error(self, client: AsyncClient, api_key: tuple[ApiKey, str]):
         """With valid API key but no configured endpoint, should return error."""
         _, raw_key = api_key
         patches, _, _ = _proxy_mocks()
@@ -440,6 +441,60 @@ class TestEndpointResolution:
         finally:
             for p in patches.values():
                 p.stop()
+
+
+class TestProviderEgressSecurity:
+    """Destination and redirect gates execute before provider egress."""
+
+    async def test_legacy_malicious_target_is_rejected_before_client_or_log(
+        self,
+        client: AsyncClient,
+        api_key: tuple[ApiKey, str],
+        malicious_endpoint: ProxyEndpoint,
+        db_session: AsyncSession,
+    ):
+        _, raw_key = api_key
+        with patch("app.api.proxy.get_http_client", new_callable=AsyncMock) as get_client:
+            resp = await client.post(
+                f"{PREFIX}/v1/chat/completions",
+                json=OPENAI_CHAT_BODY,
+                headers={
+                    "Authorization": f"Bearer {raw_key}",
+                    "X-AgentGuard-Endpoint-Id": str(malicious_endpoint.id),
+                },
+            )
+
+        assert resp.status_code == 422
+        assert "not allowed" in resp.json()["detail"]
+        get_client.assert_not_awaited()
+        request_count = await db_session.scalar(select(func.count(ProxyRequest.id)))
+        assert request_count == 0
+
+    async def test_redirect_is_rejected_without_following_provider_authorization(
+        self,
+        client: AsyncClient,
+        api_key: tuple[ApiKey, str],
+        proxy_endpoint: ProxyEndpoint,
+    ):
+        _, raw_key = api_key
+        redirect = httpx.Response(
+            status_code=302,
+            headers={"Location": "https://evil.example/steal"},
+            request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+        )
+
+        resp, mock_http, _ = await _ProxyTestBase._call(
+            client,
+            "/v1/chat/completions",
+            OPENAI_CHAT_BODY,
+            raw_key,
+            response=redirect,
+        )
+
+        assert resp.status_code == 502
+        assert resp.json()["error"]["type"] == "proxy_redirect_rejected"
+        mock_http.post.assert_awaited_once()
+        assert mock_http.post.await_args.kwargs["follow_redirects"] is False
 
     async def test_inactive_endpoint_not_resolved(
         self,
@@ -634,9 +689,7 @@ class TestProxySuccess:
         anthropic_endpoint: ProxyEndpoint,
     ):
         _, raw_key = api_key
-        patches, _, _ = _proxy_mocks(
-            _mock_httpx_response(200, ANTHROPIC_MESSAGES_RESPONSE)
-        )
+        patches, _, _ = _proxy_mocks(_mock_httpx_response(200, ANTHROPIC_MESSAGES_RESPONSE))
         for p in patches.values():
             p.start()
         try:
@@ -685,9 +738,7 @@ class TestRequestLogging:
         # Check that a ProxyRequest was created
         from sqlalchemy import select
 
-        result = await db_session.execute(
-            select(ProxyRequest).where(ProxyRequest.org_id == proxy_endpoint.org_id)
-        )
+        result = await db_session.execute(select(ProxyRequest).where(ProxyRequest.org_id == proxy_endpoint.org_id))
         logs = result.scalars().all()
         assert len(logs) >= 1
         log = logs[0]
@@ -719,9 +770,7 @@ class TestRequestLogging:
 
         from sqlalchemy import select
 
-        result = await db_session.execute(
-            select(ProxyRequest).where(ProxyRequest.org_id == proxy_endpoint.org_id)
-        )
+        result = await db_session.execute(select(ProxyRequest).where(ProxyRequest.org_id == proxy_endpoint.org_id))
         log = result.scalars().first()
         assert log is not None
         assert log.request_body is not None
@@ -835,9 +884,7 @@ class TestUpstreamErrors:
     ):
         _, raw_key = api_key
         patches, mock_http, _ = _proxy_mocks()
-        mock_http.post = AsyncMock(
-            side_effect=httpx.ConnectError("Connection refused")
-        )
+        mock_http.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
         for p in patches.values():
             p.start()
         try:
@@ -1388,9 +1435,7 @@ class TestTenantIsolation:
 
         from sqlalchemy import select
 
-        result = await db_session.execute(
-            select(ProxyRequest).where(ProxyRequest.org_id == org.id)
-        )
+        result = await db_session.execute(select(ProxyRequest).where(ProxyRequest.org_id == org.id))
         logs = result.scalars().all()
         assert len(logs) >= 1
         # Verify all logs belong to the correct org

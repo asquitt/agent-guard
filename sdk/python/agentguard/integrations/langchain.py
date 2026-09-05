@@ -1,14 +1,17 @@
 """LangChain callback handler for AgentGuard.
 
-Captures LLM calls, chain runs, tool invocations, and agent actions,
-then forwards them through the AgentGuard proxy for real-time detection.
+Buffers selected LangChain callback events and attempts best-effort delivery to
+the AgentGuard ingest API.
 
 Usage::
 
     from langchain_openai import ChatOpenAI
     from agentguard.integrations.langchain import AgentGuardCallbackHandler
 
-    handler = AgentGuardCallbackHandler(api_key="ag_live_...")
+    handler = AgentGuardCallbackHandler(
+        api_key="ag_live_...",
+        base_url="http://localhost:8001",
+    )
     llm = ChatOpenAI(callbacks=[handler])
     llm.invoke("Summarize our Q4 financials")
 """
@@ -22,15 +25,16 @@ from typing import Any, Sequence
 
 import httpx
 
+from agentguard._base_url import normalize_base_url
+
 logger = logging.getLogger("agentguard.langchain")
 
 
 class AgentGuardCallbackHandler:
     """LangChain callback handler that streams events to AgentGuard.
 
-    Captures LLM prompts/completions, chain metadata, tool calls, and agent
-    decisions. All events are sent asynchronously to the AgentGuard ingest
-    API so they appear in the dashboard alongside proxy-originated events.
+    Captures selected LLM, chain, tool, and agent callback events. Automatic
+    delivery is best-effort and in-memory; it is not durable ingestion proof.
 
     Args:
         api_key: Your AgentGuard API key (``ag_live_...``).
@@ -44,13 +48,13 @@ class AgentGuardCallbackHandler:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
         metadata: dict[str, str] | None = None,
         flush_on_chain_end: bool = True,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self.metadata = metadata or {}
         self.flush_on_chain_end = flush_on_chain_end
@@ -78,19 +82,25 @@ class AgentGuardCallbackHandler:
         event["timestamp"] = time.time()
         self._events.append(event)
 
-    def _flush(self) -> None:
+    def _flush(self, *, raise_on_error: bool = False) -> bool:
         if not self._events:
-            return
+            return True
         batch = self._events[:]
         self._events.clear()
         try:
-            self._http.post(
+            response = self._http.post(
                 "/api/v1/ingest/events",
                 json={"events": batch},
             )
+            response.raise_for_status()
+            return True
         except Exception as exc:
+            self._events[0:0] = batch
             logger.debug("Failed to flush events to AgentGuard: %s", exc)
             # Non-blocking: don't break the user's chain
+            if raise_on_error:
+                raise
+            return False
 
     # ── LLM Events ──────────────────────────────────────────────
 
@@ -365,8 +375,8 @@ class AgentGuardCallbackHandler:
     # ── Lifecycle ───────────────────────────────────────────────
 
     def flush(self) -> None:
-        """Manually flush any buffered events."""
-        self._flush()
+        """Flush buffered events, raising on transport or HTTP failure."""
+        self._flush(raise_on_error=True)
 
     def close(self) -> None:
         """Flush remaining events and close the HTTP client."""

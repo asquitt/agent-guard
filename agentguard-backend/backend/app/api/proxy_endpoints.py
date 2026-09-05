@@ -8,7 +8,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_org, get_db, require_admin, require_permission
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ProxyError
 from app.models.user import Organization, User
 from app.schemas.proxy_endpoints import (
     ProxyEndpointCreateRequest,
@@ -36,14 +36,20 @@ async def create_proxy_endpoint(
     org: Organization = Depends(get_current_org),
 ) -> ProxyEndpointResponse:
     """Create a new proxy endpoint configuration. Admin only."""
-    endpoint = await proxy_endpoint_service.create_proxy_endpoint(
-        db=db,
-        org_id=UUID(str(org.id)),
-        name=body.name,
-        provider=body.provider,
-        target_url=body.target_url,
-        config=body.config,
-    )
+    try:
+        endpoint = await proxy_endpoint_service.create_proxy_endpoint(
+            db=db,
+            org_id=UUID(str(org.id)),
+            name=body.name,
+            provider=body.provider,
+            target_url=body.target_url,
+            config=body.config,
+        )
+    except ProxyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.message,
+        )
     return ProxyEndpointResponse.model_validate(endpoint)
 
 
@@ -99,6 +105,11 @@ async def update_proxy_endpoint(
         )
     except NotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+    except ProxyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.message,
+        )
     return ProxyEndpointResponse.model_validate(endpoint)
 
 

@@ -22,10 +22,10 @@ from app.models.user import Organization
 from app.services import proxy_service
 from app.services.billing_service import get_request_limit
 from app.services.detection import pipeline as detection_pipeline
-from app.services.rate_limiter import RateLimitExceeded, check_rate_limit, record_request
 from app.services.detection.types import DetectionAction
 from app.services.providers import get_adapter
 from app.services.providers.base import ProviderAdapter
+from app.services.rate_limiter import RateLimitExceeded, check_rate_limit, record_request
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def get_http_client() -> httpx.AsyncClient:
         _http_client = httpx.AsyncClient(
             timeout=httpx.Timeout(120.0, connect=10.0),
             limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
-            follow_redirects=True,
+            follow_redirects=False,
         )
     return _http_client
 
@@ -66,12 +66,15 @@ def _ip_in_allowlist(client_ip: str, allowlist: list[str]) -> bool:
 
 
 async def _resolve_sandbox_execution(
-    db: AsyncSession, org_id: UUID, header_value: str | None,
+    db: AsyncSession,
+    org_id: UUID,
+    header_value: str | None,
 ) -> UUID | None:
     """Validate and resolve X-Sandbox-Execution-Id header."""
     if not header_value:
         return None
     from sqlalchemy import select
+
     from app.models.sandbox_execution import SandboxExecution
 
     exec_id = UUID(header_value)
@@ -126,6 +129,7 @@ async def _parse_and_resolve(
     endpoint_id = UUID(endpoint_header) if endpoint_header else None
     try:
         endpoint = await proxy_service.resolve_endpoint(db, UUID(str(org.id)), endpoint_id, provider=provider)
+        proxy_service.validate_provider_target(str(endpoint.provider), str(endpoint.target_url))
     except (NotFoundError, ProxyError) as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -139,10 +143,21 @@ async def _parse_and_resolve(
     # Resolve sandbox execution (optional header)
     sandbox_exec_header = request.headers.get("x-sandbox-execution-id")
     sandbox_execution_id = await _resolve_sandbox_execution(
-        db, UUID(str(org.id)), sandbox_exec_header,
+        db,
+        UUID(str(org.id)),
+        sandbox_exec_header,
     )
 
-    # Log request
+    # Resolve credentials before persisting payload data or attempting egress.
+    try:
+        api_key = proxy_service.get_upstream_api_key(endpoint)
+    except ProxyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=e.message,
+        )
+
+    # Log request only after the endpoint and credential gates pass.
     proxy_req = await proxy_service.create_request_log(
         db,
         UUID(str(org.id)),
@@ -153,15 +168,6 @@ async def _parse_and_resolve(
         model,
         sandbox_execution_id=sandbox_execution_id,
     )
-
-    # Get upstream API key
-    try:
-        api_key = proxy_service.get_upstream_api_key(endpoint)
-    except ProxyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.message,
-        )
 
     # Sliding-window rate limit (Redis)
     org_id_str = str(org.id)
@@ -224,11 +230,24 @@ async def _handle_non_streaming(
     headers = adapter.build_headers(api_key)
 
     try:
-        response = await client.post(target_url, json=body, headers=headers, timeout=120.0)
+        response = await client.post(
+            target_url,
+            json=body,
+            headers=headers,
+            timeout=120.0,
+            follow_redirects=False,
+        )
     except httpx.TimeoutException:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 504, '{"error":"upstream timeout"}', latency_ms, None, None, None,
+            db,
+            proxy_req,
+            504,
+            '{"error":"upstream timeout"}',
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=504,
@@ -237,7 +256,14 @@ async def _handle_non_streaming(
     except httpx.HTTPError as e:
         latency_ms = int((time.time() - start_time) * 1000)
         await proxy_service.update_request_log(
-            db, proxy_req, 502, json.dumps({"error": str(e)}), latency_ms, None, None, None,
+            db,
+            proxy_req,
+            502,
+            json.dumps({"error": str(e)}),
+            latency_ms,
+            None,
+            None,
+            None,
         )
         return JSONResponse(
             status_code=502,
@@ -246,6 +272,27 @@ async def _handle_non_streaming(
 
     latency_ms = int((time.time() - start_time) * 1000)
     response_text = response.text
+
+    if response.is_redirect:
+        await proxy_service.update_request_log(
+            db,
+            proxy_req,
+            502,
+            '{"error":"upstream redirect rejected"}',
+            latency_ms,
+            None,
+            None,
+            None,
+        )
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": {
+                    "message": "Upstream provider redirect rejected",
+                    "type": "proxy_redirect_rejected",
+                }
+            },
+        )
 
     # Parse response for token usage
     response_data: dict[str, Any] = {}
@@ -259,8 +306,14 @@ async def _handle_non_streaming(
     response_model = response_data.get("model") or proxy_service.extract_model_from_body(body)
 
     await proxy_service.update_request_log(
-        db, proxy_req, response.status_code, proxy_service.truncate_body(response_text),
-        latency_ms, input_tokens, output_tokens, response_model,
+        db,
+        proxy_req,
+        response.status_code,
+        proxy_service.truncate_body(response_text),
+        latency_ms,
+        input_tokens,
+        output_tokens,
+        response_model,
     )
 
     # Run detection pipeline on successful responses
@@ -281,21 +334,32 @@ async def _handle_non_streaming(
             try:
                 decision = await asyncio.wait_for(
                     detection_pipeline.run_sync_detectors(
-                        db, org_id, json.dumps(body), response_text, response_model,
-                        UUID(str(proxy_req.id)), sandbox_execution_id=sandbox_exec_uuid,
+                        db,
+                        org_id,
+                        json.dumps(body),
+                        response_text,
+                        response_model,
+                        UUID(str(proxy_req.id)),
+                        sandbox_execution_id=sandbox_exec_uuid,
                     ),
                     timeout=timeout_s,
                 )
             except asyncio.TimeoutError:
                 logger.warning(
                     "Sync detection timed out after %dms for org %s — degraded mode, queuing all async",
-                    settings.SYNC_DETECTION_TIMEOUT_MS, org_id,
+                    settings.SYNC_DETECTION_TIMEOUT_MS,
+                    org_id,
                 )
                 decision = None
         else:
             decision = await detection_pipeline.run_sync_detectors(
-                db, org_id, json.dumps(body), response_text, response_model,
-                UUID(str(proxy_req.id)), sandbox_execution_id=sandbox_exec_uuid,
+                db,
+                org_id,
+                json.dumps(body),
+                response_text,
+                response_model,
+                UUID(str(proxy_req.id)),
+                sandbox_execution_id=sandbox_exec_uuid,
             )
 
         if decision is not None:
@@ -327,37 +391,105 @@ async def _handle_streaming(
     db: AsyncSession,
     start_time: float,
     org_id: UUID,
-) -> StreamingResponse:
+) -> JSONResponse | StreamingResponse:
     """Forward a streaming request using the provider adapter."""
     body = adapter.inject_stream_options(body)
     headers = adapter.build_stream_headers(api_key)
+
+    try:
+        stream_context = client.stream(
+            "POST",
+            target_url,
+            json=body,
+            headers=headers,
+            timeout=120.0,
+            follow_redirects=False,
+        )
+        response = await stream_context.__aenter__()
+    except httpx.TimeoutException:
+        latency_ms = int((time.time() - start_time) * 1000)
+        await proxy_service.update_request_log(
+            db,
+            proxy_req,
+            504,
+            '{"error":"upstream timeout"}',
+            latency_ms,
+            None,
+            None,
+            None,
+        )
+        return JSONResponse(
+            status_code=504,
+            content={"error": {"message": "Upstream LLM request timed out", "type": "timeout_error"}},
+        )
+    except httpx.HTTPError:
+        latency_ms = int((time.time() - start_time) * 1000)
+        await proxy_service.update_request_log(
+            db,
+            proxy_req,
+            502,
+            '{"error":"upstream transport failure"}',
+            latency_ms,
+            None,
+            None,
+            None,
+        )
+        return JSONResponse(
+            status_code=502,
+            content={"error": {"message": "Upstream LLM request failed", "type": "proxy_error"}},
+        )
+
+    async def close_upstream() -> None:
+        try:
+            await stream_context.__aexit__(None, None, None)
+        except Exception:
+            logger.warning("Failed to close upstream streaming response")
+
+    if response.is_redirect:
+        latency_ms = int((time.time() - start_time) * 1000)
+        try:
+            await proxy_service.update_request_log(
+                db,
+                proxy_req,
+                502,
+                '{"error":"upstream redirect rejected"}',
+                latency_ms,
+                None,
+                None,
+                None,
+            )
+        finally:
+            await close_upstream()
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": {
+                    "message": "Upstream provider redirect rejected",
+                    "type": "proxy_redirect_rejected",
+                }
+            },
+        )
 
     async def stream_generator():
         accumulated_content = ""
         input_tokens: int | None = None
         output_tokens: int | None = None
         model_name: str | None = None
-        resp_status = 200
+        resp_status = response.status_code
+        response_summary = ""
+        stream_completed = False
 
         try:
-            async with client.stream(
-                "POST", target_url, json=body, headers=headers, timeout=120.0,
-            ) as response:
-                resp_status = response.status_code
-
-                if response.status_code != 200:
-                    error_body = b""
-                    async for chunk in response.aiter_bytes():
-                        error_body += chunk
-                        yield chunk
-                    latency_ms = int((time.time() - start_time) * 1000)
-                    await proxy_service.update_request_log(
-                        db, proxy_req, resp_status,
-                        error_body.decode("utf-8", errors="replace"),
-                        latency_ms, None, None, None,
-                    )
-                    return
-
+            if response.status_code != 200:
+                error_preview = bytearray()
+                async for chunk in response.aiter_bytes():
+                    remaining = proxy_service.MAX_BODY_SIZE - len(error_preview)
+                    if remaining > 0:
+                        error_preview.extend(chunk[:remaining])
+                    yield chunk
+                response_summary = error_preview.decode("utf-8", errors="replace")
+                stream_completed = True
+            else:
                 async for line in response.aiter_lines():
                     if not line:
                         continue
@@ -373,32 +505,47 @@ async def _handle_streaming(
                         input_tokens = chunk_result.input_tokens
                     if chunk_result.output_tokens is not None:
                         output_tokens = chunk_result.output_tokens
+                stream_completed = True
+                response_summary = json.dumps(
+                    {
+                        "streamed": True,
+                        "content_preview": accumulated_content[:500],
+                        "model": model_name,
+                    }
+                )
 
         except httpx.TimeoutException:
             yield 'data: {"error":"upstream timeout"}\n\n'
             resp_status = 504
-        except httpx.HTTPError as e:
-            yield f'data: {{"error":"{e}"}}\n\n'
+            response_summary = '{"error":"upstream timeout"}'
+        except httpx.HTTPError:
+            yield 'data: {"error":"upstream transport failure"}\n\n'
             resp_status = 502
+            response_summary = '{"error":"upstream transport failure"}'
+        finally:
+            if not stream_completed and resp_status == 200:
+                resp_status = 499
+                response_summary = '{"error":"downstream stream closed"}'
 
-        # Log after stream completes
-        latency_ms = int((time.time() - start_time) * 1000)
-        response_summary = json.dumps({
-            "streamed": True,
-            "content_preview": accumulated_content[:500],
-            "model": model_name,
-        })
-        await proxy_service.update_request_log(
-            db, proxy_req, resp_status, proxy_service.truncate_body(response_summary),
-            latency_ms, input_tokens, output_tokens, model_name,
-        )
+            await close_upstream()
+            latency_ms = int((time.time() - start_time) * 1000)
+            await proxy_service.update_request_log(
+                db,
+                proxy_req,
+                resp_status,
+                proxy_service.truncate_body(response_summary),
+                latency_ms,
+                input_tokens,
+                output_tokens,
+                model_name,
+            )
 
-        # Queue async detection for streaming responses
-        if resp_status == 200:
-            await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
+            if resp_status == 200 and stream_completed:
+                await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
 
     return StreamingResponse(
         stream_generator(),
+        status_code=response.status_code,
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -409,6 +556,17 @@ async def _handle_streaming(
 
 
 # --- Helper to route through adapter ---
+
+
+def _build_target_or_422(endpoint: Any, path: str) -> str:
+    """Translate an egress allowlist rejection into an API validation error."""
+    try:
+        return proxy_service.build_target_url(endpoint, path)
+    except ProxyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.message,
+        )
 
 
 async def _proxy_request(
@@ -423,7 +581,11 @@ async def _proxy_request(
     start_time = time.time()
     org_id = UUID(str(org.id))
     body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
-        request, db, org, endpoint_header, provider=provider,
+        request,
+        db,
+        org,
+        endpoint_header,
+        provider=provider,
     )
 
     # Use the endpoint's actual provider for adapter selection
@@ -444,16 +606,20 @@ async def _proxy_request(
             headers={"Retry-After": str(int(breaker.recovery_timeout))},
         )
 
+    target_url = _build_target_or_422(endpoint, path_override or path)
     client = await get_http_client()
-    target_url = proxy_service.build_target_url(endpoint, path_override or path)
 
     model = proxy_service.extract_model_from_body(body)
 
     try:
         if body.get("stream"):
-            result = await _handle_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
+            result = await _handle_streaming(
+                client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id
+            )
         else:
-            result = await _handle_non_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
+            result = await _handle_non_streaming(
+                client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id
+            )
 
         breaker.record_success()
         PROXY_REQUESTS_TOTAL.labels(provider=actual_provider, model=model or "", status="success").inc()
@@ -502,12 +668,15 @@ async def proxy_embeddings(
     start_time = time.time()
     org_id = UUID(str(org.id))
     body, path, endpoint, api_key, proxy_req = await _parse_and_resolve(
-        request, db, org, x_agentguard_endpoint_id,
+        request,
+        db,
+        org,
+        x_agentguard_endpoint_id,
     )
 
     adapter = get_adapter(str(endpoint.provider) if hasattr(endpoint, "provider") else "openai")
+    target_url = _build_target_or_422(endpoint, path)
     client = await get_http_client()
-    target_url = proxy_service.build_target_url(endpoint, path)
 
     return await _handle_non_streaming(client, target_url, body, api_key, adapter, proxy_req, db, start_time, org_id)
 
@@ -521,17 +690,21 @@ async def proxy_anthropic_messages(
 ) -> JSONResponse | StreamingResponse:
     """Proxy Anthropic Messages API (streaming + non-streaming)."""
     return await _proxy_request(
-        request, db, org, x_agentguard_endpoint_id, "anthropic", path_override="/v1/messages",
+        request,
+        db,
+        org,
+        x_agentguard_endpoint_id,
+        "anthropic",
+        path_override="/v1/messages",
     )
 
 
-async def _track_sandbox_tokens(
-    db: AsyncSession, org_id: UUID, sandbox_exec_id: str, tokens: int
-) -> None:
+async def _track_sandbox_tokens(db: AsyncSession, org_id: UUID, sandbox_exec_id: str, tokens: int) -> None:
     """Track token usage against a sandbox execution's resource budget."""
     from sqlalchemy import select
-    from app.models.sandbox_execution import SandboxExecution
+
     from app.models.sandbox import Sandbox
+    from app.models.sandbox_execution import SandboxExecution
 
     exec_uuid = UUID(sandbox_exec_id)
     result = await db.execute(
@@ -552,15 +725,12 @@ async def _track_sandbox_tokens(
     await db.flush()
 
     # Check if token budget exceeded
-    sandbox_result = await db.execute(
-        select(Sandbox).where(Sandbox.id == execution.sandbox_id)
-    )
+    sandbox_result = await db.execute(select(Sandbox).where(Sandbox.id == execution.sandbox_id))
     sandbox = sandbox_result.scalar_one_or_none()
     if sandbox:
         limits = sandbox.resource_limits or {}
         max_tokens = limits.get("max_tokens", 10000)
         if usage["tokens_used"] > max_tokens:
             from app.services.sandbox.sandbox_service import terminate_execution
-            await terminate_execution(
-                db, org_id, exec_uuid, reason="token_budget_exceeded"
-            )
+
+            await terminate_execution(db, org_id, exec_uuid, reason="token_budget_exceeded")

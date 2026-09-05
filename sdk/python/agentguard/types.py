@@ -15,13 +15,14 @@ class Incident:
     category: str
     title: str
     status: str
-    description: str = ""
-    action_taken: str = ""
-    model: str = ""
+    description: str | None = None
+    action_taken: str | None = None
     created_at: str = ""
     updated_at: str = ""
-    proxy_request_id: str = ""
-    detector_id: str = ""
+    proxy_request_id: str | None = None
+    detector_id: str | None = None
+    sandbox_execution_id: str | None = None
+    resolved_at: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Incident:
@@ -31,14 +32,30 @@ class Incident:
             category=str(data.get("category", "")),
             title=str(data.get("title", "")),
             status=str(data.get("status", "")),
-            description=str(data.get("description", "")),
-            action_taken=str(data.get("actionTaken", data.get("action_taken", ""))),
-            model=str(data.get("model", "")),
-            created_at=str(data.get("createdAt", data.get("created_at", ""))),
-            updated_at=str(data.get("updatedAt", data.get("updated_at", ""))),
-            proxy_request_id=str(data.get("proxyRequestId", data.get("proxy_request_id", ""))),
-            detector_id=str(data.get("detectorId", data.get("detector_id", ""))),
+            description=_optional_str(data.get("description")),
+            action_taken=_optional_str(
+                data.get("actionTaken", data.get("action_taken"))
+            ),
+            created_at=str(data.get("createdAt", data.get("created_at", "")) or ""),
+            updated_at=str(data.get("updatedAt", data.get("updated_at", "")) or ""),
+            proxy_request_id=_optional_str(
+                data.get("proxyRequestId", data.get("proxy_request_id"))
+            ),
+            detector_id=_optional_str(
+                data.get("detectorId", data.get("detector_id"))
+            ),
+            sandbox_execution_id=_optional_str(
+                data.get("sandboxExecutionId", data.get("sandbox_execution_id"))
+            ),
+            resolved_at=_optional_str(
+                data.get("resolvedAt", data.get("resolved_at"))
+            ),
         )
+
+
+def _optional_str(value: Any) -> str | None:
+    """Preserve absent or JSON-null optional fields instead of stringifying them."""
+    return None if value is None else str(value)
 
 
 @dataclass(frozen=True)

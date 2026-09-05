@@ -4,7 +4,20 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+_SERVER_MANAGED_SETTINGS = frozenset(
+    {
+        "controlledEvaluationAcceptance",
+        "controlled_evaluation_acceptance",
+        "onboardingCompleted",
+        "onboardingStatus",
+        "onboardingEvidence",
+        "onboarding_completed",
+        "onboarding_status",
+        "onboarding_evidence",
+    }
+)
 
 
 class OrgDetailResponse(BaseModel):
@@ -26,6 +39,21 @@ class OrgUpdateRequest(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
     settings: dict[str, Any] | None = None
+
+    @field_validator("settings")
+    @classmethod
+    def reject_server_managed_settings(
+        cls,
+        value: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        """Prevent clients from overwriting server-owned evidence and outcomes."""
+        if value is None:
+            return value
+
+        reserved = sorted(_SERVER_MANAGED_SETTINGS.intersection(value))
+        if reserved:
+            raise ValueError("Registration acceptance and onboarding truth are server-managed")
+        return value
 
 
 class MemberResponse(BaseModel):

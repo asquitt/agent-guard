@@ -1,147 +1,55 @@
-import { Check } from 'lucide-react';
-import Link from 'next/link';
-import clsx from 'clsx';
+import { Archive, LockKeyhole, PackageOpen } from 'lucide-react';
 
-interface Tier {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  cta: string;
-  ctaHref: string;
-  highlighted: boolean;
-}
-
-const TIERS: Tier[] = [
+const ARCHIVE_BOUNDARIES = [
   {
-    name: 'Starter',
-    price: '$499',
-    period: '/month',
-    description: 'For teams getting started with AI agent security.',
-    features: [
-      'Up to 100K LLM requests/mo',
-      '3 detection categories',
-      'Email alerts',
-      'Basic dashboard',
-      '7-day data retention',
-      'Community support',
-    ],
-    cta: 'Get Started',
-    ctaHref: '/register',
-    highlighted: false,
+    icon: Archive,
+    title: 'Preservation only',
+    description: 'The repository and selected public material remain available as archived reference.',
   },
   {
-    name: 'Pro',
-    price: '$1,999',
-    period: '/month',
-    description: 'Full detection coverage for scaling AI operations.',
-    features: [
-      'Up to 1M LLM requests/mo',
-      'All 6 detection categories',
-      'Slack + PagerDuty + Webhooks',
-      'Full analytics dashboard',
-      '90-day data retention',
-      'Red team testing',
-      'Agent behavior policies',
-      'Priority support',
-    ],
-    cta: 'Get Started',
-    ctaHref: '/register',
-    highlighted: true,
+    icon: LockKeyhole,
+    title: 'Standalone activity frozen',
+    description: 'Customer acquisition, registration, deployment, and provider/runtime use are not authorized.',
   },
   {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    description: 'Dedicated compliance and deployment for large orgs.',
-    features: [
-      'Unlimited LLM requests',
-      'Custom detection rules',
-      'SSO / SAML',
-      'Data residency controls',
-      'Unlimited retention',
-      'Dedicated CSM',
-      'SLA guarantees',
-      'On-premise deployment',
-    ],
-    cta: 'Contact Sales',
-    ctaHref: '#contact',
-    highlighted: false,
+    icon: PackageOpen,
+    title: 'Bounded extraction',
+    description: 'Assets may move only through a separately authorized extraction with a named consumer.',
   },
 ];
 
-export default function PricingSection() {
+export default function ArchiveDispositionSection() {
   return (
-    <section id="pricing" className="px-6 py-24">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-16 text-center">
-          <h2 className="text-3xl font-bold text-foreground sm:text-4xl">
-            Simple, Transparent Pricing
+    <section id="archive" className="border-y border-border bg-muted/20 px-6 py-24">
+      <div className="mx-auto max-w-5xl">
+        <div className="text-center">
+          <p className="text-sm font-medium uppercase tracking-wider text-primary">
+            Portfolio disposition
+          </p>
+          <h2 className="mt-3 text-3xl font-bold text-foreground sm:text-4xl">
+            Standalone Product Mothballed
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Start free. Scale with confidence.
+          <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-muted-foreground">
+            No prices, plans, trials, pilots, or workspaces are offered. The
+            archived interface does not establish a hosted service, a production
+            deployment, or current runtime availability.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={clsx(
-                'flex flex-col rounded-xl border p-8 transition-all',
-                tier.highlighted
-                  ? 'border-primary bg-card shadow-[0_0_60px_-15px] shadow-primary/20'
-                  : 'border-border bg-card hover:border-primary/20',
-              )}
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {ARCHIVE_BOUNDARIES.map((boundary) => (
+            <article
+              key={boundary.title}
+              className="rounded-xl border border-border bg-card p-6"
             >
-              {tier.highlighted && (
-                <span className="mb-4 inline-block self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  Most Popular
-                </span>
-              )}
-
-              <h3 className="text-lg font-semibold text-foreground">
-                {tier.name}
+              <boundary.icon className="h-6 w-6 text-primary" aria-hidden="true" />
+              <h3 className="mt-4 text-base font-semibold text-foreground">
+                {boundary.title}
               </h3>
-
-              <div className="mt-4">
-                <span className="text-4xl font-bold text-foreground">
-                  {tier.price}
-                </span>
-                {tier.period && (
-                  <span className="text-muted-foreground">{tier.period}</span>
-                )}
-              </div>
-
-              <p className="mt-3 text-sm text-muted-foreground">
-                {tier.description}
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {boundary.description}
               </p>
-
-              <Link
-                href={tier.ctaHref}
-                className={clsx(
-                  'mt-6 block w-full rounded-lg py-2.5 text-center text-sm font-medium transition-colors',
-                  tier.highlighted
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'border border-border text-foreground hover:bg-muted/50',
-                )}
-              >
-                {tier.cta}
-              </Link>
-
-              <ul className="mt-6 flex-1 space-y-3">
-                {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </article>
           ))}
         </div>
       </div>

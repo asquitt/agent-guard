@@ -99,7 +99,13 @@ def register(email: str, name: str, org: str) -> dict | None:
         "POST",
         "/api/v1/auth/register",
         201,
-        json={"email": email, "password": PASSWORD, "full_name": name, "org_name": org},
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "full_name": name,
+            "org_name": org,
+            "controlled_evaluation_accepted": True,
+        },
     )
     if r and r.status_code == 201:
         return r.json()

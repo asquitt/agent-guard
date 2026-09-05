@@ -56,6 +56,7 @@ def raise_for_status(response) -> None:
     if response.status_code < 400:
         return
 
+    body = None
     try:
         body = response.json()
         detail = body.get("detail", "") if isinstance(body, dict) else str(body)
@@ -65,6 +66,10 @@ def raise_for_status(response) -> None:
     if isinstance(detail, dict):
         error_type = detail.get("type", "")
         message = detail.get("error", str(detail))
+    elif isinstance(body, dict) and isinstance(body.get("error"), dict):
+        error = body["error"]
+        error_type = str(error.get("type", ""))
+        message = str(error.get("message", error))
     else:
         error_type = ""
         message = str(detail)
@@ -72,7 +77,7 @@ def raise_for_status(response) -> None:
     if response.status_code == 401:
         raise AuthenticationError(message)
     if response.status_code == 403:
-        if "detection" in error_type or "blocked" in message.lower():
+        if "detection" in error_type:
             raise DetectionBlockedError(message)
         raise AgentGuardError(message, status_code=403)
     if response.status_code == 422:
@@ -86,7 +91,7 @@ def raise_for_status(response) -> None:
                 pass
         raise RateLimitError(message, retry_after=retry_after)
     if response.status_code == 503:
-        if "circuit" in error_type or "circuit" in message.lower():
+        if "circuit" in error_type:
             raise CircuitOpenError(message)
         raise AgentGuardError(message, status_code=503)
 

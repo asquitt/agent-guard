@@ -183,8 +183,9 @@ export default function SiemSettingsPage() {
           <form onSubmit={handleSubmit} className="mb-6 space-y-4 rounded-lg border border-border bg-muted/50 p-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Name</label>
+                <label htmlFor="siem-name" className="mb-1 block text-xs font-medium text-foreground">Name</label>
                 <input
+                  id="siem-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Production Splunk"
@@ -193,8 +194,9 @@ export default function SiemSettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Format</label>
+                <label htmlFor="siem-format" className="mb-1 block text-xs font-medium text-foreground">Format</label>
                 <select
+                  id="siem-format"
                   value={format}
                   onChange={(e) => setFormat(e.target.value)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -205,8 +207,9 @@ export default function SiemSettingsPage() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-foreground">Endpoint URL</label>
+                <label htmlFor="siem-endpoint-url" className="mb-1 block text-xs font-medium text-foreground">Endpoint URL</label>
                 <input
+                  id="siem-endpoint-url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://your-siem.example.com/api/events"
@@ -215,10 +218,11 @@ export default function SiemSettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">
+                <label htmlFor="siem-authorization-header" className="mb-1 block text-xs font-medium text-foreground">
                   Authorization Header <span className="text-muted-foreground">(optional)</span>
                 </label>
                 <input
+                  id="siem-authorization-header"
                   value={authHeader}
                   onChange={(e) => setAuthHeader(e.target.value)}
                   placeholder="e.g. Splunk abc123-token"
@@ -226,8 +230,9 @@ export default function SiemSettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">Min Severity</label>
+                <label htmlFor="siem-min-severity" className="mb-1 block text-xs font-medium text-foreground">Min Severity</label>
                 <select
+                  id="siem-min-severity"
                   value={minSeverity}
                   onChange={(e) => setMinSeverity(e.target.value)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -237,8 +242,8 @@ export default function SiemSettingsPage() {
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-foreground">Event Types</label>
+              <fieldset className="sm:col-span-2">
+                <legend className="mb-1 block text-xs font-medium text-foreground">Event Types</legend>
                 <div className="flex flex-wrap gap-2">
                   {EVENT_TYPE_OPTIONS.map((evt) => (
                     <label key={evt} className="flex items-center gap-1.5 text-xs text-foreground">
@@ -258,7 +263,7 @@ export default function SiemSettingsPage() {
                     </label>
                   ))}
                 </div>
-              </div>
+              </fieldset>
             </div>
             <div className="flex justify-end gap-2">
               <button

@@ -1,14 +1,17 @@
 """CrewAI integration for AgentGuard.
 
-Wraps a CrewAI ``Crew`` so that every agent task execution, tool call,
-and LLM interaction is forwarded to AgentGuard for security monitoring.
+Wraps a CrewAI ``Crew`` to buffer selected workflow events and attempt
+best-effort delivery to an AgentGuard deployment.
 
 Usage::
 
     from crewai import Crew, Agent, Task
     from agentguard.integrations.crewai import AgentGuardCrewAIHandler
 
-    handler = AgentGuardCrewAIHandler(api_key="ag_live_...")
+    handler = AgentGuardCrewAIHandler(
+        api_key="ag_live_...",
+        base_url="http://localhost:8001",
+    )
     crew = Crew(agents=[...], tasks=[...])
     result = handler.run(crew)
 """
@@ -21,6 +24,8 @@ import uuid
 from typing import Any
 
 import httpx
+
+from agentguard._base_url import normalize_base_url
 
 logger = logging.getLogger("agentguard.crewai")
 
@@ -41,13 +46,13 @@ class AgentGuardCrewAIHandler:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
         metadata: dict[str, str] | None = None,
         timeout: float = 10.0,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self.metadata = metadata or {}
         self.timeout = timeout
@@ -65,9 +70,9 @@ class AgentGuardCrewAIHandler:
         }
         self._events.append(event)
 
-    def _flush(self) -> None:
+    def _flush(self, *, raise_on_error: bool = False) -> bool:
         if not self._events:
-            return
+            return True
         batch = list(self._events)
         self._events.clear()
         headers: dict[str, str] = {
@@ -77,14 +82,20 @@ class AgentGuardCrewAIHandler:
         if self.endpoint_id:
             headers["X-AgentGuard-Endpoint-Id"] = self.endpoint_id
         try:
-            httpx.post(
+            response = httpx.post(
                 f"{self.base_url}/api/v1/ingest/events",
                 json={"events": batch},
                 headers=headers,
                 timeout=self.timeout,
             )
+            response.raise_for_status()
+            return True
         except Exception:
+            self._events[0:0] = batch
             logger.debug("Failed to flush events to AgentGuard", exc_info=True)
+            if raise_on_error:
+                raise
+            return False
 
     def _on_task_start(self, task: Any, agent: Any) -> None:
         self._emit(
@@ -160,5 +171,5 @@ class AgentGuardCrewAIHandler:
         return result
 
     def manual_flush(self) -> None:
-        """Manually flush any buffered events."""
-        self._flush()
+        """Flush buffered events, raising on transport or HTTP failure."""
+        self._flush(raise_on_error=True)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { listDetectors, updateDetector } from '@/lib/api';
@@ -36,7 +36,7 @@ export default function DetectorsPage() {
     queryFn: () => listDetectors(),
   });
 
-  const detectors = data?.items ?? [];
+  const detectors = useMemo(() => data?.items ?? [], [data?.items]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggleOne = useCallback((id: string) => {

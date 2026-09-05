@@ -77,10 +77,11 @@ export function Header() {
           </button>
         )}
 
-      <div className="relative" ref={menuRef} onKeyDown={handleKeyDown}>
+      <div className="relative" ref={menuRef}>
         <button
           ref={triggerRef}
           onClick={() => setMenuOpen(!menuOpen)}
+          onKeyDown={handleKeyDown}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           aria-label="User menu"
@@ -93,7 +94,13 @@ export function Header() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg" role="menu" aria-label="User actions">
+          <div
+            className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg"
+            role="menu"
+            aria-label="User actions"
+            tabIndex={-1}
+            onKeyDown={handleKeyDown}
+          >
             <div className="border-b border-border px-4 py-2" role="none">
               <p className="text-sm font-medium text-foreground">{user?.name}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>

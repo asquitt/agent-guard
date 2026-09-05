@@ -376,7 +376,7 @@ def test_tenant_isolation():
 def test_error_cases():
     section("Error Cases")
     check("Invalid JWT", "GET", "/api/v1/incidents/", 401, headers={"Authorization": "Bearer garbage.token.here"})
-    check("No auth header", "GET", "/api/v1/incidents/", 403, headers={})
+    check("No auth header", "GET", "/api/v1/incidents/", 401, headers={})
     fake_id = str(uuid.uuid4())
     check("Nonexistent detector", "GET", f"/api/v1/detectors/{fake_id}", 404, token=S.get("t1"))
     check(

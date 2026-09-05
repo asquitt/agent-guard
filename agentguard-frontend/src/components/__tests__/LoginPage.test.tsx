@@ -11,8 +11,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
+  MfaRequiredError: class MfaRequiredError extends Error {
+    constructor(public mfaToken: string) {
+      super('MFA verification required');
+    }
+  },
   useAuth: () => ({
     login: mockLogin,
+    verifyMfaLogin: vi.fn(),
     isAuthenticated: false,
     isLoading: false,
     user: null,
@@ -34,13 +40,15 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it('renders register and SSO links', () => {
+  it('keeps existing-account access without inviting registration', () => {
     render(<LoginPage />);
 
-    expect(screen.getByRole('link', { name: /create one/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /view archive/i })).toHaveAttribute(
       'href',
-      '/register',
+      '/',
     );
+    expect(document.querySelector('a[href="/register"]')).toBeNull();
+    expect(screen.getByText(/no new accounts are offered/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /sign in with sso/i })).toHaveAttribute(
       'href',
       '/login/sso',

@@ -3,31 +3,30 @@ import Logo from '@/components/ui/Logo';
 
 const COLUMNS = [
   {
-    title: 'Product',
+    title: 'Archive',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Documentation', href: '/docs' },
-      { label: 'Changelog', href: '/changelog' },
-      { label: 'Status', href: '/status' },
+      { label: 'Disposition', href: '/#archive' },
+      { label: 'Archived Reference', href: '/docs' },
+      { label: 'Development History', href: '/changelog' },
+      { label: 'Generic Status Surface', href: '/status' },
     ],
   },
   {
-    title: 'Company',
+    title: 'Project',
     links: [
-      { label: 'About', href: '/about' },
-      { label: 'Blog', href: '/blog' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Contact', href: 'mailto:hello@agentguard.dev' },
+      { label: 'About the Archive', href: '/about' },
+      { label: 'Archived Blog', href: '/blog' },
+      { label: 'Archived Careers', href: '/careers' },
+      { label: 'Existing Account', href: '/login' },
     ],
   },
   {
-    title: 'Legal',
+    title: 'Reference',
     links: [
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Terms of Service', href: '/terms' },
-      { label: 'Security', href: '/security' },
-      { label: 'SOC 2', href: '/security#soc2' },
+      { label: 'Archived Data Notice', href: '/privacy' },
+      { label: 'Archived Terms Notice', href: '/terms' },
+      { label: 'Security Reference', href: '/security' },
+      { label: 'Assurance Caveats', href: '/security#assurance' },
     ],
   },
 ];
@@ -37,7 +36,6 @@ export default function Footer() {
     <footer className="border-t border-border px-6 py-12">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-          {/* Logo column */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <Logo className="h-7 w-7" />
@@ -46,51 +44,35 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              AI Agent Incident Response
+              Mothballed standalone project.
               <br />
-              for Financial Services.
+              Archived reference only.
             </p>
           </div>
 
-          {/* Link columns */}
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
               <h4 className="text-sm font-semibold text-foreground">
-                {col.title}
+                {column.title}
               </h4>
               <ul className="mt-3 space-y-2">
-                {col.links.map((link) => {
-                  const isExternal =
-                    link.href.startsWith('mailto:') ||
-                    link.href.startsWith('#');
-
-                  return (
-                    <li key={link.label}>
-                      {isExternal ? (
-                        <a
-                          href={link.href}
-                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          {link.label}
-                        </a>
-                      ) : (
-                        <Link
-                          href={link.href}
-                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                          {link.label}
-                        </Link>
-                      )}
-                    </li>
-                  );
-                })}
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
         </div>
 
         <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} AgentGuard. All rights reserved.
+          Archived AgentGuard source reference · {new Date().getFullYear()}
         </div>
       </div>
     </footer>

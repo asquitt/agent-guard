@@ -1,19 +1,26 @@
 /**
  * LangGraph.js callback handler for AgentGuard.
  *
- * Extends the LangChain handler with graph-level tracking for node/edge
- * transitions within LangGraph workflows.
+ * Buffers selected LangGraph callback events, including graph-level node
+ * transitions, for best-effort delivery to the AgentGuard ingest API.
  *
  * @example
  * ```ts
  * import { StateGraph } from '@langchain/langgraph';
- * import { AgentGuardLangGraphHandler } from 'agentguard/langgraph';
+ * import { AgentGuardLangGraphHandler } from 'agentguard';
  *
- * const handler = new AgentGuardLangGraphHandler({ apiKey: 'ag_live_...' });
+ * const handler = new AgentGuardLangGraphHandler({
+ *   apiKey: 'ag_live_...',
+ *   baseUrl: 'http://localhost:8001',
+ * });
  * const app = graph.compile();
  * const result = await app.invoke(inputs, { callbacks: [handler] });
  * ```
  */
+
+import { randomUUID } from 'node:crypto';
+
+import { normalizeBaseUrl } from './base-url';
 
 interface SDKEvent {
   type: string;
@@ -26,7 +33,7 @@ interface SDKEvent {
 
 export interface AgentGuardLangGraphOptions {
   apiKey: string;
-  baseUrl?: string;
+  baseUrl: string;
   endpointId?: string;
   metadata?: Record<string, string>;
   flushOnChainEnd?: boolean;
@@ -49,11 +56,11 @@ export class AgentGuardLangGraphHandler {
 
   constructor(options: AgentGuardLangGraphOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = (options.baseUrl ?? 'https://api.agentguard.app').replace(/\/$/, '');
+    this.baseUrl = normalizeBaseUrl(options.baseUrl);
     this.endpointId = options.endpointId;
     this.metadata = options.metadata ?? {};
     this.flushOnChainEnd = options.flushOnChainEnd ?? true;
-    this.sessionId = crypto.randomUUID();
+    this.sessionId = randomUUID();
   }
 
   private emit(partial: Record<string, unknown> & { type: string; run_id: string }): void {
@@ -71,8 +78,8 @@ export class AgentGuardLangGraphHandler {
     this.events.push(event);
   }
 
-  private async flush(): Promise<void> {
-    if (this.events.length === 0) return;
+  private async flush(raiseOnError = false): Promise<boolean> {
+    if (this.events.length === 0) return true;
     const batch = [...this.events];
     this.events = [];
     try {
@@ -83,14 +90,20 @@ export class AgentGuardLangGraphHandler {
       if (this.endpointId) {
         headers['X-AgentGuard-Endpoint-Id'] = this.endpointId;
       }
-      await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ events: batch }),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch {
-      // Non-blocking
+      if (!response.ok) {
+        throw new Error(`AgentGuard ingest failed with HTTP ${response.status}`);
+      }
+      return true;
+    } catch (error) {
+      this.events = [...batch, ...this.events];
+      if (raiseOnError) throw error;
+      return false;
     }
   }
 
@@ -273,6 +286,6 @@ export class AgentGuardLangGraphHandler {
 
   /** Manually flush any buffered events. */
   async manualFlush(): Promise<void> {
-    await this.flush();
+    await this.flush(true);
   }
 }

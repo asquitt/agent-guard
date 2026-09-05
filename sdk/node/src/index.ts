@@ -1,7 +1,7 @@
 /**
  * AgentGuard Node.js SDK
  *
- * AI agent security monitoring for financial services.
+ * Source preview client for an explicit AgentGuard deployment.
  */
 
 export { AgentGuardClient } from './client';
@@ -25,6 +25,7 @@ export type {
 
 export { wrapOpenAI, wrapAnthropic } from './wrap';
 export type { WrapOptions } from './wrap';
+export { normalizeBaseUrl } from './base-url';
 
 export { AgentGuardCallbackHandler } from './langchain';
 export type { AgentGuardCallbackOptions } from './langchain';

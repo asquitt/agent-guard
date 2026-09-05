@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     PASSWORD_MIN_LENGTH: int = 12
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 15
 
+    # Controlled evaluation enrollment (closed unless explicitly enabled)
+    REGISTRATION_ENABLED: bool = False
+    REGISTRATION_ACCESS_CODE: str = ""
+    LOCAL_REGISTRATION_BYPASS_ENABLED: bool = False
+    CONTROLLED_EVALUATION_ACCEPTANCE_VERSION: str = "controlled-evaluation-v1"
+
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
     ALLOWED_METHODS: List[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
@@ -60,6 +66,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "us-east-1"
+    GLOBAL_PROVIDER_CREDENTIAL_FALLBACK_ENABLED: bool = False
 
     # Internal LLM for detection (hallucination & compliance checks)
     DETECTION_LLM_PROVIDER: str = "openai"  # "openai" or "anthropic"

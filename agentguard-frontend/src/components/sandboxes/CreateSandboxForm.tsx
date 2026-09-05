@@ -94,8 +94,8 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Template Selector */}
         {templates && templates.length > 0 && (
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Start from Template</label>
+          <fieldset>
+            <legend className="mb-1 block text-xs text-muted-foreground">Start from Template</legend>
             <div className="flex flex-wrap gap-2">
               {templates.map((t) => (
                 <button key={t.id} type="button" onClick={() => applyTemplate(t)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50">
@@ -103,38 +103,38 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
         )}
 
         {/* Basic Info */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Name *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="my-agent-sandbox" />
+            <label htmlFor="sandbox-name" className="mb-1 block text-xs text-muted-foreground">Name *</label>
+            <input id="sandbox-name" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="my-agent-sandbox" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Description</label>
-            <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} placeholder="Optional description" />
+            <label htmlFor="sandbox-description" className="mb-1 block text-xs text-muted-foreground">Description</label>
+            <input id="sandbox-description" value={description} onChange={(e) => setDescription(e.target.value)} className={inputCls} placeholder="Optional description" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Image</label>
-            <input value={image} onChange={(e) => setImage(e.target.value)} className={inputCls} placeholder="agentguard/sandbox-base:latest" />
+            <label htmlFor="sandbox-image" className="mb-1 block text-xs text-muted-foreground">Image</label>
+            <input id="sandbox-image" value={image} onChange={(e) => setImage(e.target.value)} className={inputCls} placeholder="agentguard/sandbox-base:latest" />
           </div>
         </div>
 
         {/* Resource Limits */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Memory (MB)</label>
-            <input type="number" value={memoryMb} onChange={(e) => setMemoryMb(Number(e.target.value))} min={64} max={8192} className={inputCls} />
+            <label htmlFor="sandbox-memory" className="mb-1 block text-xs text-muted-foreground">Memory (MB)</label>
+            <input id="sandbox-memory" type="number" value={memoryMb} onChange={(e) => setMemoryMb(Number(e.target.value))} min={64} max={8192} className={inputCls} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Token Budget</label>
-            <input type="number" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} min={100} className={inputCls} />
+            <label htmlFor="sandbox-token-budget" className="mb-1 block text-xs text-muted-foreground">Token Budget</label>
+            <input id="sandbox-token-budget" type="number" value={maxTokens} onChange={(e) => setMaxTokens(Number(e.target.value))} min={100} className={inputCls} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Timeout (s)</label>
-            <input type="number" value={timeoutSeconds} onChange={(e) => setTimeoutSeconds(Number(e.target.value))} min={10} className={inputCls} />
+            <label htmlFor="sandbox-timeout" className="mb-1 block text-xs text-muted-foreground">Timeout (s)</label>
+            <input id="sandbox-timeout" type="number" value={timeoutSeconds} onChange={(e) => setTimeoutSeconds(Number(e.target.value))} min={10} className={inputCls} />
           </div>
         </div>
 
@@ -144,17 +144,17 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
             <input type="checkbox" checked={denyAllEgress} onChange={(e) => setDenyAllEgress(e.target.checked)} className="rounded" />
             Deny all egress (whitelist only)
           </label>
-          <textarea value={allowedHosts} onChange={(e) => setAllowedHosts(e.target.value)} rows={2} className={`mt-2 ${inputCls}`} placeholder="Allowed hosts (one per line)" />
+          <textarea aria-label="Allowed egress hosts" value={allowedHosts} onChange={(e) => setAllowedHosts(e.target.value)} rows={2} className={`mt-2 ${inputCls}`} placeholder="Allowed hosts (one per line)" />
         </div>
 
         {/* Capabilities */}
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Capabilities</label>
+        <fieldset>
+          <legend className="mb-1 block text-xs text-muted-foreground">Capabilities</legend>
           <div className="flex gap-2">
-            <select value={capType} onChange={(e) => setCapType(e.target.value)} className="rounded-lg border border-border bg-background px-2 py-2 text-sm">
+            <select aria-label="Capability type" value={capType} onChange={(e) => setCapType(e.target.value)} className="rounded-lg border border-border bg-background px-2 py-2 text-sm">
               {CAPABILITY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
-            <input value={capTarget} onChange={(e) => setCapTarget(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="Target (e.g. *.openai.com)" />
+            <input aria-label="Capability target" value={capTarget} onChange={(e) => setCapTarget(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="Target (e.g. *.openai.com)" />
             <button type="button" onClick={addCap} className="rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/80">Add</button>
           </div>
           {caps.length > 0 && (
@@ -162,19 +162,19 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
               {caps.map((c, i) => (
                 <span key={i} className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-2 py-1 text-xs text-blue-400">
                   {c.type}: {c.target}
-                  <button type="button" onClick={() => setCaps((p) => p.filter((_, j) => j !== i))} className="ml-1 text-blue-300 hover:text-white">&times;</button>
+                  <button type="button" aria-label={`Remove ${c.type} capability`} onClick={() => setCaps((p) => p.filter((_, j) => j !== i))} className="ml-1 text-blue-300 hover:text-white">&times;</button>
                 </span>
               ))}
             </div>
           )}
-        </div>
+        </fieldset>
 
         {/* Env Vars */}
-        <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Environment Variables</label>
+        <fieldset>
+          <legend className="mb-1 block text-xs text-muted-foreground">Environment Variables</legend>
           <div className="flex gap-2">
-            <input value={envKey} onChange={(e) => setEnvKey(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="KEY" />
-            <input value={envVal} onChange={(e) => setEnvVal(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="value" />
+            <input aria-label="Environment variable name" value={envKey} onChange={(e) => setEnvKey(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="KEY" />
+            <input aria-label="Environment variable value" value={envVal} onChange={(e) => setEnvVal(e.target.value)} className={`flex-1 ${inputCls}`} placeholder="value" />
             <button type="button" onClick={addEnvVar} className="rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/80">Add</button>
           </div>
           {envVars.length > 0 && (
@@ -182,12 +182,12 @@ export default function CreateSandboxForm({ onClose, onSuccess }: Props) {
               {envVars.map((ev, i) => (
                 <div key={i} className="flex items-center justify-between rounded bg-muted/50 px-2 py-1 text-xs">
                   <span className="font-mono text-foreground">{ev.key}=••••••</span>
-                  <button type="button" onClick={() => setEnvVars((p) => p.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">&times;</button>
+                  <button type="button" aria-label={`Remove ${ev.key} environment variable`} onClick={() => setEnvVars((p) => p.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300">&times;</button>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </fieldset>
 
         {/* Submit */}
         <div className="flex gap-2">

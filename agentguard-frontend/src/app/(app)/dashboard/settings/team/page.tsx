@@ -123,10 +123,11 @@ export default function TeamSettingsPage() {
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-foreground">
+                <label htmlFor="team-invite-email" className="mb-1 block text-xs font-medium text-foreground">
                   Email Address
                 </label>
                 <input
+                  id="team-invite-email"
                   type="email"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
@@ -136,10 +137,11 @@ export default function TeamSettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-foreground">
+                <label htmlFor="team-invite-role" className="mb-1 block text-xs font-medium text-foreground">
                   Role
                 </label>
                 <select
+                  id="team-invite-role"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"

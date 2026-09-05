@@ -4,6 +4,7 @@
 
 import re
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -42,10 +43,12 @@ async def register_user(
     password: str,
     full_name: str,
     org_name: str,
+    controlled_evaluation_accepted: Literal[True],
 ) -> tuple[User, Organization]:
-    """Register a new user and organization atomically.
+    """Stage a new user, organization, and acceptance in one transaction.
 
     First user in the org is always ADMIN.
+    The caller owns the transaction commit so its audit record is atomic too.
     Raises ValidationError if email or org slug already exists.
     """
     existing = await get_user_by_email(db, email)
@@ -57,10 +60,20 @@ async def register_user(
     if slug_result.scalar_one_or_none() is not None:
         raise ValidationError("Organization name already taken")
 
+    if controlled_evaluation_accepted is not True:
+        raise ValidationError("Controlled evaluation acceptance is required")
+
+    accepted_at = datetime.now(timezone.utc)
     org = Organization(  # type: ignore[call-arg]
         name=org_name,
         slug=slug,
         plan_tier=PlanTier.STARTER.value,
+        settings={
+            "controlled_evaluation_acceptance": {
+                "version": settings.CONTROLLED_EVALUATION_ACCEPTANCE_VERSION,
+                "accepted_at": accepted_at.isoformat(),
+            }
+        },
     )
     db.add(org)
     await db.flush()
@@ -72,31 +85,17 @@ async def register_user(
         role=UserRole.ADMIN.value,
         org_id=org.id,
         is_active=True,
-        password_changed_at=datetime.now(timezone.utc),
+        password_changed_at=accepted_at,
     )
     db.add(user)
-
     try:
-        await db.commit()
+        await db.flush()
     except IntegrityError:
         await db.rollback()
         raise ValidationError("Email or organization name already taken")
 
     await db.refresh(user)
     await db.refresh(org)
-
-    # Create Stripe customer (non-blocking — don't fail registration)
-    try:
-        from app.services.billing_service import get_or_create_stripe_customer
-
-        await get_or_create_stripe_customer(db, org)
-    except Exception:
-        import logging
-
-        logging.getLogger(__name__).warning(
-            "Failed to create Stripe customer for org %s — will retry later",
-            org.id,
-        )
 
     return user, org
 

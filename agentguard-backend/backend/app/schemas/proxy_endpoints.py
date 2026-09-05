@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import Provider
+from app.services.proxy_endpoint_security import sanitize_endpoint_config
 
 
 class ProxyEndpointCreateRequest(BaseModel):
@@ -49,6 +50,12 @@ class ProxyEndpointResponse(BaseModel):
     config: dict[str, Any] | None
     created_at: datetime = Field(serialization_alias="createdAt")
     updated_at: datetime = Field(serialization_alias="updatedAt")
+
+    @field_validator("config", mode="before")
+    @classmethod
+    def redact_legacy_credentials(cls, value: object) -> object:
+        """Never serialize provider credentials from legacy endpoint rows."""
+        return sanitize_endpoint_config(value)
 
 
 class ProxyEndpointListResponse(BaseModel):

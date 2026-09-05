@@ -98,10 +98,11 @@ export default function ApiKeysPage() {
         <div className="mb-4 rounded-xl border border-border bg-card p-4">
           <div className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="api-key-name" className="mb-1 block text-sm font-medium text-foreground">
                 Key name
               </label>
               <input
+                id="api-key-name"
                 type="text"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}

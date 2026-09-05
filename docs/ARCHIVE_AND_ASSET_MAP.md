@@ -32,9 +32,9 @@ Every extraction must:
 6. Run the destination repository's security, quality, and independent-review gates.
 7. Record the source commit and destination commit so later fixes can be traced.
 
-## Frozen and Unshipped Work
+## Frozen and Archived Work
 
-- `codex/p0-release-truth` contains unfinished local hardening work. It is preserved, not merged, not reviewed as a candidate, and not production evidence.
+- `codex/p0-release-truth` is limited to archive security and truth-maintenance work. Local tests, builds, and any reviewed merge from that lane are repository evidence only; they do not reactivate the standalone product or authorize deployment, provider traffic, registration, or customer use.
 - The historical standalone README contains unsupported product claims and is labeled reference-only.
 - The historical workflow files are outside `.github/workflows/` and cannot execute as GitHub Actions in this repository.
 

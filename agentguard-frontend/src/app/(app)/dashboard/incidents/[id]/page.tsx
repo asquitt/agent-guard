@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { DetectionTimeline } from '@/components/incidents/DetectionTimeline';
 import { ResponsePlaybook } from '@/components/incidents/ResponsePlaybook';
 import { QueryError } from '@/components/ui/QueryError';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useModalKeyboardBoundary } from '@/lib/dialog';
 
 export default function IncidentDetailPage() {
   const params = useParams();
@@ -57,6 +58,18 @@ export default function IncidentDetailPage() {
     },
   });
 
+  const [pendingAction, setPendingAction] = useState<'resolved' | 'dismissed' | null>(null);
+  const [quickStatusOpen, setQuickStatusOpen] = useState(false);
+
+  const handleQuickStatus = useCallback(() => {
+    if (incident) setQuickStatusOpen(true);
+  }, [incident]);
+
+  useEffect(() => {
+    window.addEventListener('keyboard:quick-status', handleQuickStatus);
+    return () => window.removeEventListener('keyboard:quick-status', handleQuickStatus);
+  }, [handleQuickStatus]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -77,17 +90,6 @@ export default function IncidentDetailPage() {
 
   const canResolve = incident.status === 'open' || incident.status === 'acknowledged';
   const canAcknowledge = incident.status === 'open';
-  const [pendingAction, setPendingAction] = useState<'resolved' | 'dismissed' | null>(null);
-  const [quickStatusOpen, setQuickStatusOpen] = useState(false);
-
-  const handleQuickStatus = useCallback(() => {
-    if (incident) setQuickStatusOpen(true);
-  }, [incident]);
-
-  useEffect(() => {
-    window.addEventListener('keyboard:quick-status', handleQuickStatus);
-    return () => window.removeEventListener('keyboard:quick-status', handleQuickStatus);
-  }, [handleQuickStatus]);
 
   return (
     <div>
@@ -472,10 +474,20 @@ function QuickStatusPicker({
   onSelect: (status: string) => void;
   onClose: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalKeyboardBoundary(dialogRef, onClose, open);
+
+  useEffect(() => {
+    if (!open) return;
+    const firstAvailable = dialogRef.current?.querySelector<HTMLButtonElement>(
+      'button:not([disabled])',
+    );
+    firstAvailable?.focus();
+  }, [open, currentStatus, loading]);
+
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { onClose(); return; }
       const match = STATUSES.find((s) => s.key === e.key);
       if (match && match.value !== currentStatus) {
         e.preventDefault();
@@ -489,14 +501,21 @@ function QuickStatusPicker({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center">
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
       <div
-        className="w-full max-w-xs rounded-xl border border-border bg-popover p-4 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        className="relative w-full max-w-xs rounded-xl border border-border bg-popover p-4 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Set incident status"
+        tabIndex={-1}
       >
         <p className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
           Set Status

@@ -2,7 +2,7 @@
 
 import re
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -28,6 +28,8 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=12, max_length=128)
     full_name: str = Field(min_length=1, max_length=255)
     org_name: str = Field(min_length=1, max_length=255)
+    controlled_evaluation_accepted: Literal[True]
+    access_code: str | None = Field(default=None, max_length=512)
 
     @field_validator("password")
     @classmethod
@@ -114,6 +116,7 @@ class MeResponse(BaseModel):
 
 class LoginResponse(BaseModel):
     """Login response — may include tokens or require MFA verification."""
+
     access_token: str | None = None
     refresh_token: str | None = None
     token_type: str = "bearer"

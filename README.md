@@ -37,4 +37,4 @@ Standalone development requires a new explicit portfolio decision and every gate
 
 - Former standalone README: [`docs/historical/STANDALONE_PRODUCT_README.md`](docs/historical/STANDALONE_PRODUCT_README.md)
 - Former GitHub workflows: [`docs/historical/workflows/`](docs/historical/workflows/)
-- Unfinished hardening lane: `codex/p0-release-truth` is preserved but unshipped and is not part of this disposition change.
+- Archive hardening lane: `codex/p0-release-truth` is limited to security and truth-maintenance work for dormant source. A reviewed merge from that lane does not reactivate the product or authorize deployment, provider traffic, registration, or customer use.

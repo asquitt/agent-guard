@@ -11,6 +11,7 @@ import type {
   PaginatedResponse,
 } from '@/types';
 import { apiFetch, buildQueryString } from './client';
+import { apiUrl } from './url';
 
 export async function listAuditLogs(
   filters: AuditLogFilters = {},
@@ -44,8 +45,7 @@ export async function getFrameworkScores(days = 30): Promise<ComplianceScores> {
 
 export async function downloadReport(reportId: string): Promise<Blob> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  const base = process.env.NEXT_PUBLIC_API_URL || '';
-  const res = await fetch(`${base}/api/v1/compliance/reports/${reportId}/download`, {
+  const res = await fetch(apiUrl(`/compliance/reports/${reportId}/download`), {
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
     },
@@ -56,8 +56,7 @@ export async function downloadReport(reportId: string): Promise<Blob> {
 
 export async function downloadCefExport(): Promise<Blob> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  const base = process.env.NEXT_PUBLIC_API_URL || '';
-  const res = await fetch(`${base}/api/v1/compliance/audit-logs/export/cef`, {
+  const res = await fetch(apiUrl('/compliance/audit-logs/export/cef'), {
     headers: {
       ...(token && { Authorization: `Bearer ${token}` }),
     },

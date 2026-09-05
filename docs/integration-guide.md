@@ -1,238 +1,226 @@
-# Integration Guide
+# Archived integration guide
 
-AgentGuard works as an LLM proxy. Your application sends requests to AgentGuard instead of directly to OpenAI/Anthropic. AgentGuard forwards them upstream, runs detection on the responses, and returns the result. No code changes beyond swapping the base URL.
+> **Mothballed:** AgentGuard is not authorized for standalone deployment or
+> provider traffic. This guide is preserved implementation reference only. Do
+> not install the SDKs, connect credentials, send provider requests, or incur
+> runtime/provider spend unless an explicit reactivation decision satisfies
+> every gate in [`PROJECT_STATUS.json`](../PROJECT_STATUS.json).
 
-## Authentication
+The archived implementation accepts provider-compatible requests at an
+explicit deployment, forwards them through an organization-owned endpoint, and
+records available detection evidence. A reactivation verification would use an
+explicit deployment origin:
 
-Every request to the proxy requires two things:
-
-1. **API Key** -- passed in the `Authorization` header as `Bearer ag_live_...`
-2. **Endpoint ID** (optional) -- passed in the `X-AgentGuard-Endpoint-Id` header. If omitted, the default endpoint for the provider is used.
-
+```bash
+export AGENTGUARD_BASE_URL=http://localhost:8001
+export AGENTGUARD_API_KEY=ag_live_replace_me
 ```
-Authorization: Bearer ag_live_abc123...
-X-AgentGuard-Endpoint-Id: 550e8400-e29b-41d4-a716-446655440000
+
+There is no implied hosted origin. The repository SDKs are source previews and
+are not claimed to be published to package registries.
+
+## Prerequisites
+
+Every proxy request needs:
+
+1. An organization API key in `Authorization: Bearer ...`.
+2. An active provider endpoint owned by the same organization.
+3. A provider credential configured in the AgentGuard deployment.
+4. For observable detection, an active detector and any required worker or
+   external model dependency.
+
+`X-AgentGuard-Endpoint-Id` is optional. When supplied, it selects that
+organization-owned endpoint; otherwise the backend resolves an active endpoint
+for the route's provider.
+
+## Python source preview
+
+Install from the repository root:
+
+```bash
+python -m pip install -e './sdk/python[openai,anthropic]'
 ```
 
-## Python -- OpenAI SDK
-
-The SDK wraps the OpenAI client to route traffic through AgentGuard automatically.
+### OpenAI
 
 ```python
-import openai
-import agentguard
+import os
 
-client = openai.OpenAI(api_key="sk-...")
-client = agentguard.wrap_openai(client, api_key="ag_live_...")
+import agentguard
+from openai import OpenAI
+
+agentguard_key = os.environ["AGENTGUARD_API_KEY"]
+client = OpenAI(api_key=agentguard_key)
+client = agentguard.wrap_openai(
+    client,
+    api_key=agentguard_key,
+    base_url=os.environ["AGENTGUARD_BASE_URL"],
+    # endpoint_id="organization-owned-endpoint-uuid",
+)
 
 response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Summarize our Q3 earnings."}]
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Hello"}],
 )
 print(response.choices[0].message.content)
 ```
 
-### Manual base_url override (no SDK)
+The wrapper base is `/api/v1/proxy/v1`; the OpenAI client appends
+`/chat/completions`, producing
+`/api/v1/proxy/v1/chat/completions` end to end.
+The wrapper uses the official client's `with_options` request configuration and
+returns a configured clone; it does not mutate the input client.
+
+Without the wrapper:
 
 ```python
-import openai
+import os
 
-client = openai.OpenAI(
-    api_key="ag_live_...",  # AgentGuard API key
-    base_url="https://proxy.agentguard.app/api/v1/proxy"
-)
+from openai import OpenAI
 
-# The client thinks it's talking to OpenAI, but traffic routes through AgentGuard
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}]
+client = OpenAI(
+    api_key=os.environ["AGENTGUARD_API_KEY"],
+    base_url=f'{os.environ["AGENTGUARD_BASE_URL"]}/api/v1/proxy/v1',
 )
 ```
 
-> Your upstream OpenAI key is stored in the proxy endpoint configuration in the dashboard. AgentGuard injects it before forwarding.
-
-## Python -- Anthropic SDK
+### Anthropic
 
 ```python
-import anthropic
-import agentguard
+import os
 
-client = anthropic.Anthropic(api_key="sk-ant-...")
-client = agentguard.wrap_anthropic(client, api_key="ag_live_...")
+import agentguard
+from anthropic import Anthropic
+
+agentguard_key = os.environ["AGENTGUARD_API_KEY"]
+client = Anthropic(api_key=agentguard_key)
+client = agentguard.wrap_anthropic(
+    client,
+    api_key=agentguard_key,
+    base_url=os.environ["AGENTGUARD_BASE_URL"],
+)
 
 response = client.messages.create(
     model="claude-sonnet-4-20250514",
-    max_tokens=1024,
-    messages=[{"role": "user", "content": "Draft a compliance report."}]
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Hello"}],
 )
 print(response.content[0].text)
 ```
 
-## Python -- Raw httpx/requests
+The wrapper base is `/api/v1/proxy`; the Anthropic client appends
+`/v1/messages`, producing `/api/v1/proxy/v1/messages` end to end.
+The same configured-clone contract applies to Anthropic.
 
-If you don't use an SDK, POST directly to the proxy endpoint.
+Use the wrapper for Anthropic so the organization key is carried in the Bearer
+header accepted by the AgentGuard backend. Setting only Anthropic's `api_key`
+sends `x-api-key`, which is not the proxy authentication contract.
 
-### OpenAI-compatible request
+## Node.js source preview
 
-```python
-import httpx
+Build and install from the checkout rather than assuming a registry release:
 
-response = httpx.post(
-    "https://proxy.agentguard.app/api/v1/proxy/v1/chat/completions",
-    headers={
-        "Authorization": "Bearer ag_live_...",
-        "Content-Type": "application/json",
-    },
-    json={
-        "model": "gpt-4",
-        "messages": [{"role": "user", "content": "Hello!"}]
-    },
-    timeout=120.0,
-)
-print(response.json())
+```bash
+cd sdk/node
+npm install
+npm run build
 ```
 
-### Anthropic-compatible request
-
-```python
-import httpx
-
-response = httpx.post(
-    "https://proxy.agentguard.app/api/v1/proxy/v1/messages",
-    headers={
-        "Authorization": "Bearer ag_live_...",
-        "Content-Type": "application/json",
-    },
-    json={
-        "model": "claude-sonnet-4-20250514",
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": "Hello!"}]
-    },
-    timeout=120.0,
-)
-print(response.json())
-```
-
-## Node.js -- OpenAI SDK
-
-Point the OpenAI client's `baseURL` at AgentGuard.
+### OpenAI
 
 ```typescript
-import OpenAI from "openai";
+import OpenAI from 'openai';
+import { wrapOpenAI } from 'agentguard';
 
-const client = new OpenAI({
-  apiKey: "ag_live_...",  // AgentGuard API key
-  baseURL: "https://proxy.agentguard.app/api/v1/proxy",
+const agentguardKey = process.env.AGENTGUARD_API_KEY!;
+const client = wrapOpenAI(new OpenAI({ apiKey: agentguardKey }), {
+  apiKey: agentguardKey,
+  baseUrl: process.env.AGENTGUARD_BASE_URL!,
 });
 
 const response = await client.chat.completions.create({
-  model: "gpt-4",
-  messages: [{ role: "user", content: "Hello!" }],
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: 'Hello' }],
 });
-
-console.log(response.choices[0].message.content);
 ```
 
-## Node.js -- Anthropic SDK
+### Anthropic
 
 ```typescript
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic from '@anthropic-ai/sdk';
+import { wrapAnthropic } from 'agentguard';
 
-const client = new Anthropic({
-  apiKey: "ag_live_...",  // AgentGuard API key
-  baseURL: "https://proxy.agentguard.app/api/v1/proxy",
+const agentguardKey = process.env.AGENTGUARD_API_KEY!;
+const client = wrapAnthropic(new Anthropic({ apiKey: agentguardKey }), {
+  apiKey: agentguardKey,
+  baseUrl: process.env.AGENTGUARD_BASE_URL!,
 });
 
 const response = await client.messages.create({
-  model: "claude-sonnet-4-20250514",
-  max_tokens: 1024,
-  messages: [{ role: "user", content: "Hello!" }],
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 256,
+  messages: [{ role: 'user', content: 'Hello' }],
 });
-
-console.log(response.content[0].text);
 ```
 
-## curl
+The Node wrappers use the official clients' `withOptions` request
+configuration and return configured clones. They attach the AgentGuard Bearer
+credential and optional metadata to the actual provider-SDK request.
 
-### OpenAI proxy
+Framework callbacks in both source previews use in-memory, best-effort event
+delivery rather than a durable queue. Automatic delivery failures retain the
+batch only while the process lives. Explicit `flush`/`manualFlush` calls surface
+HTTP and transport failures so callers can retry; process termination can still
+lose buffered events.
+
+## Raw HTTP
+
+OpenAI-compatible chat completion:
 
 ```bash
-curl -X POST https://proxy.agentguard.app/api/v1/proxy/v1/chat/completions \
-  -H "Authorization: Bearer ag_live_..." \
+curl --fail-with-body \
+  "$AGENTGUARD_BASE_URL/api/v1/proxy/v1/chat/completions" \
+  -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+  --data '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-### Anthropic proxy
+Anthropic-compatible message:
 
 ```bash
-curl -X POST https://proxy.agentguard.app/api/v1/proxy/v1/messages \
-  -H "Authorization: Bearer ag_live_..." \
+curl --fail-with-body \
+  "$AGENTGUARD_BASE_URL/api/v1/proxy/v1/messages" \
+  -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-sonnet-4-20250514",
-    "max_tokens": 1024,
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+  --data '{"model":"claude-sonnet-4-20250514","max_tokens":256,"messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-### With endpoint ID
+To select an endpoint explicitly, add:
 
-```bash
-curl -X POST https://proxy.agentguard.app/api/v1/proxy/v1/chat/completions \
-  -H "Authorization: Bearer ag_live_..." \
-  -H "X-AgentGuard-Endpoint-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+```text
+X-AgentGuard-Endpoint-Id: organization-owned-endpoint-uuid
 ```
 
-## Streaming
+## Detection and enforcement semantics
 
-Streaming works transparently. Set `"stream": true` in the request body and AgentGuard will pass through SSE events from the upstream provider. Async detectors run after the stream completes.
+Detector behavior is configuration- and execution-dependent:
 
-```python
-# OpenAI streaming
-stream = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}],
-    stream=True,
-)
-for chunk in stream:
-    print(chunk.choices[0].delta.content or "", end="")
-```
+| Condition | Current behavior |
+| --- | --- |
+| No matching active detector | Provider response can pass without an incident |
+| Synchronous `monitor` or `warn` result | Incident may be recorded; response passes through |
+| Synchronous `redact` result | Non-streaming response may be modified before return |
+| Synchronous `block` result | Non-streaming request returns `403` |
+| Asynchronous result | Runs after response and cannot retract it |
+| Streaming request | Stream is delivered before asynchronous analysis; monitor-only |
+| Detection timeout with degraded mode | Response may proceed while work is queued asynchronously |
 
-## Configuring Detectors
+Do not infer enforcement from an action-mode label alone. Verify a known
+trigger against the exact detector configuration and confirm the returned body,
+persisted request, organization ownership, and incident.
 
-Detectors are configured in the AgentGuard dashboard under **Settings > Detectors**. Five detection categories are available:
+The current proxy returns an OpenAI-style block body from the shared handler:
 
-| Category | What it detects |
-|----------|----------------|
-| `hallucination` | Factual inconsistencies in LLM output |
-| `pii_leak` | Personal data exposure (SSN, email, phone, etc.) |
-| `compliance` | Regulatory violations (SOX, PCI-DSS, FFIEC) |
-| `cost_anomaly` | Unusual token consumption patterns |
-| `loop` | Repeated outputs indicating a stuck agent |
-
-Each detector has an **action mode** that controls what happens when a detection fires:
-
-| Mode | Behavior |
-|------|----------|
-| `monitor` | Log the incident, pass the response through |
-| `warn` | Log the incident, add a warning header |
-| `redact` | Redact sensitive content from the response |
-| `block` | Block the response entirely (returns 403) |
-
-## Handling Blocked Responses
-
-When a detector blocks a response, you'll receive a `403` with this format:
-
-**OpenAI proxy:**
 ```json
 {
   "error": {
@@ -242,35 +230,21 @@ When a detector blocks a response, you'll receive a `403` with this format:
 }
 ```
 
-**Anthropic proxy:**
-```json
-{
-  "type": "error",
-  "error": {
-    "type": "detection_blocked",
-    "message": "Request blocked by security policy"
-  }
-}
-```
+Provider SDKs surface non-2xx responses through their normal error types. Do
+not match human-readable strings as an authorization or policy decision; inspect
+the status and structured error payload.
 
-Handle this in your application:
+## Persistence and data handling
 
-```python
-from openai import OpenAIError
+The backend can retain proxy request and response content and persist incidents
+in PostgreSQL. Use synthetic inputs until your deployment's retention,
+redaction, encryption, backup, and role boundaries have been independently
+validated. Dashboard visibility is separate evidence from provider success.
 
-try:
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": "..."}]
-    )
-except OpenAIError as e:
-    if "detection_blocked" in str(e):
-        print("Response blocked by AgentGuard security policy")
-    else:
-        raise
-```
+Compliance categories and framework mappings support review workflows. They do
+not prove that a deployment or organization satisfies a regulatory framework.
 
-## Next Steps
+## Next steps
 
-- [API Reference](./api-reference.md) -- Full endpoint documentation
-- [Quick Start](./quickstart.md) -- 5-minute setup
+- [Quick start](./quickstart.md)
+- [API reference](./api-reference.md)

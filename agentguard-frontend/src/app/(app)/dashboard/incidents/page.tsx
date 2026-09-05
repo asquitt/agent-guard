@@ -86,7 +86,7 @@ function IncidentsContent() {
     },
   });
 
-  const rawIncidents = data?.items ?? [];
+  const rawIncidents = useMemo(() => data?.items ?? [], [data?.items]);
 
   const incidents = useMemo(() => {
     const sorted = [...rawIncidents];
@@ -265,7 +265,6 @@ function IncidentsContent() {
               className="inline-flex items-center gap-1"
             >
               <input
-                autoFocus
                 value={viewName}
                 onChange={(e) => setViewName(e.target.value)}
                 placeholder="View name..."
@@ -535,4 +534,3 @@ function SortableHeader({
     </th>
   );
 }
-

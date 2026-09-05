@@ -81,10 +81,11 @@ export default function AlertsPage() {
           <div className="space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="mb-1 block text-sm font-medium text-foreground">
+                <label htmlFor="alert-destination-name" className="mb-1 block text-sm font-medium text-foreground">
                   Name
                 </label>
                 <input
+                  id="alert-destination-name"
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -93,10 +94,11 @@ export default function AlertsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">
+                <label htmlFor="alert-destination-type" className="mb-1 block text-sm font-medium text-foreground">
                   Type
                 </label>
                 <select
+                  id="alert-destination-type"
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
                   className="rounded-lg border border-border px-3 py-2 text-sm"
@@ -109,10 +111,11 @@ export default function AlertsPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">
+              <label htmlFor="alert-webhook-url" className="mb-1 block text-sm font-medium text-foreground">
                 Webhook URL
               </label>
               <input
+                id="alert-webhook-url"
                 type="url"
                 value={newWebhookUrl}
                 onChange={(e) => setNewWebhookUrl(e.target.value)}

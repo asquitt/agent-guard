@@ -1,19 +1,26 @@
 /**
  * LangChain.js callback handler for AgentGuard.
  *
- * Captures LLM calls, chain runs, tool invocations, and agent actions,
- * then forwards them through the AgentGuard ingest API.
+ * Buffers selected LangChain callback events and attempts best-effort delivery
+ * to the AgentGuard ingest API.
  *
  * @example
  * ```ts
  * import { ChatOpenAI } from '@langchain/openai';
- * import { AgentGuardCallbackHandler } from 'agentguard/langchain';
+ * import { AgentGuardCallbackHandler } from 'agentguard';
  *
- * const handler = new AgentGuardCallbackHandler({ apiKey: 'ag_live_...' });
+ * const handler = new AgentGuardCallbackHandler({
+ *   apiKey: 'ag_live_...',
+ *   baseUrl: 'http://localhost:8001',
+ * });
  * const llm = new ChatOpenAI({ callbacks: [handler] });
  * await llm.invoke('Summarize Q4 financials');
  * ```
  */
+
+import { randomUUID } from 'node:crypto';
+
+import { normalizeBaseUrl } from './base-url';
 
 interface SDKEvent {
   type: string;
@@ -26,7 +33,7 @@ interface SDKEvent {
 
 export interface AgentGuardCallbackOptions {
   apiKey: string;
-  baseUrl?: string;
+  baseUrl: string;
   endpointId?: string;
   metadata?: Record<string, string>;
   flushOnChainEnd?: boolean;
@@ -48,11 +55,11 @@ export class AgentGuardCallbackHandler {
 
   constructor(options: AgentGuardCallbackOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = (options.baseUrl ?? 'https://api.agentguard.app').replace(/\/$/, '');
+    this.baseUrl = normalizeBaseUrl(options.baseUrl);
     this.endpointId = options.endpointId;
     this.metadata = options.metadata ?? {};
     this.flushOnChainEnd = options.flushOnChainEnd ?? true;
-    this.sessionId = crypto.randomUUID();
+    this.sessionId = randomUUID();
   }
 
   private emit(partial: Record<string, unknown> & { type: string; run_id: string }): void {
@@ -67,8 +74,8 @@ export class AgentGuardCallbackHandler {
     this.events.push(event);
   }
 
-  private async flush(): Promise<void> {
-    if (this.events.length === 0) return;
+  private async flush(raiseOnError = false): Promise<boolean> {
+    if (this.events.length === 0) return true;
     const batch = [...this.events];
     this.events = [];
     try {
@@ -79,14 +86,20 @@ export class AgentGuardCallbackHandler {
       if (this.endpointId) {
         headers['X-AgentGuard-Endpoint-Id'] = this.endpointId;
       }
-      await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ events: batch }),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch {
-      // Non-blocking: don't break the user's chain
+      if (!response.ok) {
+        throw new Error(`AgentGuard ingest failed with HTTP ${response.status}`);
+      }
+      return true;
+    } catch (error) {
+      this.events = [...batch, ...this.events];
+      if (raiseOnError) throw error;
+      return false;
     }
   }
 
@@ -250,6 +263,6 @@ export class AgentGuardCallbackHandler {
 
   /** Manually flush any buffered events. */
   async manualFlush(): Promise<void> {
-    await this.flush();
+    await this.flush(true);
   }
 }

@@ -12,6 +12,8 @@ from app.core.config import settings
 from app.core.exceptions import NotFoundError, ProxyError
 from app.models.proxy import ProxyEndpoint, ProxyRequest
 from app.services.providers.pricing import calculate_cost
+from app.services.proxy_endpoint_security import build_provider_target_url
+from app.services.proxy_endpoint_security import validate_provider_target as validate_target
 
 MAX_BODY_SIZE = 512 * 1024  # 512 KB
 
@@ -131,33 +133,27 @@ def truncate_body(body: str) -> str:
 
 
 def get_upstream_api_key(endpoint: ProxyEndpoint) -> str:
-    """Get upstream API key from endpoint config, fall back to global.
-
-    Priority:
-    1. endpoint.config["api_key"] if set
-    2. Global key for the endpoint's provider
-    """
-    config = endpoint.config  # type: ignore[union-attr]
-    if isinstance(config, dict):
-        key = config.get("api_key", "")
-        if key:
-            return str(key)
-
+    """Resolve a provider key only for an explicitly gated local evaluation."""
     provider = str(endpoint.provider)  # type: ignore[union-attr]
+    environment = settings.ENVIRONMENT.strip().lower()
+    fallback_allowed = environment in {"development", "test"} and settings.GLOBAL_PROVIDER_CREDENTIAL_FALLBACK_ENABLED
     settings_key = _PROVIDER_KEY_MAP.get(provider)
-    if settings_key:
-        val = getattr(settings, settings_key, "")
-        if val:
-            return str(val)
-        raise ProxyError(f"No {provider} API key configured (set {settings_key})")
+    if fallback_allowed and settings_key:
+        value = getattr(settings, settings_key, "")
+        if value:
+            return str(value)
+    raise ProxyError(f"No approved endpoint credential is configured for provider '{provider}'")
 
-    # Fallback for unknown providers
-    if settings.OPENAI_API_KEY:
-        return settings.OPENAI_API_KEY
-    raise ProxyError(f"No API key configured for provider '{provider}'")
+
+def validate_provider_target(provider: str, target_url: str) -> str:
+    """Validate a provider target against the canonical egress allowlist."""
+    return validate_target(provider, target_url)
 
 
 def build_target_url(endpoint: ProxyEndpoint, path: str) -> str:
-    """Build the full upstream URL from endpoint target_url + path."""
-    base = str(endpoint.target_url).rstrip("/")  # type: ignore[union-attr]
-    return f"{base}{path}"
+    """Build a full provider URL only from allowlisted host and path parts."""
+    return build_provider_target_url(
+        str(endpoint.provider),  # type: ignore[union-attr]
+        str(endpoint.target_url),  # type: ignore[union-attr]
+        path,
+    )

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.models.proxy import ProxyEndpoint
+from app.services.proxy_endpoint_security import validate_endpoint_config, validate_provider_target
 
 
 async def create_proxy_endpoint(
@@ -21,12 +22,14 @@ async def create_proxy_endpoint(
     config: dict[str, Any] | None = None,
 ) -> ProxyEndpoint:
     """Create a new proxy endpoint configuration."""
+    canonical_config = validate_endpoint_config(config)
+    normalized_target = validate_provider_target(provider, target_url)
     endpoint = ProxyEndpoint(
         org_id=org_id,
         name=name,
         provider=provider,
-        target_url=target_url,
-        config=config or {},
+        target_url=normalized_target,
+        config=canonical_config,
         is_active=True,
     )
     db.add(endpoint)
@@ -80,14 +83,21 @@ async def update_proxy_endpoint(
 ) -> ProxyEndpoint:
     """Update proxy endpoint fields."""
     endpoint = await get_proxy_endpoint(db, org_id, endpoint_id)
+    normalized_target = None
+    if target_url is not None:
+        normalized_target = validate_provider_target(str(endpoint.provider), target_url)
+    canonical_config = None
+    if config is not None:
+        canonical_config = validate_endpoint_config(config)
+
     if name is not None:
         endpoint.name = name  # type: ignore[assignment]
-    if target_url is not None:
-        endpoint.target_url = target_url  # type: ignore[assignment]
+    if normalized_target is not None:
+        endpoint.target_url = normalized_target  # type: ignore[assignment]
     if is_active is not None:
         endpoint.is_active = is_active  # type: ignore[assignment]
-    if config is not None:
-        endpoint.config = config  # type: ignore[assignment]
+    if canonical_config is not None:
+        endpoint.config = canonical_config  # type: ignore[assignment]
     await db.commit()
     await db.refresh(endpoint)
     return endpoint
