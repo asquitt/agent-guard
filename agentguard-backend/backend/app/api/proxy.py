@@ -5,13 +5,16 @@ import ipaddress
 import json
 import logging
 import time
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 from typing import Any
 from uuid import UUID
 
+import anyio
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.types import Receive, Scope, Send
 
 from app.core.circuit_breaker import get_breaker
 from app.core.config import settings
@@ -45,6 +48,37 @@ async def get_http_client() -> httpx.AsyncClient:
             follow_redirects=False,
         )
     return _http_client
+
+
+class _ManagedStreamingResponse(StreamingResponse):
+    """Finalize resources even when downstream delivery stops before iteration."""
+
+    def __init__(
+        self,
+        content: AsyncIterable[str | bytes],
+        *,
+        finalize: Callable[[], Awaitable[None]],
+        status_code: int,
+        media_type: str,
+        headers: dict[str, str],
+    ) -> None:
+        super().__init__(content, status_code=status_code, media_type=media_type, headers=headers)
+        self._finalize = finalize
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        response_error: BaseException | None = None
+        try:
+            await super().__call__(scope, receive, send)
+        except BaseException as exc:
+            response_error = exc
+            raise
+        finally:
+            try:
+                await self._finalize()
+            except Exception:
+                if response_error is None:
+                    raise
+                logger.exception("Failed to finalize upstream streaming response")
 
 
 def _ip_in_allowlist(client_ip: str, allowlist: list[str]) -> bool:
@@ -470,14 +504,48 @@ async def _handle_streaming(
             },
         )
 
-    async def stream_generator():
-        accumulated_content = ""
-        input_tokens: int | None = None
-        output_tokens: int | None = None
-        model_name: str | None = None
-        resp_status = response.status_code
-        response_summary = ""
-        stream_completed = False
+    accumulated_content = ""
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    model_name: str | None = None
+    resp_status = response.status_code
+    response_summary = ""
+    stream_completed = False
+    finalized = False
+    finalize_lock = asyncio.Lock()
+
+    async def finalize_stream() -> None:
+        nonlocal finalized, resp_status, response_summary
+
+        with anyio.CancelScope(shield=True):
+            async with finalize_lock:
+                if finalized:
+                    return
+                finalized = True
+
+                if not stream_completed and resp_status == 200:
+                    resp_status = 499
+                    response_summary = '{"error":"downstream stream closed"}'
+
+                await close_upstream()
+                latency_ms = int((time.time() - start_time) * 1000)
+                await proxy_service.update_request_log(
+                    db,
+                    proxy_req,
+                    resp_status,
+                    proxy_service.truncate_body(response_summary),
+                    latency_ms,
+                    input_tokens,
+                    output_tokens,
+                    model_name,
+                )
+
+                if resp_status == 200 and stream_completed:
+                    await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
+
+    async def stream_generator() -> AsyncIterator[str | bytes]:
+        nonlocal accumulated_content, input_tokens, model_name, output_tokens
+        nonlocal resp_status, response_summary, stream_completed
 
         try:
             if response.status_code != 200:
@@ -522,29 +590,10 @@ async def _handle_streaming(
             yield 'data: {"error":"upstream transport failure"}\n\n'
             resp_status = 502
             response_summary = '{"error":"upstream transport failure"}'
-        finally:
-            if not stream_completed and resp_status == 200:
-                resp_status = 499
-                response_summary = '{"error":"downstream stream closed"}'
 
-            await close_upstream()
-            latency_ms = int((time.time() - start_time) * 1000)
-            await proxy_service.update_request_log(
-                db,
-                proxy_req,
-                resp_status,
-                proxy_service.truncate_body(response_summary),
-                latency_ms,
-                input_tokens,
-                output_tokens,
-                model_name,
-            )
-
-            if resp_status == 200 and stream_completed:
-                await detection_pipeline.queue_async_detectors(db, org_id, UUID(str(proxy_req.id)))
-
-    return StreamingResponse(
+    return _ManagedStreamingResponse(
         stream_generator(),
+        finalize=finalize_stream,
         status_code=response.status_code,
         media_type="text/event-stream",
         headers={
