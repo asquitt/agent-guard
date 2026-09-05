@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,12 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from typing import Any
-
 from app.models.enums import ROLE_PERMISSIONS, UserRole
 from app.models.user import Organization, User
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -26,7 +25,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Get current authenticated user from JWT token.
@@ -34,13 +33,16 @@ async def get_current_user(
     Validates access token type, queries User from DB,
     and checks is_active status.
     """
-    token = credentials.credentials
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    if credentials is None:
+        raise credentials_exception
+
+    token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         user_id: str | None = payload.get("sub")
@@ -137,7 +139,7 @@ def get_client_ip(request: Request) -> str:
 
 
 async def get_current_org_from_api_key(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> Organization:
     """Authenticate via API key (for proxy routes).
@@ -147,6 +149,13 @@ async def get_current_org_from_api_key(
     Updates last_used_at on each use.
     """
     from app.services import api_key_service
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     token = credentials.credentials
     if not token.startswith("ag_live_"):

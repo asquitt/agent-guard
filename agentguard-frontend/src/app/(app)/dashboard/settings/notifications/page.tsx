@@ -99,17 +99,20 @@ export default function NotificationsPage() {
           onChange={(v) => update({ email_enabled: v })}
         />
         {prefs.email_enabled && (
-          <div className="mt-4">
-            <label className="mb-2 block text-xs font-medium text-foreground">
+          <fieldset className="mt-4">
+            <legend className="mb-2 block text-xs font-medium text-foreground">
               Digest Frequency
-            </label>
+            </legend>
             <div className="space-y-2">
               {DIGEST_OPTIONS.map((opt) => (
                 <label
                   key={opt.value}
+                  htmlFor={`digest-${opt.value}`}
+                  aria-label={opt.label}
                   className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
                 >
                   <input
+                    id={`digest-${opt.value}`}
                     type="radio"
                     name="digest"
                     value={opt.value}
@@ -117,14 +120,14 @@ export default function NotificationsPage() {
                     onChange={() => update({ email_digest: opt.value })}
                     className="accent-primary"
                   />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{opt.label}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">{opt.label}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+                  </span>
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
         )}
       </Section>
 
@@ -137,9 +140,12 @@ export default function NotificationsPage() {
           {SEVERITY_OPTIONS.map((opt) => (
             <label
               key={opt.value}
+              htmlFor={`severity-${opt.value}`}
+              aria-label={opt.label}
               className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
             >
               <input
+                id={`severity-${opt.value}`}
                 type="radio"
                 name="severity"
                 value={opt.value}
@@ -147,10 +153,10 @@ export default function NotificationsPage() {
                 onChange={() => update({ min_severity: opt.value })}
                 className="accent-primary"
               />
-              <div>
-                <p className="text-sm font-medium text-foreground">{opt.label}</p>
-                <p className="text-xs text-muted-foreground">{opt.desc}</p>
-              </div>
+              <span>
+                <span className="block text-sm font-medium text-foreground">{opt.label}</span>
+                <span className="block text-xs text-muted-foreground">{opt.desc}</span>
+              </span>
             </label>
           ))}
         </div>
@@ -227,10 +233,11 @@ export default function NotificationsPage() {
         {prefs.quiet_hours_enabled && (
           <div className="mt-4 flex items-center gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">
+              <label htmlFor="quiet-hours-start" className="mb-1 block text-xs font-medium text-foreground">
                 Start (UTC)
               </label>
               <input
+                id="quiet-hours-start"
                 type="time"
                 value={prefs.quiet_hours_start}
                 onChange={(e) => update({ quiet_hours_start: e.target.value })}
@@ -239,10 +246,11 @@ export default function NotificationsPage() {
             </div>
             <span className="mt-5 text-sm text-muted-foreground">to</span>
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">
+              <label htmlFor="quiet-hours-end" className="mb-1 block text-xs font-medium text-foreground">
                 End (UTC)
               </label>
               <input
+                id="quiet-hours-end"
                 type="time"
                 value={prefs.quiet_hours_end}
                 onChange={(e) => update({ quiet_hours_end: e.target.value })}

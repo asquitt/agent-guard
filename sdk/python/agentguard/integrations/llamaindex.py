@@ -1,14 +1,17 @@
 """LlamaIndex callback handler for AgentGuard.
 
-Captures LLM calls, query engine events, retrieval, and embedding operations,
-then forwards them to the AgentGuard ingest API.
+Buffers selected LlamaIndex callback events and attempts best-effort delivery
+to the AgentGuard ingest API.
 
 Usage::
 
     from llama_index.core import Settings
     from agentguard.integrations.llamaindex import AgentGuardCallbackHandler
 
-    handler = AgentGuardCallbackHandler(api_key="ag_live_...")
+    handler = AgentGuardCallbackHandler(
+        api_key="ag_live_...",
+        base_url="http://localhost:8001",
+    )
     Settings.callback_manager.add_handler(handler)
 """
 
@@ -20,6 +23,8 @@ import uuid
 from typing import Any
 
 import httpx
+
+from agentguard._base_url import normalize_base_url
 
 logger = logging.getLogger("agentguard.llamaindex")
 
@@ -50,12 +55,12 @@ class AgentGuardCallbackHandler:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self.metadata = metadata or {}
 
@@ -82,15 +87,23 @@ class AgentGuardCallbackHandler:
         event["timestamp"] = time.time()
         self._events.append(event)
 
-    def _flush(self) -> None:
+    def _flush(self, *, raise_on_error: bool = False) -> bool:
         if not self._events:
-            return
+            return True
         batch = self._events[:]
         self._events.clear()
         try:
-            self._http.post("/api/v1/ingest/events", json={"events": batch})
+            response = self._http.post(
+                "/api/v1/ingest/events", json={"events": batch}
+            )
+            response.raise_for_status()
+            return True
         except Exception as exc:
+            self._events[0:0] = batch
             logger.debug("Failed to flush events to AgentGuard: %s", exc)
+            if raise_on_error:
+                raise
+            return False
 
     # ── Trace-level callbacks ───────────────────────────────────
 
@@ -197,7 +210,8 @@ class AgentGuardCallbackHandler:
     # ── Lifecycle ───────────────────────────────────────────────
 
     def flush(self) -> None:
-        self._flush()
+        """Flush buffered events, raising on transport or HTTP failure."""
+        self._flush(raise_on_error=True)
 
     def close(self) -> None:
         self._flush()

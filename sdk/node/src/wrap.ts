@@ -2,11 +2,13 @@
  * Wrap OpenAI and Anthropic clients to route through AgentGuard proxy.
  */
 
+import { normalizeBaseUrl } from './base-url';
+
 export interface WrapOptions {
   /** AgentGuard API key (ag_live_...) */
   apiKey: string;
-  /** Custom AgentGuard proxy URL */
-  baseUrl?: string;
+  /** Base URL of the AgentGuard deployment (for example, http://localhost:8001) */
+  baseUrl: string;
   /** Proxy endpoint UUID */
   endpointId?: string;
   /** Custom metadata sent as X-AgentGuard-* headers */
@@ -14,16 +16,18 @@ export interface WrapOptions {
 }
 
 /**
- * Wrap an OpenAI client to route all requests through AgentGuard.
+ * Configure an OpenAI client clone for AgentGuard's tracked OpenAI routes.
  *
  * @example
  * ```ts
  * import OpenAI from 'openai';
  * import { wrapOpenAI } from 'agentguard';
  *
- * const client = new OpenAI({ apiKey: 'sk-...' });
+ * const agentguardKey = 'ag_live_...';
+ * const client = new OpenAI({ apiKey: agentguardKey });
  * const wrapped = wrapOpenAI(client, {
- *   apiKey: 'ag_live_...',
+ *   apiKey: agentguardKey,
+ *   baseUrl: 'http://localhost:8001',
  *   metadata: { userId: 'u_123', agentName: 'support-bot' },
  * });
  * ```
@@ -33,31 +37,24 @@ export function wrapOpenAI<T extends Record<string, any>>(
   client: T,
   options: WrapOptions,
 ): T {
-  const base = (options.baseUrl ?? 'https://api.agentguard.app').replace(
-    /\/$/,
-    '',
-  );
-  const proxyUrl = `${base}/api/v1/proxy/openai/v1`;
-
-  // OpenAI SDK stores base URL
-  (client as Record<string, unknown>).baseURL = proxyUrl;
-
-  const headers = buildHeaders(options);
-  applyHeaders(client, headers);
-  return client;
+  const base = normalizeBaseUrl(options.baseUrl);
+  const proxyUrl = `${base}/api/v1/proxy/v1`;
+  return configureClient(client, options, proxyUrl);
 }
 
 /**
- * Wrap an Anthropic client to route all requests through AgentGuard.
+ * Configure an Anthropic client clone for AgentGuard's tracked messages route.
  *
  * @example
  * ```ts
  * import Anthropic from '@anthropic-ai/sdk';
  * import { wrapAnthropic } from 'agentguard';
  *
- * const client = new Anthropic({ apiKey: 'sk-ant-...' });
+ * const agentguardKey = 'ag_live_...';
+ * const client = new Anthropic({ apiKey: agentguardKey });
  * const wrapped = wrapAnthropic(client, {
- *   apiKey: 'ag_live_...',
+ *   apiKey: agentguardKey,
+ *   baseUrl: 'http://localhost:8001',
  *   metadata: { sessionId: 'sess_456' },
  * });
  * ```
@@ -67,18 +64,9 @@ export function wrapAnthropic<T extends Record<string, any>>(
   client: T,
   options: WrapOptions,
 ): T {
-  const base = (options.baseUrl ?? 'https://api.agentguard.app').replace(
-    /\/$/,
-    '',
-  );
-  const proxyUrl = `${base}/api/v1/proxy/anthropic/v1`;
-
-  // Anthropic SDK stores base URL differently
-  (client as Record<string, unknown>)._baseURL = proxyUrl;
-
-  const headers = buildHeaders(options);
-  applyHeaders(client, headers);
-  return client;
+  const base = normalizeBaseUrl(options.baseUrl);
+  const proxyUrl = `${base}/api/v1/proxy`;
+  return configureClient(client, options, proxyUrl);
 }
 
 function buildHeaders(options: WrapOptions): Record<string, string> {
@@ -96,10 +84,29 @@ function buildHeaders(options: WrapOptions): Record<string, string> {
   return h;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyHeaders(client: Record<string, any>, headers: Record<string, string>): void {
-  if (!client._customHeaders || typeof client._customHeaders !== 'object') {
-    client._customHeaders = {};
+interface ProviderCloneOptions {
+  apiKey: string;
+  baseURL: string;
+  defaultHeaders: Record<string, string>;
+}
+
+function configureClient<T>(
+  client: T,
+  options: WrapOptions,
+  proxyUrl: string,
+): T {
+  const configurable = client as {
+    withOptions?: (options: ProviderCloneOptions) => T;
+  };
+  if (typeof configurable.withOptions !== 'function') {
+    throw new TypeError(
+      'AgentGuard wrappers require an official OpenAI or Anthropic client with withOptions()',
+    );
   }
-  Object.assign(client._customHeaders as Record<string, string>, headers);
+
+  return configurable.withOptions({
+    apiKey: options.apiKey,
+    baseURL: proxyUrl,
+    defaultHeaders: buildHeaders(options),
+  });
 }

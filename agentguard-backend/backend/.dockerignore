@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+htmlcov/
+tests/
+*.pyc
+*.pyo
+*.log
+SECURITY_AUDIT.md

@@ -54,19 +54,48 @@ export class CircuitOpenError extends AgentGuardError {
  * Throw the appropriate typed error for a non-OK response.
  */
 export function raiseForStatus(status: number, body: string): never {
+  const { message, type } = parseErrorBody(body);
   switch (status) {
     case 401:
-      throw new AuthenticationError(body || undefined);
+      throw new AuthenticationError(message || undefined);
     case 403:
-      throw new DetectionBlockedError(body || undefined);
+      if (type.includes('detection')) {
+        throw new DetectionBlockedError(message || undefined);
+      }
+      throw new AgentGuardError(message || 'Forbidden', 403);
     case 422:
-      throw new ValidationError(body || undefined);
+      throw new ValidationError(message || undefined);
     case 429: {
-      throw new RateLimitError(undefined, body || undefined);
+      throw new RateLimitError(undefined, message || undefined);
     }
     case 503:
-      throw new CircuitOpenError(body || undefined);
+      if (type.includes('circuit')) {
+        throw new CircuitOpenError(message || undefined);
+      }
+      throw new AgentGuardError(message || 'Service unavailable', 503);
     default:
-      throw new AgentGuardError(`HTTP ${status}: ${body}`, status);
+      throw new AgentGuardError(`HTTP ${status}: ${message || body}`, status);
   }
+}
+
+function parseErrorBody(body: string): { message: string; type: string } {
+  try {
+    const parsed = JSON.parse(body) as {
+      detail?: string | { error?: string; message?: string; type?: string };
+      error?: string | { error?: string; message?: string; type?: string };
+    };
+    const candidate = parsed.error ?? parsed.detail;
+    if (typeof candidate === 'string') {
+      return { message: candidate, type: '' };
+    }
+    if (candidate && typeof candidate === 'object') {
+      return {
+        message: candidate.message ?? candidate.error ?? body,
+        type: candidate.type ?? '',
+      };
+    }
+  } catch {
+    // Non-JSON provider or proxy error body.
+  }
+  return { message: body, type: '' };
 }

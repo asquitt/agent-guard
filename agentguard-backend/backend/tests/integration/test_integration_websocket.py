@@ -1,492 +1,466 @@
-"""Integration tests for websocket.py router.
+"""Integration coverage for single-use WebSocket authentication tickets."""
 
-Endpoints:
-  WS     /ws/events?token=<jwt>
-
-The WebSocket endpoint uses AsyncSessionLocal directly (not get_db),
-so full connection testing requires a running DB. We test:
-- Auth rejection paths (no token, invalid token, expired token)
-- The _authenticate_ws function directly with mocked DB
-- HTTP upgrade rejection for non-WebSocket requests
-- Connection flow with mocked Redis
-"""
+from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
+import re
 import uuid
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import Response, WebSocketDisconnect
 from httpx import ASGITransport, AsyncClient
 
-from app.core.auth import create_access_token
+from app.api.websocket import limiter as websocket_ticket_limiter
 from app.main import app
 
 
-# ── HTTP Upgrade Path Tests ───────────────────────────────────────
+@pytest.fixture(autouse=True)
+def _reset_websocket_ticket_rate_limit() -> None:
+    """Keep each ticket contract test independent of limiter state."""
+    websocket_ticket_limiter.reset()
 
 
-class TestWebSocketHTTPUpgrade:
-    """Test that the WebSocket route exists and rejects non-WS requests."""
+class FakePubSub:
+    def __init__(self) -> None:
+        self.subscribe = AsyncMock()
+        self.unsubscribe = AsyncMock()
+        self.close = AsyncMock()
 
-    async def test_ws_no_token_get_rejected(self):
-        """Regular GET to WS route should be rejected."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            resp = await ac.get("/ws/events")
-            assert resp.status_code in (400, 403, 404, 405, 426)
+    async def get_message(self, **_kwargs: Any) -> None:
+        return None
 
-    async def test_ws_with_invalid_token_get_rejected(self):
-        """GET with invalid token to WS route should be rejected."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            resp = await ac.get("/ws/events?token=invalid-jwt-token")
-            assert resp.status_code in (400, 403, 404, 405, 426)
 
-    async def test_ws_post_method_rejected(self):
-        """POST to WS route should be rejected."""
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            resp = await ac.post("/ws/events", json={})
-            assert resp.status_code in (400, 403, 404, 405, 426)
+class FakeRedis:
+    """Small Redis double with shared storage and atomic GETDEL semantics."""
 
-    async def test_ws_route_exists(self):
-        """The /ws/events route should be registered in the app."""
-        routes = [r.path for r in app.routes if hasattr(r, "path")]
+    def __init__(self, store: dict[str, str] | None = None) -> None:
+        self.store = store if store is not None else {}
+        self.set_calls: list[tuple[str, str, int | None, bool | None]] = []
+        self.getdel_calls: list[str] = []
+        self.pubsub_instance = FakePubSub()
+        self.closed = False
+
+    async def set(
+        self,
+        key: str,
+        value: str,
+        *,
+        ex: int | None = None,
+        nx: bool | None = None,
+    ) -> bool:
+        self.set_calls.append((key, value, ex, nx))
+        if nx and key in self.store:
+            return False
+        self.store[key] = value
+        return True
+
+    async def getdel(self, key: str) -> str | None:
+        self.getdel_calls.append(key)
+        return self.store.pop(key, None)
+
+    def pubsub(self) -> FakePubSub:
+        return self.pubsub_instance
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+def _session_context(db_session: Any) -> AsyncMock:
+    context = AsyncMock()
+    context.__aenter__ = AsyncMock(return_value=db_session)
+    context.__aexit__ = AsyncMock(return_value=None)
+    return context
+
+
+def _websocket(protocols: list[str], *, disconnect: bool = True) -> AsyncMock:
+    ws = AsyncMock()
+    ws.headers = {"sec-websocket-protocol": ", ".join(protocols)}
+    ws.query_params = {}
+    ws.accept = AsyncMock()
+    ws.close = AsyncMock()
+    ws.send_json = AsyncMock()
+    if disconnect:
+        ws.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
+    return ws
+
+
+class TestWebSocketRoutes:
+    async def test_regular_http_request_to_socket_is_rejected(self) -> None:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/ws/events")
+
+        assert response.status_code in (400, 403, 404, 405, 426)
+
+    def test_ticket_and_socket_routes_are_registered(self) -> None:
+        routes = [route.path for route in app.routes if hasattr(route, "path")]  # type: ignore[attr-defined]
+        assert "/api/v1/ws/ticket" in routes
         assert "/ws/events" in routes
 
 
-# ── _authenticate_ws Function Tests ───────────────────────────────
+class TestTicketIssuance:
+    async def test_ticket_endpoint_requires_user_authentication(self) -> None:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/api/v1/ws/ticket")
 
+        assert response.status_code in (401, 403)
 
-class TestAuthenticateWS:
-    """Test the WebSocket authentication function directly."""
+    async def test_ticket_is_opaque_and_only_its_digest_is_stored(
+        self,
+        client: AsyncClient,
+        auth_headers: dict[str, str],
+        user: Any,
+    ) -> None:
+        redis = FakeRedis()
 
-    async def test_invalid_jwt_returns_none(self):
-        """Invalid JWT should return None."""
-        from app.api.websocket import _authenticate_ws
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            response = await client.post("/api/v1/ws/ticket", headers=auth_headers)
 
-        result = await _authenticate_ws("not-a-valid-jwt")
-        assert result is None
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["pragma"] == "no-cache"
+        body = response.json()
+        ticket = body["ticket"]
+        assert re.fullmatch(r"[A-Za-z0-9_-]{43}", ticket)
+        assert body["expiresIn"] <= 30
 
-    async def test_empty_token_returns_none(self):
-        """Empty string token should return None."""
-        from app.api.websocket import _authenticate_ws
-
-        result = await _authenticate_ws("")
-        assert result is None
-
-    async def test_expired_jwt_returns_none(self):
-        """Expired JWT should return None."""
-        from app.api.websocket import _authenticate_ws
-        from jose import jwt as jose_jwt
-        from app.core.config import settings
-
-        payload = {
-            "sub": str(uuid.uuid4()),
-            "type": "access",
-            "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+        assert len(redis.set_calls) == 1
+        key, stored_payload, ttl, only_if_absent = redis.set_calls[0]
+        digest = hashlib.sha256(ticket.encode("ascii")).hexdigest()
+        assert key == f"ws:ticket:{digest}"
+        assert ticket not in key
+        assert ticket not in stored_payload
+        assert ttl == body["expiresIn"]
+        assert ttl is not None and ttl <= 30
+        assert only_if_absent is True
+        assert json.loads(stored_payload) == {
+            "user_id": str(user.id),
+            "org_id": str(user.org_id),
         }
-        token = jose_jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-        result = await _authenticate_ws(token)
-        assert result is None
+        assert redis.closed is True
 
-    async def test_refresh_token_type_rejected(self):
-        """Refresh tokens should not be accepted for WebSocket auth."""
-        from app.api.websocket import _authenticate_ws
-        from jose import jwt as jose_jwt
-        from app.core.config import settings
+    async def test_ticket_endpoint_returns_generic_503_when_redis_fails(
+        self,
+        client: AsyncClient,
+        auth_headers: dict[str, str],
+    ) -> None:
+        redis = FakeRedis()
+        redis.set = AsyncMock(side_effect=RuntimeError("redis://secret@cache unavailable"))
 
-        payload = {
-            "sub": str(uuid.uuid4()),
-            "type": "refresh",
-            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
-        }
-        token = jose_jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-        result = await _authenticate_ws(token)
-        assert result is None
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            response = await client.post("/api/v1/ws/ticket", headers=auth_headers)
 
-    async def test_missing_sub_claim_rejected(self):
-        """JWT without sub claim should be rejected."""
-        from app.api.websocket import _authenticate_ws
-        from jose import jwt as jose_jwt
-        from app.core.config import settings
+        assert response.status_code == 503
+        assert response.json() == {"detail": "WebSocket ticket service unavailable"}
+        assert "redis" not in response.text.lower()
+        assert "secret" not in response.text.lower()
+        assert redis.closed is True
 
-        payload = {
-            "type": "access",
-            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
-        }
-        token = jose_jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-        result = await _authenticate_ws(token)
-        assert result is None
+    async def test_ticket_handler_explicitly_marks_capability_non_cacheable(
+        self,
+        user: Any,
+    ) -> None:
+        from app.api.websocket import create_websocket_ticket
 
-    async def test_valid_token_inactive_user_rejected(self):
-        """Valid JWT for an inactive user should be rejected."""
-        from app.api.websocket import _authenticate_ws
+        redis = FakeRedis()
+        response = Response()
+        undecorated_handler = create_websocket_ticket.__wrapped__  # type: ignore[attr-defined]
 
-        user_id = str(uuid.uuid4())
-        token = create_access_token(user_id, token_version=0)
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            result = await undecorated_handler(
+                request=AsyncMock(),
+                response=response,
+                current_user=user,
+            )
 
-        mock_user = MagicMock()
-        mock_user.is_active = False
-        mock_user.org_id = uuid.uuid4()
+        assert "ticket" in result
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["pragma"] == "no-cache"
+        assert redis.closed is True
 
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
+    async def test_ticket_issuance_is_rate_limited_per_client_ip(
+        self,
+        client: AsyncClient,
+        auth_headers: dict[str, str],
+    ) -> None:
+        redis_clients: list[FakeRedis] = []
 
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(return_value=mock_result)
+        def new_redis_client(*_args: Any, **_kwargs: Any) -> FakeRedis:
+            redis_client = FakeRedis()
+            redis_clients.append(redis_client)
+            return redis_client
 
-        mock_session_ctx = AsyncMock()
-        mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_ctx.__aexit__ = AsyncMock(return_value=None)
+        with patch(
+            "app.api.websocket.aioredis.from_url",
+            side_effect=new_redis_client,
+        ):
+            responses = [await client.post("/api/v1/ws/ticket", headers=auth_headers) for _request_number in range(11)]
 
-        with patch("app.api.websocket.AsyncSessionLocal", return_value=mock_session_ctx):
-            result = await _authenticate_ws(token)
-            assert result is None
-
-    async def test_valid_token_nonexistent_user_rejected(self):
-        """Valid JWT for a user not in DB should be rejected."""
-        from app.api.websocket import _authenticate_ws
-
-        user_id = str(uuid.uuid4())
-        token = create_access_token(user_id, token_version=0)
-
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-
-        mock_db = AsyncMock()
-        mock_db.execute = AsyncMock(return_value=mock_result)
-
-        mock_session_ctx = AsyncMock()
-        mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_ctx.__aexit__ = AsyncMock(return_value=None)
-
-        with patch("app.api.websocket.AsyncSessionLocal", return_value=mock_session_ctx):
-            result = await _authenticate_ws(token)
-            assert result is None
-
-    async def test_valid_token_valid_user_returns_ids(self):
-        """Valid JWT for an active user should return (user_id, org_id)."""
-        from app.api.websocket import _authenticate_ws
-
-        user_id = str(uuid.uuid4())
-        org_id = str(uuid.uuid4())
-        token = create_access_token(user_id, token_version=0)
-
-        mock_user = MagicMock()
-        mock_user.is_active = True
-        mock_user.org_id = uuid.UUID(org_id)
-
-        mock_org_result = MagicMock()
-        mock_org_result.scalar_one_or_none.return_value = uuid.UUID(org_id)
-
-        mock_user_result = MagicMock()
-        mock_user_result.scalar_one_or_none.return_value = mock_user
-
-        call_count = 0
-
-        async def mock_execute(query):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return mock_user_result
-            return mock_org_result
-
-        mock_db = AsyncMock()
-        mock_db.execute = mock_execute
-
-        mock_session_ctx = AsyncMock()
-        mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_db)
-        mock_session_ctx.__aexit__ = AsyncMock(return_value=None)
-
-        with patch("app.api.websocket.AsyncSessionLocal", return_value=mock_session_ctx):
-            result = await _authenticate_ws(token)
-            assert result is not None
-            assert result[0] == user_id
-            assert result[1] == org_id
-
-    async def test_wrong_secret_key_rejected(self):
-        """JWT signed with wrong key should be rejected."""
-        from app.api.websocket import _authenticate_ws
-        from jose import jwt as jose_jwt
-
-        payload = {
-            "sub": str(uuid.uuid4()),
-            "type": "access",
-            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
-        }
-        token = jose_jwt.encode(payload, "wrong-secret-key", algorithm="HS256")
-        result = await _authenticate_ws(token)
-        assert result is None
+        assert [response.status_code for response in responses[:10]] == [200] * 10
+        assert responses[10].status_code == 429
+        assert len(redis_clients) == 10
+        assert all(redis_client.closed for redis_client in redis_clients)
 
 
-# ── Redis Listener Tests ──────────────────────────────────────────
+class TestTicketProtocolParsing:
+    @pytest.mark.parametrize(
+        "protocols",
+        [
+            [],
+            ["agentguard.v1"],
+            ["agentguard.ticket.abc"],
+            ["agentguard.ticket.abc", "agentguard.v1"],
+            ["agentguard.v1", "agentguard.ticket.abc", "extra"],
+            ["agentguard.v1", "agentguard.ticket.contains.dot"],
+        ],
+    )
+    async def test_missing_or_malformed_subprotocols_close_with_4001(
+        self,
+        protocols: list[str],
+    ) -> None:
+        from app.api.websocket import websocket_events
+
+        ws = _websocket(protocols)
+        with patch("app.api.websocket.aioredis.from_url") as redis_factory:
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        redis_factory.assert_not_called()
+
+    async def test_query_jwt_is_not_an_authentication_path(self) -> None:
+        from app.api.websocket import websocket_events
+
+        ws = _websocket([])
+        ws.query_params = {"token": "long-lived-access-token"}
+
+        with patch("app.api.websocket.aioredis.from_url") as redis_factory:
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        redis_factory.assert_not_called()
+
+
+class TestTicketConsumption:
+    async def test_ticket_is_consumed_once_and_only_safe_protocol_is_echoed(
+        self,
+        client: AsyncClient,
+        auth_headers: dict[str, str],
+        db_session: Any,
+        user: Any,
+    ) -> None:
+        from app.api.websocket import websocket_events
+
+        shared_store: dict[str, str] = {}
+        issue_redis = FakeRedis(shared_store)
+        consume_redis = FakeRedis(shared_store)
+        pubsub_redis = FakeRedis(shared_store)
+        replay_redis = FakeRedis(shared_store)
+        redis_connections = iter([issue_redis, consume_redis, pubsub_redis, replay_redis])
+
+        with (
+            patch(
+                "app.api.websocket.aioredis.from_url",
+                side_effect=lambda *_args, **_kwargs: next(redis_connections),
+            ),
+            patch(
+                "app.api.websocket.AsyncSessionLocal",
+                return_value=_session_context(db_session),
+            ),
+        ):
+            response = await client.post("/api/v1/ws/ticket", headers=auth_headers)
+            ticket = response.json()["ticket"]
+            protocols = ["agentguard.v1", f"agentguard.ticket.{ticket}"]
+
+            ws = _websocket(protocols)
+            await websocket_events(ws)
+
+            replay_ws = _websocket(protocols)
+            await websocket_events(replay_ws)
+
+        assert response.status_code == 200
+        ws.accept.assert_called_once_with(subprotocol="agentguard.v1")
+        ws.send_json.assert_called_once_with({"type": "connected", "data": {"orgId": str(user.org_id)}})
+        pubsub_redis.pubsub_instance.subscribe.assert_awaited_once_with(f"org:{user.org_id}:events")
+
+        expected_key = f"ws:ticket:{hashlib.sha256(ticket.encode('ascii')).hexdigest()}"
+        assert consume_redis.getdel_calls == [expected_key]
+        assert replay_redis.getdel_calls == [expected_key]
+        assert ticket not in expected_key
+        assert shared_store == {}
+
+        replay_ws.accept.assert_not_called()
+        replay_ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        assert issue_redis.closed is True
+        assert consume_redis.closed is True
+        assert pubsub_redis.closed is True
+        assert replay_redis.closed is True
+
+    async def test_expired_ticket_closes_with_4001(self) -> None:
+        from app.api.websocket import websocket_events
+
+        ticket = "a" * 43
+        ws = _websocket(["agentguard.v1", f"agentguard.ticket.{ticket}"])
+        redis = FakeRedis()
+
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        assert redis.closed is True
+
+    async def test_cross_org_ticket_is_consumed_and_rejected(
+        self,
+        db_session: Any,
+        user: Any,
+    ) -> None:
+        from app.api.websocket import websocket_events
+
+        ticket = "b" * 43
+        key = f"ws:ticket:{hashlib.sha256(ticket.encode('ascii')).hexdigest()}"
+        redis = FakeRedis({key: json.dumps({"user_id": str(user.id), "org_id": str(uuid.uuid4())})})
+        ws = _websocket(["agentguard.v1", f"agentguard.ticket.{ticket}"])
+
+        with (
+            patch("app.api.websocket.aioredis.from_url", return_value=redis),
+            patch(
+                "app.api.websocket.AsyncSessionLocal",
+                return_value=_session_context(db_session),
+            ),
+        ):
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        assert key not in redis.store
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            "not-json",
+            "{}",
+            '{"user_id":"not-a-uuid","org_id":"also-not-a-uuid"}',
+            '{"user_id":"00000000-0000-0000-0000-000000000000"}',
+        ],
+    )
+    async def test_malformed_ticket_payload_is_rejected(self, payload: str) -> None:
+        from app.api.websocket import websocket_events
+
+        ticket = "c" * 43
+        key = f"ws:ticket:{hashlib.sha256(ticket.encode('ascii')).hexdigest()}"
+        redis = FakeRedis({key: payload})
+        ws = _websocket(["agentguard.v1", f"agentguard.ticket.{ticket}"])
+
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        assert key not in redis.store
+
+    async def test_redis_failure_during_consume_fails_closed(self) -> None:
+        from app.api.websocket import websocket_events
+
+        ticket = "d" * 43
+        redis = FakeRedis()
+        redis.getdel = AsyncMock(side_effect=RuntimeError("redis secret detail"))
+        ws = _websocket(["agentguard.v1", f"agentguard.ticket.{ticket}"])
+
+        with patch("app.api.websocket.aioredis.from_url", return_value=redis):
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        assert redis.closed is True
+
+    async def test_database_failure_during_consume_fails_closed(
+        self,
+        user: Any,
+    ) -> None:
+        from app.api.websocket import websocket_events
+
+        ticket = "e" * 43
+        key = f"ws:ticket:{hashlib.sha256(ticket.encode('ascii')).hexdigest()}"
+        redis = FakeRedis({key: json.dumps({"user_id": str(user.id), "org_id": str(user.org_id)})})
+        ws = _websocket(["agentguard.v1", f"agentguard.ticket.{ticket}"])
+
+        with (
+            patch("app.api.websocket.aioredis.from_url", return_value=redis),
+            patch(
+                "app.api.websocket.AsyncSessionLocal",
+                side_effect=RuntimeError("postgresql://secret@db unavailable"),
+            ),
+            patch("app.api.websocket.logger.warning") as warning,
+        ):
+            await websocket_events(ws)
+
+        ws.accept.assert_not_called()
+        ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
+        warning.assert_called_once_with("WebSocket ticket identity revalidation failed")
+        assert "secret" not in str(warning.call_args_list)
+        assert redis.closed is True
 
 
 class TestRedisListener:
-    """Test the _redis_listener helper function."""
-
-    async def test_listener_forwards_bytes_message(self):
-        """Redis listener should forward bytes messages to WebSocket."""
+    async def test_listener_forwards_bytes_message(self) -> None:
         from app.api.websocket import _redis_listener
 
-        mock_ws = AsyncMock()
-        mock_pubsub = AsyncMock()
-
-        call_count = 0
-
-        async def mock_get_message(**kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return {
+        ws = AsyncMock()
+        pubsub = AsyncMock()
+        pubsub.get_message = AsyncMock(
+            side_effect=[
+                {
                     "type": "message",
                     "data": b'{"type":"incident","data":{"id":"test"}}',
-                }
-            raise asyncio.CancelledError()
-
-        mock_pubsub.get_message = mock_get_message
-
-        with pytest.raises(asyncio.CancelledError):
-            await _redis_listener(mock_ws, mock_pubsub)
-
-        mock_ws.send_text.assert_called_once_with(
-            '{"type":"incident","data":{"id":"test"}}'
+                },
+                asyncio.CancelledError(),
+            ]
         )
 
-    async def test_listener_handles_string_data(self):
-        """Redis listener should handle string data (not just bytes)."""
-        from app.api.websocket import _redis_listener
-
-        mock_ws = AsyncMock()
-        mock_pubsub = AsyncMock()
-
-        call_count = 0
-
-        async def mock_get_message(**kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return {
-                    "type": "message",
-                    "data": '{"type":"alert","severity":"high"}',
-                }
-            raise asyncio.CancelledError()
-
-        mock_pubsub.get_message = mock_get_message
-
         with pytest.raises(asyncio.CancelledError):
-            await _redis_listener(mock_ws, mock_pubsub)
+            await _redis_listener(ws, pubsub)
 
-        mock_ws.send_text.assert_called_once()
+        ws.send_text.assert_awaited_once_with('{"type":"incident","data":{"id":"test"}}')
 
-    async def test_listener_ignores_none_messages(self):
-        """Redis listener should handle None (no message available)."""
-        from app.api.websocket import _redis_listener
-
-        mock_ws = AsyncMock()
-        mock_pubsub = AsyncMock()
-
-        call_count = 0
-
-        async def mock_get_message(**kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count <= 2:
-                return None
-            raise asyncio.CancelledError()
-
-        mock_pubsub.get_message = mock_get_message
-
-        with pytest.raises(asyncio.CancelledError):
-            await _redis_listener(mock_ws, mock_pubsub)
-
-        mock_ws.send_text.assert_not_called()
-
-
-# ── Channel Naming Tests ──────────────────────────────────────────
-
-
-class TestChannelNaming:
-    """Test that the channel naming convention is correct."""
-
-    def test_channel_format(self):
-        """Channel should follow org:{org_id}:events pattern."""
-        org_id = str(uuid.uuid4())
-        channel = f"org:{org_id}:events"
-        assert channel.startswith("org:")
-        assert channel.endswith(":events")
-        assert org_id in channel
-
-    def test_different_orgs_get_different_channels(self):
-        """Each org should have its own unique channel."""
-        org_a = str(uuid.uuid4())
-        org_b = str(uuid.uuid4())
-        channel_a = f"org:{org_a}:events"
-        channel_b = f"org:{org_b}:events"
-        assert channel_a != channel_b
-
-
-# ── Connection Flow Tests ─────────────────────────────────────────
-
-
-class TestConnectionFlow:
-    """Test the full WebSocket connection flow with mocks."""
-
-    async def test_websocket_sends_connected_message_on_auth(self):
-        """After auth, WebSocket should send a 'connected' message with orgId."""
+    async def test_event_task_exception_is_consumed_and_cleaned_up(self) -> None:
         from app.api.websocket import websocket_events
 
+        ticket = "f" * 43
         user_id = str(uuid.uuid4())
         org_id = str(uuid.uuid4())
-
-        mock_ws = AsyncMock()
-        mock_ws.query_params = {"token": "valid-token"}
-        mock_ws.accept = AsyncMock()
-        mock_ws.send_json = AsyncMock()
-        mock_ws.close = AsyncMock()
-        mock_ws.receive_text = AsyncMock(side_effect=asyncio.CancelledError())
-
-        mock_pubsub = AsyncMock()
-        mock_pubsub.subscribe = AsyncMock()
-        mock_pubsub.unsubscribe = AsyncMock()
-        mock_pubsub.close = AsyncMock()
-        mock_pubsub.get_message = AsyncMock(side_effect=asyncio.CancelledError())
-
-        mock_redis = MagicMock()
-        mock_redis.pubsub.return_value = mock_pubsub
-        mock_redis.close = AsyncMock()
-
-        with patch(
-            "app.api.websocket._authenticate_ws",
-            new_callable=AsyncMock,
-            return_value=(user_id, org_id),
-        ):
-            with patch(
-                "app.api.websocket.aioredis.from_url",
-                return_value=mock_redis,
-            ):
-                try:
-                    await websocket_events(mock_ws)
-                except (asyncio.CancelledError, Exception):
-                    pass
-
-        mock_ws.accept.assert_called_once()
-        mock_ws.send_json.assert_called_once_with(
-            {"type": "connected", "data": {"orgId": org_id}}
+        redis = FakeRedis()
+        redis.pubsub_instance.get_message = AsyncMock(side_effect=RuntimeError("redis://secret@cache stream failed"))
+        ws = _websocket(
+            ["agentguard.v1", f"agentguard.ticket.{ticket}"],
+            disconnect=False,
         )
+        never_received = asyncio.Event()
 
-    async def test_websocket_subscribes_to_org_channel(self):
-        """WebSocket should subscribe to the org-specific Redis channel."""
-        from app.api.websocket import websocket_events
-        from fastapi import WebSocketDisconnect
+        async def wait_for_message() -> None:
+            await never_received.wait()
 
-        user_id = str(uuid.uuid4())
-        org_id = str(uuid.uuid4())
+        ws.receive_text = AsyncMock(side_effect=wait_for_message)
 
-        mock_ws = AsyncMock()
-        mock_ws.query_params = {"token": "valid-token"}
-        mock_ws.accept = AsyncMock()
-        mock_ws.send_json = AsyncMock()
-        mock_ws.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
-
-        mock_pubsub = AsyncMock()
-        mock_pubsub.subscribe = AsyncMock()
-        mock_pubsub.unsubscribe = AsyncMock()
-        mock_pubsub.close = AsyncMock()
-        # Return None so the listener sleeps, giving receiver time to disconnect
-        mock_pubsub.get_message = AsyncMock(return_value=None)
-
-        mock_redis = MagicMock()
-        mock_redis.pubsub.return_value = mock_pubsub
-        mock_redis.close = AsyncMock()
-
-        with patch(
-            "app.api.websocket._authenticate_ws",
-            new_callable=AsyncMock,
-            return_value=(user_id, org_id),
-        ):
-            with patch(
+        with (
+            patch(
+                "app.api.websocket._consume_ticket",
+                new=AsyncMock(return_value=(user_id, org_id)),
+            ),
+            patch(
                 "app.api.websocket.aioredis.from_url",
-                return_value=mock_redis,
-            ):
-                await websocket_events(mock_ws)
-
-        expected_channel = f"org:{org_id}:events"
-        mock_pubsub.subscribe.assert_called_once_with(expected_channel)
-
-    async def test_websocket_no_token_closes_with_4001(self):
-        """WebSocket without token should be closed with code 4001."""
-        from app.api.websocket import websocket_events
-
-        mock_ws = AsyncMock()
-        mock_ws.query_params = {}
-        mock_ws.close = AsyncMock()
-
-        await websocket_events(mock_ws)
-
-        mock_ws.close.assert_called_once_with(code=4001, reason="Missing token")
-        mock_ws.accept.assert_not_called()
-
-    async def test_websocket_invalid_token_closes_with_4001(self):
-        """WebSocket with invalid token should accept then close with 4001."""
-        from app.api.websocket import websocket_events
-
-        mock_ws = AsyncMock()
-        mock_ws.query_params = {"token": "invalid"}
-        mock_ws.accept = AsyncMock()
-        mock_ws.close = AsyncMock()
-
-        with patch(
-            "app.api.websocket._authenticate_ws",
-            new_callable=AsyncMock,
-            return_value=None,
+                return_value=redis,
+            ),
+            patch("app.api.websocket.logger.warning") as warning,
         ):
-            await websocket_events(mock_ws)
+            await websocket_events(ws)
 
-        mock_ws.accept.assert_called_once()
-        mock_ws.close.assert_called_once_with(code=4001, reason="Authentication failed")
-
-    async def test_websocket_cleanup_on_disconnect(self):
-        """WebSocket should clean up Redis resources on disconnect."""
-        from app.api.websocket import websocket_events
-        from fastapi import WebSocketDisconnect
-
-        user_id = str(uuid.uuid4())
-        org_id = str(uuid.uuid4())
-
-        mock_ws = AsyncMock()
-        mock_ws.query_params = {"token": "valid-token"}
-        mock_ws.accept = AsyncMock()
-        mock_ws.send_json = AsyncMock()
-        mock_ws.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
-
-        mock_pubsub = AsyncMock()
-        mock_pubsub.subscribe = AsyncMock()
-        mock_pubsub.unsubscribe = AsyncMock()
-        mock_pubsub.close = AsyncMock()
-        mock_pubsub.get_message = AsyncMock(return_value=None)
-
-        mock_redis = MagicMock()
-        mock_redis.pubsub.return_value = mock_pubsub
-        mock_redis.close = AsyncMock()
-
-        with patch(
-            "app.api.websocket._authenticate_ws",
-            new_callable=AsyncMock,
-            return_value=(user_id, org_id),
-        ):
-            with patch(
-                "app.api.websocket.aioredis.from_url",
-                return_value=mock_redis,
-            ):
-                await websocket_events(mock_ws)
-
-        expected_channel = f"org:{org_id}:events"
-        mock_pubsub.unsubscribe.assert_called_once_with(expected_channel)
-        mock_pubsub.close.assert_called_once()
-        mock_redis.close.assert_called_once()
+        warning.assert_any_call("WebSocket event stream failed for user=%s org=%s", user_id, org_id)
+        assert "secret" not in str(warning.call_args_list)
+        redis.pubsub_instance.unsubscribe.assert_awaited_once_with(f"org:{org_id}:events")
+        redis.pubsub_instance.close.assert_awaited_once()
+        assert redis.closed is True

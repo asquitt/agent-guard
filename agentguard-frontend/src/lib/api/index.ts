@@ -17,7 +17,9 @@ export {
   resetPasswordApi,
   updateProfileApi,
 } from './auth';
-export type { UserProfile } from './auth';
+export type { RegisterInput, UserProfile } from './auth';
+export { createWebSocketTicket } from './websocket';
+export type { WebSocketTicket } from './websocket';
 export {
   getBillingStatus,
   createCheckoutSession,

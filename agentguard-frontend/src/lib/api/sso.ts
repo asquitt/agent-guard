@@ -1,6 +1,7 @@
 /** SSO API client. */
 
 import { apiFetch } from './client';
+import { apiUrl } from './url';
 import type { SSOCheckResult, SSOConfig, SSOConfigCreate, SSOConfigUpdate, SSOTestResult } from '@/types/sso';
 
 // ─── Config Management (Admin) ──────────────────────────────────────────────
@@ -65,6 +66,5 @@ export async function checkSSORequirement(email: string): Promise<SSOCheckResult
 }
 
 export function getSSOInitiateUrl(orgSlug: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${base}/api/v1/auth/sso/initiate/${orgSlug}`;
+  return apiUrl(`/auth/sso/initiate/${orgSlug}`);
 }

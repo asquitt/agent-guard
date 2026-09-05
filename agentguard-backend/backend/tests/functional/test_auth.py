@@ -1,8 +1,14 @@
 """Auth-related functional tests: registration, login, token lifecycle, errors."""
 
 from .conftest import (
-    TS, PASSWORD, NEW_PASSWORD, S,
-    section, check, register, login,
+    TS,
+    PASSWORD,
+    NEW_PASSWORD,
+    S,
+    section,
+    check,
+    register,
+    login,
 )
 
 
@@ -51,7 +57,13 @@ def test_auth_register_login():
         "POST",
         "/api/v1/auth/register",
         409,
-        json={"email": email1, "password": PASSWORD, "full_name": "Dup", "org_name": "Dup"},
+        json={
+            "email": email1,
+            "password": PASSWORD,
+            "full_name": "Dup",
+            "org_name": "Dup",
+            "controlled_evaluation_accepted": True,
+        },
     )
 
 
@@ -114,6 +126,12 @@ def test_auth_errors():
         "POST",
         "/api/v1/auth/register",
         422,
-        json={"email": "weak@test.dev", "password": "short", "full_name": "W", "org_name": "W"},
+        json={
+            "email": "weak@test.dev",
+            "password": "short",
+            "full_name": "W",
+            "org_name": "W",
+            "controlled_evaluation_accepted": True,
+        },
     )
-    check("No auth header", "GET", "/api/v1/incidents/", 403, headers={"Content-Type": "application/json"})
+    check("No auth header", "GET", "/api/v1/incidents/", 401, headers={"Content-Type": "application/json"})

@@ -219,7 +219,8 @@ function AgentRow({
             </button>
           </div>
         ) : (
-          <span
+          <button
+            type="button"
             onClick={() => setEditing(true)}
             className={clsx(
               'inline-flex cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium',
@@ -227,7 +228,7 @@ function AgentRow({
             )}
           >
             {agent.status}
-          </span>
+          </button>
         )}
       </td>
       <td className="px-4 py-3">
@@ -332,8 +333,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Name *</label>
+            <label htmlFor="agent-name" className="mb-1 block text-xs text-muted-foreground">Name *</label>
             <input
+              id="agent-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -341,8 +343,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Owner</label>
+            <label htmlFor="agent-owner" className="mb-1 block text-xs text-muted-foreground">Owner</label>
             <input
+              id="agent-owner"
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -351,8 +354,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+          <label htmlFor="agent-description" className="mb-1 block text-xs text-muted-foreground">Description</label>
           <textarea
+            id="agent-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -362,8 +366,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Risk Tier</label>
+            <label htmlFor="agent-risk-tier" className="mb-1 block text-xs text-muted-foreground">Risk Tier</label>
             <select
+              id="agent-risk-tier"
               value={riskTier}
               onChange={(e) => setRiskTier(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -374,8 +379,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Provider</label>
+            <label htmlFor="agent-provider" className="mb-1 block text-xs text-muted-foreground">Provider</label>
             <input
+              id="agent-provider"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -383,8 +389,9 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Model</label>
+            <label htmlFor="agent-model" className="mb-1 block text-xs text-muted-foreground">Model</label>
             <input
+              id="agent-model"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -392,8 +399,8 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             />
           </div>
         </div>
-        <div>
-          <label className="mb-2 block text-xs text-muted-foreground">Compliance Frameworks</label>
+        <fieldset>
+          <legend className="mb-2 block text-xs text-muted-foreground">Compliance Frameworks</legend>
           <div className="flex flex-wrap gap-2">
             {FRAMEWORKS.map((f) => (
               <button
@@ -411,7 +418,7 @@ function CreateAgentForm({ onClose, onSuccess }: { onClose: () => void; onSucces
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
         <div className="flex gap-2">
           <button
             type="submit"

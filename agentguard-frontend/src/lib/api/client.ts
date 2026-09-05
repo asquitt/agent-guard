@@ -2,8 +2,7 @@
  * API client with authentication handling and automatic token refresh.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const API_PREFIX = '/api/v1';
+import { apiUrl } from './url';
 
 export class ApiError extends Error {
   constructor(
@@ -38,6 +37,19 @@ function clearTokens() {
 // Prevent concurrent refresh attempts
 let refreshPromise: Promise<boolean> | null = null;
 
+async function parseSuccessResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T;
+  }
+
+  const body = await response.text();
+  if (!body) {
+    return undefined as T;
+  }
+
+  return JSON.parse(body) as T;
+}
+
 export { clearTokens };
 
 export async function tryRefreshToken(): Promise<boolean> {
@@ -48,7 +60,7 @@ export async function tryRefreshToken(): Promise<boolean> {
     if (!refresh) return false;
 
     try {
-      const res = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
+      const res = await fetch(apiUrl('/auth/refresh'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refresh }),
@@ -80,7 +92,7 @@ export async function apiFetch<T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, {
+  const response = await fetch(apiUrl(endpoint), {
     ...options,
     headers,
   });
@@ -96,11 +108,11 @@ export async function apiFetch<T>(
         ...callerHeaders,
         ...(newToken && { Authorization: `Bearer ${newToken}` }),
       };
-      const retryResponse = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, {
+      const retryResponse = await fetch(apiUrl(endpoint), {
         ...options,
         headers: retryHeaders,
       });
-      if (retryResponse.ok) return retryResponse.json();
+      if (retryResponse.ok) return parseSuccessResponse<T>(retryResponse);
       // Retry also failed — clear tokens and redirect to login
       clearTokens();
       if (typeof window !== 'undefined') window.location.href = '/login';
@@ -122,11 +134,11 @@ export async function apiFetch<T>(
       window.dispatchEvent(new CustomEvent('api:rate-limited', { detail: { retryAfter } }));
     }
     await new Promise((r) => setTimeout(r, retryAfter));
-    const retryResponse = await fetch(`${API_BASE_URL}${API_PREFIX}${endpoint}`, {
+    const retryResponse = await fetch(apiUrl(endpoint), {
       ...options,
       headers,
     });
-    if (retryResponse.ok) return retryResponse.json();
+    if (retryResponse.ok) return parseSuccessResponse<T>(retryResponse);
     const retryError = await retryResponse.json().catch(() => ({ detail: 'Rate limited' }));
     throw new ApiError(retryResponse.status, retryError.detail || 'Rate limited');
   }
@@ -136,7 +148,7 @@ export async function apiFetch<T>(
     throw new ApiError(response.status, error.detail || 'Request failed');
   }
 
-  return response.json();
+  return parseSuccessResponse<T>(response);
 }
 
 export function buildQueryString(params: Record<string, unknown>): string {

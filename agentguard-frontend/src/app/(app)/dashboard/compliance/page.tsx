@@ -288,8 +288,9 @@ function ReportsTab() {
         <h3 className="mb-4 text-sm font-medium text-foreground">Generate Report</h3>
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Report Type</label>
+            <label htmlFor="compliance-report-type" className="mb-1 block text-xs text-muted-foreground">Report Type</label>
             <select
+              id="compliance-report-type"
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
               className="rounded-lg border border-border px-3 py-2 text-sm"
@@ -307,8 +308,9 @@ function ReportsTab() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">From</label>
+            <label htmlFor="compliance-date-from" className="mb-1 block text-xs text-muted-foreground">From</label>
             <input
+              id="compliance-date-from"
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
@@ -316,8 +318,9 @@ function ReportsTab() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">To</label>
+            <label htmlFor="compliance-date-to" className="mb-1 block text-xs text-muted-foreground">To</label>
             <input
+              id="compliance-date-to"
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}

@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/sso';
 import type { SSOConfig, SSOConfigCreate } from '@/types/sso';
 import { ApiError } from '@/lib/api/client';
+import { apiUrl } from '@/lib/api/url';
 
 export default function SSOSettingsPage() {
   const { user, organization } = useAuth();
@@ -217,7 +218,7 @@ export default function SSOSettingsPage() {
           <div className="rounded-lg bg-muted/50 p-3">
             <p className="text-xs font-medium text-muted-foreground">SP Metadata URL</p>
             <code className="text-xs text-muted-foreground">
-              {`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/auth/sso/saml/metadata/${organization?.slug ?? 'your-org'}`}
+              {apiUrl(`/auth/sso/saml/metadata/${organization?.slug ?? 'your-org'}`)}
             </code>
           </div>
         </div>

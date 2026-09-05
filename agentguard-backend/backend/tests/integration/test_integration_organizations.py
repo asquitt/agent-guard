@@ -19,7 +19,6 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import Organization, User
 
@@ -32,9 +31,7 @@ PREFIX = "/api/v1/organizations"
 class TestGetCurrentOrg:
     """GET /api/v1/organizations/current"""
 
-    async def test_get_org_success(
-        self, client: AsyncClient, auth_headers: dict[str, str], org: Organization
-    ):
+    async def test_get_org_success(self, client: AsyncClient, auth_headers: dict[str, str], org: Organization):
         resp = await client.get(f"{PREFIX}/current", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
@@ -46,9 +43,7 @@ class TestGetCurrentOrg:
         resp = await client.get(f"{PREFIX}/current")
         assert resp.status_code == 401
 
-    async def test_get_org_viewer_can_read(
-        self, client: AsyncClient, viewer_headers: dict[str, str]
-    ):
+    async def test_get_org_viewer_can_read(self, client: AsyncClient, viewer_headers: dict[str, str]):
         """Viewer has settings:read -> can access org details."""
         # Viewer does NOT have settings:read, so should get 403
         resp = await client.get(f"{PREFIX}/current", headers=viewer_headers)
@@ -61,9 +56,7 @@ class TestGetCurrentOrg:
 class TestUpdateOrg:
     """PATCH /api/v1/organizations/current"""
 
-    async def test_update_org_success(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_org_success(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.patch(
             f"{PREFIX}/current",
             json={"name": "Updated Org Name"},
@@ -72,9 +65,7 @@ class TestUpdateOrg:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Updated Org Name"
 
-    async def test_update_org_settings(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_org_settings(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.patch(
             f"{PREFIX}/current",
             json={"settings": {"feature_flag": True}},
@@ -83,15 +74,43 @@ class TestUpdateOrg:
         assert resp.status_code == 200
         assert resp.json()["settings"]["feature_flag"] is True
 
-    async def test_update_org_no_auth(self, client: AsyncClient):
+    @pytest.mark.parametrize(
+        "reserved_key",
+        [
+            "controlledEvaluationAcceptance",
+            "controlled_evaluation_acceptance",
+            "onboardingCompleted",
+            "onboardingStatus",
+            "onboardingEvidence",
+            "onboarding_completed",
+            "onboarding_status",
+            "onboarding_evidence",
+        ],
+    )
+    async def test_update_org_rejects_server_managed_truth(
+        self,
+        client: AsyncClient,
+        auth_headers: dict[str, str],
+        reserved_key: str,
+    ):
         resp = await client.patch(
-            f"{PREFIX}/current", json={"name": "Hacked"}
+            f"{PREFIX}/current",
+            json={"settings": {reserved_key: True}},
+            headers=auth_headers,
         )
+
+        assert resp.status_code == 422
+        assert "server-managed" in str(resp.json())
+
+        current = await client.get(f"{PREFIX}/current", headers=auth_headers)
+        assert current.status_code == 200
+        assert reserved_key not in current.json()["settings"]
+
+    async def test_update_org_no_auth(self, client: AsyncClient):
+        resp = await client.patch(f"{PREFIX}/current", json={"name": "Hacked"})
         assert resp.status_code == 401
 
-    async def test_update_org_viewer_forbidden(
-        self, client: AsyncClient, viewer_headers: dict[str, str]
-    ):
+    async def test_update_org_viewer_forbidden(self, client: AsyncClient, viewer_headers: dict[str, str]):
         """Viewer cannot update org -> 403."""
         resp = await client.patch(
             f"{PREFIX}/current",
@@ -107,12 +126,8 @@ class TestUpdateOrg:
 class TestListMembers:
     """GET /api/v1/organizations/current/members"""
 
-    async def test_list_members_success(
-        self, client: AsyncClient, auth_headers: dict[str, str], user: User
-    ):
-        resp = await client.get(
-            f"{PREFIX}/current/members", headers=auth_headers
-        )
+    async def test_list_members_success(self, client: AsyncClient, auth_headers: dict[str, str], user: User):
+        resp = await client.get(f"{PREFIX}/current/members", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert "items" in body
@@ -120,12 +135,8 @@ class TestListMembers:
         assert body["total"] >= 1
         assert isinstance(body["items"], list)
 
-    async def test_list_members_pagination(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
-        resp = await client.get(
-            f"{PREFIX}/current/members?skip=0&limit=1", headers=auth_headers
-        )
+    async def test_list_members_pagination(self, client: AsyncClient, auth_headers: dict[str, str]):
+        resp = await client.get(f"{PREFIX}/current/members?skip=0&limit=1", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert len(body["items"]) <= 1
@@ -141,9 +152,7 @@ class TestListMembers:
 class TestInviteMember:
     """POST /api/v1/organizations/current/members/invite"""
 
-    async def test_invite_member_success(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_invite_member_success(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.post(
             f"{PREFIX}/current/members/invite",
             json={"email": "newinvite@example.com", "role": "member"},
@@ -154,9 +163,7 @@ class TestInviteMember:
         assert body["email"] == "newinvite@example.com"
         assert body["role"] == "member"
 
-    async def test_invite_member_duplicate(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_invite_member_duplicate(self, client: AsyncClient, auth_headers: dict[str, str]):
         """Invite same email twice -> 409."""
         payload = {"email": "dupe-invite@example.com", "role": "member"}
         await client.post(
@@ -171,9 +178,7 @@ class TestInviteMember:
         )
         assert resp.status_code == 409
 
-    async def test_invite_member_invalid_role(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_invite_member_invalid_role(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.post(
             f"{PREFIX}/current/members/invite",
             json={"email": "badrole@example.com", "role": "superadmin"},
@@ -188,9 +193,7 @@ class TestInviteMember:
         )
         assert resp.status_code == 401
 
-    async def test_invite_member_viewer_forbidden(
-        self, client: AsyncClient, viewer_headers: dict[str, str]
-    ):
+    async def test_invite_member_viewer_forbidden(self, client: AsyncClient, viewer_headers: dict[str, str]):
         resp = await client.post(
             f"{PREFIX}/current/members/invite",
             json={"email": "viewer-invite@example.com", "role": "member"},
@@ -232,9 +235,7 @@ class TestUpdateMemberRole:
         )
         assert resp.status_code == 422
 
-    async def test_update_member_not_found(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_member_not_found(self, client: AsyncClient, auth_headers: dict[str, str]):
         fake_id = str(uuid4())
         resp = await client.patch(
             f"{PREFIX}/current/members/{fake_id}",
@@ -282,9 +283,7 @@ class TestRemoveMember:
         )
         assert resp.status_code == 422
 
-    async def test_remove_member_not_found(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_remove_member_not_found(self, client: AsyncClient, auth_headers: dict[str, str]):
         fake_id = str(uuid4())
         resp = await client.delete(
             f"{PREFIX}/current/members/{fake_id}",
@@ -305,13 +304,9 @@ class TestRemoveMember:
 class TestTenantIsolation:
     """Verify that users from Org B cannot access Org A resources."""
 
-    async def test_other_org_cannot_see_members(
-        self, client: AsyncClient, other_org_headers: dict[str, str]
-    ):
+    async def test_other_org_cannot_see_members(self, client: AsyncClient, other_org_headers: dict[str, str]):
         """Other org lists their OWN members, not the primary org's."""
-        resp = await client.get(
-            f"{PREFIX}/current/members", headers=other_org_headers
-        )
+        resp = await client.get(f"{PREFIX}/current/members", headers=other_org_headers)
         assert resp.status_code == 200
         body = resp.json()
         # Should only see the other org's user, not the primary org's
@@ -352,21 +347,15 @@ class TestTenantIsolation:
 class TestIpAllowlist:
     """GET/PUT /api/v1/organizations/current/ip-allowlist"""
 
-    async def test_get_ip_allowlist_default(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
-        resp = await client.get(
-            f"{PREFIX}/current/ip-allowlist", headers=auth_headers
-        )
+    async def test_get_ip_allowlist_default(self, client: AsyncClient, auth_headers: dict[str, str]):
+        resp = await client.get(f"{PREFIX}/current/ip-allowlist", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert "ips" in body
         assert "enabled" in body
         assert body["enabled"] is False
 
-    async def test_update_ip_allowlist(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_ip_allowlist(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.put(
             f"{PREFIX}/current/ip-allowlist",
             json={"ips": ["10.0.0.1", "192.168.1.0/24"]},
@@ -377,9 +366,7 @@ class TestIpAllowlist:
         assert body["enabled"] is True
         assert len(body["ips"]) == 2
 
-    async def test_update_ip_allowlist_invalid_ip(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_ip_allowlist_invalid_ip(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.put(
             f"{PREFIX}/current/ip-allowlist",
             json={"ips": ["not-an-ip"]},
@@ -415,12 +402,8 @@ class TestRoles:
 class TestEnvironments:
     """GET /api/v1/organizations/environments"""
 
-    async def test_list_environments(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
-        resp = await client.get(
-            f"{PREFIX}/environments", headers=auth_headers
-        )
+    async def test_list_environments(self, client: AsyncClient, auth_headers: dict[str, str]):
+        resp = await client.get(f"{PREFIX}/environments", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert "environments" in body
@@ -439,20 +422,14 @@ class TestEnvironments:
 class TestDataResidency:
     """GET/PUT /api/v1/organizations/current/data-residency"""
 
-    async def test_get_data_residency(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
-        resp = await client.get(
-            f"{PREFIX}/current/data-residency", headers=auth_headers
-        )
+    async def test_get_data_residency(self, client: AsyncClient, auth_headers: dict[str, str]):
+        resp = await client.get(f"{PREFIX}/current/data-residency", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert "config" in body
         assert "available_regions" in body or "availableRegions" in body
 
-    async def test_update_data_residency(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_data_residency(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.put(
             f"{PREFIX}/current/data-residency",
             json={
@@ -464,9 +441,7 @@ class TestDataResidency:
         )
         assert resp.status_code == 200
 
-    async def test_update_data_residency_invalid_region(
-        self, client: AsyncClient, auth_headers: dict[str, str]
-    ):
+    async def test_update_data_residency_invalid_region(self, client: AsyncClient, auth_headers: dict[str, str]):
         resp = await client.put(
             f"{PREFIX}/current/data-residency",
             json={"primaryRegion": "invalid-region-99"},

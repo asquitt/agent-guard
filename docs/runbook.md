@@ -1,4 +1,12 @@
-# AgentGuard On-Call Operations Runbook
+# Archived AgentGuard On-Call Operations Runbook
+
+> **Mothballed planning artifact:** AgentGuard has no authorized standalone
+> deployment. This runbook describes a historical target Kubernetes/AWS model;
+> it is not evidence that its services, alerts, domains, or escalation paths
+> exist. Do not run these commands or incur runtime/provider spend unless an
+> explicit reactivation decision satisfies every gate in
+> [`PROJECT_STATUS.json`](../PROJECT_STATUS.json), then resolve and verify the
+> exact target first.
 
 ## Service Architecture Quick Reference
 
@@ -189,7 +197,7 @@ kubectl run rollback-migration --image=<api-image> --restart=Never -n agentguard
 
 # Verify rollback succeeded
 kubectl get pods -n agentguard
-curl -s https://api.agentguard.app/health | jq .
+curl -s "${AGENTGUARD_BASE_URL:?set the deployment origin}/health" | jq .
 ```
 
 **Important:** Always rollback the Helm release first, then handle DB migrations separately. Never rollback a migration without rolling back the application code that depends on it.

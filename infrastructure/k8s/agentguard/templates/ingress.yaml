@@ -32,7 +32,7 @@ spec:
                   number: {{ .Values.api.service.port }}
           # Health check (for ALB)
           - path: /health
-            pathType: Exact
+            pathType: Prefix
             backend:
               service:
                 name: {{ .Release.Name }}-api

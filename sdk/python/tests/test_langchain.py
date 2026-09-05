@@ -3,11 +3,19 @@
 import uuid
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from agentguard.integrations.langchain import AgentGuardCallbackHandler
+
+BASE = "https://guard.example.test"
 
 
 def _make_handler(**kwargs) -> AgentGuardCallbackHandler:
-    return AgentGuardCallbackHandler(api_key="ag_test_key", **kwargs)
+    return AgentGuardCallbackHandler(
+        api_key="ag_test_key",
+        base_url=kwargs.pop("base_url", BASE),
+        **kwargs,
+    )
 
 
 # ── Construction ─────────────────────────────────────────────────
@@ -15,12 +23,19 @@ def _make_handler(**kwargs) -> AgentGuardCallbackHandler:
 def test_handler_defaults():
     h = _make_handler()
     assert h.api_key == "ag_test_key"
-    assert h.base_url == "https://api.agentguard.app"
+    assert h.base_url == BASE
     assert h.endpoint_id is None
     assert h.metadata == {}
     assert h.flush_on_chain_end is True
     assert h._chain_depth == 0
     assert len(h._events) == 0
+
+
+def test_handler_requires_deployment_base_url():
+    with pytest.raises(TypeError):
+        AgentGuardCallbackHandler(  # pyright: ignore[reportCallIssue]
+            api_key="ag_test_key"
+        )
 
 
 def test_handler_custom_params():
@@ -277,7 +292,7 @@ def test_flush_swallows_errors(mock_post):
     h = _make_handler()
     h._emit({"type": "a"})
     h._flush()  # should not raise
-    assert len(h._events) == 0
+    assert len(h._events) == 1
 
 
 def test_close():

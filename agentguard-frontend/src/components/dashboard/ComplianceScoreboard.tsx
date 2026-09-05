@@ -107,8 +107,10 @@ function FrameworkCard({
   const textColor = FRAMEWORK_TEXT[framework.name] ?? 'text-foreground';
 
   return (
-    <div
-      className={clsx('cursor-pointer rounded-xl border-2 p-4 transition-shadow hover:shadow-md', borderColor)}
+    <button
+      type="button"
+      aria-expanded={isExpanded}
+      className={clsx('w-full cursor-pointer rounded-xl border-2 p-4 text-left transition-shadow hover:shadow-md', borderColor)}
       onClick={onToggle}
     >
       <div className="flex items-center justify-between">
@@ -133,6 +135,6 @@ function FrameworkCard({
           ))}
         </div>
       )}
-    </div>
+    </button>
   );
 }

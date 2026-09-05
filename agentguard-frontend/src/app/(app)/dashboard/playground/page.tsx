@@ -117,10 +117,11 @@ export default function PlaygroundPage() {
         {/* Input panel */}
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="playground-request-body" className="mb-1 block text-sm font-medium text-foreground">
               Request Body (JSON)
             </label>
             <textarea
+              id="playground-request-body"
               value={requestText}
               onChange={(e) => setRequestText(e.target.value)}
               rows={6}
@@ -129,10 +130,11 @@ export default function PlaygroundPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">
+            <label htmlFor="playground-response-body" className="mb-1 block text-sm font-medium text-foreground">
               Response Body (JSON)
             </label>
             <textarea
+              id="playground-response-body"
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
               rows={6}
@@ -142,9 +144,9 @@ export default function PlaygroundPage() {
           </div>
 
           {/* Detector categories */}
-          <div>
+          <fieldset>
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-medium text-foreground">Detectors</label>
+              <legend className="text-sm font-medium text-foreground">Detectors</legend>
               <button onClick={selectAll} className="text-xs text-primary hover:text-primary">
                 Select all
               </button>
@@ -165,7 +167,7 @@ export default function PlaygroundPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           <button
             onClick={handleTest}

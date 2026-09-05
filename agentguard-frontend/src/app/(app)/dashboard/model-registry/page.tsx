@@ -12,19 +12,7 @@ import {
 import type { AIModel, AIModelCreate } from '@/lib/api/model-registry';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/hooks/useToast';
-
-const RISK_COLORS: Record<string, string> = {
-  low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  approved: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-};
+import { REVIEW_STATUS_COLORS as STATUS_COLORS, RISK_COLORS } from '@/lib/constants';
 
 export default function ModelRegistryPage() {
   const queryClient = useQueryClient();
@@ -210,8 +198,9 @@ export default function ModelRegistryPage() {
               onChange={(v) => setForm({ ...form, model_version: v })}
             />
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">Risk Level</label>
+              <label htmlFor="model-risk-level" className="mb-1 block text-xs font-medium text-foreground">Risk Level</label>
               <select
+                id="model-risk-level"
                 value={form.risk_level}
                 onChange={(e) => setForm({ ...form, risk_level: e.target.value })}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -223,8 +212,9 @@ export default function ModelRegistryPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">PII Handling</label>
+              <label htmlFor="model-pii-handling" className="mb-1 block text-xs font-medium text-foreground">PII Handling</label>
               <select
+                id="model-pii-handling"
                 value={form.pii_handling}
                 onChange={(e) => setForm({ ...form, pii_handling: e.target.value })}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"

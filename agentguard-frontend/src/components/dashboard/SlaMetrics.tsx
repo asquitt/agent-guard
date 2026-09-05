@@ -24,7 +24,7 @@ function errorRateColor(rate: number): string {
   return 'text-red-600';
 }
 
-function uptimeColor(pct: number): string {
+function successRateColor(pct: number): string {
   if (pct >= 99.9) return 'text-green-600';
   if (pct >= 99) return 'text-yellow-600';
   return 'text-red-600';
@@ -38,19 +38,28 @@ function formatMs(ms: number | null): string {
 export function SlaMetricsSection() {
   const [days, setDays] = useState(30);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['sla-metrics', days],
     queryFn: () => getSlaMetrics(days),
   });
+  const hasSamples = Boolean(data && data.totalRequests > 0);
+  const metricsUnavailable = isLoading || isError || !data;
 
   return (
     <div className="mt-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Proxy SLA Metrics</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Observed Proxy Metrics</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Calculated from recorded organization requests, not a service-level commitment.
+          </p>
+        </div>
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.days}
+              type="button"
+              aria-pressed={days === opt.days}
               onClick={() => setDays(opt.days)}
               className={clsx(
                 'rounded-md px-3 py-1 text-sm font-medium transition-colors',
@@ -65,6 +74,12 @@ export function SlaMetricsSection() {
         </div>
       </div>
 
+      {isError && (
+        <p role="alert" className="mb-4 text-sm text-muted-foreground">
+          Observed metrics are unavailable.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SlaCard
           label="P95 Latency"
@@ -74,21 +89,41 @@ export function SlaMetricsSection() {
         />
         <SlaCard
           label="Error Rate"
-          value={isLoading ? '—' : `${((data?.errorRate ?? 0) * 100).toFixed(2)}%`}
-          colorClass={isLoading ? 'text-muted-foreground/60' : errorRateColor(data?.errorRate ?? 0)}
+          value={hasSamples && data ? `${(data.errorRate * 100).toFixed(2)}%` : '—'}
+          colorClass={hasSamples && data ? errorRateColor(data.errorRate) : 'text-muted-foreground/60'}
           subtitle={data ? `${data.totalRequests.toLocaleString()} total requests` : undefined}
         />
         <SlaCard
           label="Throughput"
-          value={isLoading ? '—' : `${Math.round(data?.avgThroughputPerHour ?? 0)}/hr`}
-          colorClass="text-foreground"
-          subtitle={`Last ${days} days`}
+          value={hasSamples && data ? `${Math.round(data.avgThroughputPerHour)}/hr` : '—'}
+          colorClass={hasSamples ? 'text-foreground' : 'text-muted-foreground/60'}
+          subtitle={
+            metricsUnavailable
+              ? 'Metric unavailable'
+              : hasSamples
+                ? `Last ${days} days`
+                : 'No recorded requests in this period'
+          }
         />
         <SlaCard
-          label="Uptime"
-          value={isLoading ? '—' : `${(data?.uptimePct ?? 0).toFixed(2)}%`}
-          colorClass={isLoading ? 'text-muted-foreground/60' : uptimeColor(data?.uptimePct ?? 0)}
-          subtitle={data?.byProvider.length ? `${data.byProvider.length} provider(s)` : undefined}
+          label="Successful response ratio"
+          value={
+            !hasSamples || !data
+              ? '—'
+              : `${data.uptimePct.toFixed(2)}%`
+          }
+          colorClass={
+            !hasSamples || !data
+              ? 'text-muted-foreground/60'
+              : successRateColor(data.uptimePct)
+          }
+          subtitle={
+            data
+              ? data.totalRequests === 0
+                ? 'No recorded requests in this period'
+                : `Based on ${data.totalRequests.toLocaleString()} recorded requests`
+              : undefined
+          }
         />
       </div>
     </div>

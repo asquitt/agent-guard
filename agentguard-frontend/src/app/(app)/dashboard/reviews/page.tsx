@@ -248,8 +248,9 @@ function ReviewCard({
       {showActions && isPending && (
         <div className="mt-4 border-t border-border pt-4">
           <div className="mb-3">
-            <label className="mb-1 block text-xs text-muted-foreground">Decision Reason (optional)</label>
+            <label htmlFor={`review-reason-${item.id}`} className="mb-1 block text-xs text-muted-foreground">Decision Reason (optional)</label>
             <input
+              id={`review-reason-${item.id}`}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"

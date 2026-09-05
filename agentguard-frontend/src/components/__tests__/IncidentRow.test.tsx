@@ -60,9 +60,10 @@ const mockIncident: Incident = {
   createdAt: '2024-01-15T10:30:00Z',
   updatedAt: '2024-01-15T10:30:00Z',
   actionTaken: 'redacted',
-  model: 'gpt-4',
   detectorId: 'det-1',
   proxyRequestId: 'req-1',
+  sandboxExecutionId: null,
+  resolvedAt: null,
 };
 
 function renderRow(overrides: Partial<Parameters<typeof IncidentRow>[0]> = {}) {

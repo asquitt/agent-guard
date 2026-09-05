@@ -3,6 +3,7 @@
  */
 
 import { raiseForStatus, RateLimitError } from './errors';
+import { normalizeBaseUrl } from './base-url';
 import type {
   Incident,
   IncidentListResponse,
@@ -11,7 +12,9 @@ import type {
 
 export interface AgentGuardClientOptions {
   apiKey: string;
-  baseUrl?: string;
+  baseUrl: string;
+  /** User access token for access-token-protected management routes. */
+  accessToken?: string;
   endpointId?: string;
   timeout?: number;
   maxRetries?: number;
@@ -27,6 +30,7 @@ export interface IncidentFilters {
 
 export class AgentGuardClient {
   private apiKey: string;
+  private accessToken: string | undefined;
   private baseUrl: string;
   private endpointId: string | undefined;
   private timeout: number;
@@ -34,16 +38,14 @@ export class AgentGuardClient {
 
   constructor(options: AgentGuardClientOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = (options.baseUrl ?? 'https://api.agentguard.app').replace(
-      /\/$/,
-      '',
-    );
+    this.baseUrl = normalizeBaseUrl(options.baseUrl);
+    this.accessToken = options.accessToken;
     this.endpointId = options.endpointId;
     this.timeout = options.timeout ?? 120_000;
     this.maxRetries = options.maxRetries ?? 3;
   }
 
-  private headers(): Record<string, string> {
+  private proxyHeaders(): Record<string, string> {
     const h: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
@@ -52,6 +54,18 @@ export class AgentGuardClient {
       h['X-AgentGuard-Endpoint-Id'] = this.endpointId;
     }
     return h;
+  }
+
+  private managementHeaders(): Record<string, string> {
+    if (!this.accessToken) {
+      throw new TypeError(
+        'accessToken is required for AgentGuard management routes',
+      );
+    }
+    return {
+      Authorization: `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    };
   }
 
   private async requestWithRetry(
@@ -105,7 +119,7 @@ export class AgentGuardClient {
   ): Promise<ProxyResponse> {
     const res = await this.requestWithRetry(
       `${this.baseUrl}/api/v1/proxy${path}`,
-      { method: 'POST', headers: this.headers(), body: JSON.stringify(body) },
+      { method: 'POST', headers: this.proxyHeaders(), body: JSON.stringify(body) },
     );
 
     if (!res.ok) {
@@ -132,7 +146,7 @@ export class AgentGuardClient {
 
     const res = await this.requestWithRetry(
       `${this.baseUrl}/api/v1/incidents/${qs}`,
-      { headers: this.headers() },
+      { headers: this.managementHeaders() },
     );
 
     if (!res.ok) {
@@ -146,7 +160,7 @@ export class AgentGuardClient {
   async getIncident(incidentId: string): Promise<Incident> {
     const res = await this.requestWithRetry(
       `${this.baseUrl}/api/v1/incidents/${incidentId}`,
-      { headers: this.headers() },
+      { headers: this.managementHeaders() },
     );
 
     if (!res.ok) {

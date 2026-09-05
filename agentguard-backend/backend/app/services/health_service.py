@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any
 
@@ -51,23 +52,43 @@ async def _check_database() -> dict[str, Any]:
             await session.execute(text("SELECT 1"))
         elapsed = int((time.monotonic() - start) * 1000)
         return {"name": "database", "status": "ok", "response_time_ms": elapsed}
-    except Exception as e:
+    except Exception:
         elapsed = int((time.monotonic() - start) * 1000)
-        return {"name": "database", "status": "error", "response_time_ms": elapsed, "message": str(e)[:200]}
+        return {
+            "name": "database",
+            "status": "error",
+            "response_time_ms": elapsed,
+            "message": "Database unavailable",
+        }
 
 
 async def _check_redis() -> dict[str, Any]:
     """Check Redis connectivity with PING."""
     start = time.monotonic()
+    redis_client: Any = None
+    available = False
     try:
-        r = aioredis.from_url(settings.REDIS_URL)
-        await r.ping()
-        await r.aclose()
-        elapsed = int((time.monotonic() - start) * 1000)
+        redis_client = aioredis.from_url(settings.REDIS_URL)
+        await redis_client.ping()
+        available = True
+    except Exception:
+        pass
+    finally:
+        if redis_client is not None:
+            try:
+                await redis_client.aclose()
+            except Exception:
+                available = False
+
+    elapsed = int((time.monotonic() - start) * 1000)
+    if available:
         return {"name": "redis", "status": "ok", "response_time_ms": elapsed}
-    except Exception as e:
-        elapsed = int((time.monotonic() - start) * 1000)
-        return {"name": "redis", "status": "error", "response_time_ms": elapsed, "message": str(e)[:200]}
+    return {
+        "name": "redis",
+        "status": "error",
+        "response_time_ms": elapsed,
+        "message": "Redis unavailable",
+    }
 
 
 async def _check_celery() -> dict[str, Any]:
@@ -80,9 +101,16 @@ async def _check_celery() -> dict[str, Any]:
     try:
         from app.tasks.celery_app import celery_app
 
-        # inspect().ping() is synchronous — run with short timeout
-        inspector = celery_app.control.inspect(timeout=2.0)
-        ping_result = inspector.ping()
+        def ping_workers():
+            inspector = celery_app.control.inspect(timeout=2.0)
+            return inspector.ping()
+
+        # Celery inspection is synchronous. Keep it off the API event loop and
+        # bound the caller's wait even if the transport ignores its own timeout.
+        ping_result = await asyncio.wait_for(
+            asyncio.to_thread(ping_workers),
+            timeout=2.5,
+        )
         elapsed = int((time.monotonic() - start) * 1000)
 
         if ping_result:
@@ -94,6 +122,11 @@ async def _check_celery() -> dict[str, Any]:
                 "message": f"{worker_count} worker(s) active",
             }
         return {"name": "celery", "status": "degraded", "response_time_ms": elapsed, "message": "No workers found"}
-    except Exception as e:
+    except Exception:
         elapsed = int((time.monotonic() - start) * 1000)
-        return {"name": "celery", "status": "degraded", "response_time_ms": elapsed, "message": str(e)[:200]}
+        return {
+            "name": "celery",
+            "status": "degraded",
+            "response_time_ms": elapsed,
+            "message": "Worker status unavailable",
+        }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
+import { useModalKeyboardBoundary } from '@/lib/dialog';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -27,35 +28,33 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalKeyboardBoundary(dialogRef, onCancel, open);
 
   // Focus cancel button when dialog opens (safer default)
   useEffect(() => {
     if (open) cancelRef.current?.focus();
   }, [open]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-    },
-    [onCancel],
-  );
-
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
-      onClick={onCancel}
-      onKeyDown={handleKeyDown}
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute inset-0 bg-black/50"
+        onClick={onCancel}
+      />
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-desc"
-        className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        className="relative w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-xl"
       >
         <h2 id="confirm-title" className="text-lg font-semibold text-foreground">
           {title}

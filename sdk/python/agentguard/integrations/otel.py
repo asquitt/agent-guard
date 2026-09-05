@@ -1,7 +1,7 @@
 """OpenTelemetry span exporter for AgentGuard.
 
-Exports trace spans to the AgentGuard traces API so they appear in the
-observability dashboard alongside proxy-originated traces.
+Attempts to export trace spans to the AgentGuard traces API and reports success
+or failure through the exporter result contract.
 
 Usage::
 
@@ -9,7 +9,10 @@ Usage::
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from agentguard.integrations.otel import AgentGuardSpanExporter
 
-    exporter = AgentGuardSpanExporter(api_key="ag_live_...")
+    exporter = AgentGuardSpanExporter(
+        api_key="ag_live_...",
+        base_url="http://localhost:8001",
+    )
     provider = TracerProvider()
     provider.add_span_processor(BatchSpanProcessor(exporter))
 """
@@ -20,6 +23,8 @@ import logging
 from typing import Any, Sequence
 
 import httpx
+
+from agentguard._base_url import normalize_base_url
 
 logger = logging.getLogger("agentguard.otel")
 
@@ -39,11 +44,11 @@ class AgentGuardSpanExporter:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self._http = httpx.Client(
             base_url=self.base_url,

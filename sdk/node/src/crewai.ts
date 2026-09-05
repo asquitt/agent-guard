@@ -1,17 +1,24 @@
 /**
  * CrewAI-style multi-agent handler for AgentGuard (Node.js).
  *
- * Wraps a multi-agent orchestration workflow and forwards task execution,
- * tool calls, and agent interactions to AgentGuard for monitoring.
+ * Buffers selected workflow events and attempts best-effort delivery to the
+ * AgentGuard ingest API.
  *
  * @example
  * ```ts
- * import { AgentGuardCrewAIHandler } from 'agentguard/crewai';
+ * import { AgentGuardCrewAIHandler } from 'agentguard';
  *
- * const handler = new AgentGuardCrewAIHandler({ apiKey: 'ag_live_...' });
+ * const handler = new AgentGuardCrewAIHandler({
+ *   apiKey: 'ag_live_...',
+ *   baseUrl: 'http://localhost:8001',
+ * });
  * const result = await handler.run(crew);
  * ```
  */
+
+import { randomUUID } from 'node:crypto';
+
+import { normalizeBaseUrl } from './base-url';
 
 interface SDKEvent {
   type: string;
@@ -23,7 +30,7 @@ interface SDKEvent {
 
 export interface AgentGuardCrewAIOptions {
   apiKey: string;
-  baseUrl?: string;
+  baseUrl: string;
   endpointId?: string;
   metadata?: Record<string, string>;
 }
@@ -39,10 +46,10 @@ export class AgentGuardCrewAIHandler {
 
   constructor(options: AgentGuardCrewAIOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = (options.baseUrl ?? 'https://api.agentguard.app').replace(/\/$/, '');
+    this.baseUrl = normalizeBaseUrl(options.baseUrl);
     this.endpointId = options.endpointId;
     this.metadata = options.metadata ?? {};
-    this.sessionId = crypto.randomUUID();
+    this.sessionId = randomUUID();
   }
 
   private emit(event_type: string, extra: Record<string, unknown> = {}): void {
@@ -55,8 +62,8 @@ export class AgentGuardCrewAIHandler {
     });
   }
 
-  private async flush(): Promise<void> {
-    if (this.events.length === 0) return;
+  private async flush(raiseOnError = false): Promise<boolean> {
+    if (this.events.length === 0) return true;
     const batch = [...this.events];
     this.events = [];
     try {
@@ -67,14 +74,20 @@ export class AgentGuardCrewAIHandler {
       if (this.endpointId) {
         headers['X-AgentGuard-Endpoint-Id'] = this.endpointId;
       }
-      await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ingest/events`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ events: batch }),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch {
-      // Non-blocking
+      if (!response.ok) {
+        throw new Error(`AgentGuard ingest failed with HTTP ${response.status}`);
+      }
+      return true;
+    } catch (error) {
+      this.events = [...batch, ...this.events];
+      if (raiseOnError) throw error;
+      return false;
     }
   }
 
@@ -142,6 +155,6 @@ export class AgentGuardCrewAIHandler {
 
   /** Manually flush any buffered events. */
   async manualFlush(): Promise<void> {
-    await this.flush();
+    await this.flush(true);
   }
 }

@@ -6,6 +6,8 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.api.auth import limiter as registration_limiter
+from app.core.config import settings
 from app.main import app
 
 
@@ -13,10 +15,17 @@ from app.main import app
 async def raw_client():
     """Async HTTP client without DB override (for mocked tests)."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(
-        transport=transport, base_url="http://test", follow_redirects=True
-    ) as ac:
+    async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=True) as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def _enable_local_registration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep mocked registration tests inside the explicit test bypass."""
+    registration_limiter.reset()
+    monkeypatch.setattr(settings, "ENVIRONMENT", "test")
+    monkeypatch.setattr(settings, "REGISTRATION_ENABLED", True)
+    monkeypatch.setattr(settings, "LOCAL_REGISTRATION_BYPASS_ENABLED", True)
 
 
 # ── Health ───────────────────────────────────────────────────────────
@@ -62,6 +71,7 @@ class TestAuthRegister:
                 "password": "StrongPass1!",
                 "full_name": "New User",
                 "org_name": "New Org",
+                "controlled_evaluation_accepted": True,
             },
         )
         assert resp.status_code == 201
@@ -75,9 +85,9 @@ class TestAuthRegister:
 
 class TestUnauthorizedAccess:
     async def test_incidents_without_auth(self, raw_client: AsyncClient):
-        """GET /api/v1/incidents/ without Authorization header returns 403."""
+        """GET /api/v1/incidents/ without Authorization header returns 401."""
         resp = await raw_client.get("/api/v1/incidents/")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     async def test_incidents_with_invalid_token(self, raw_client: AsyncClient):
         """GET /api/v1/incidents/ with garbage token returns 401."""
@@ -88,9 +98,9 @@ class TestUnauthorizedAccess:
         assert resp.status_code == 401
 
     async def test_detectors_without_auth(self, raw_client: AsyncClient):
-        """GET /api/v1/detectors/ without auth returns 403."""
+        """GET /api/v1/detectors/ without auth returns 401."""
         resp = await raw_client.get("/api/v1/detectors/")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     async def test_dashboard_with_invalid_token(self, raw_client: AsyncClient):
         """GET /api/v1/dashboard/metrics with bad token returns 401."""

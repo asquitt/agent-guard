@@ -8,13 +8,14 @@ export interface Incident {
   category: string;
   title: string;
   status: 'open' | 'acknowledged' | 'resolved' | 'dismissed';
-  description: string;
-  actionTaken: string;
-  model: string;
+  description: string | null;
+  actionTaken: string | null;
   createdAt: string;
   updatedAt: string;
-  proxyRequestId: string;
-  detectorId: string;
+  proxyRequestId: string | null;
+  detectorId: string | null;
+  sandboxExecutionId: string | null;
+  resolvedAt: string | null;
 }
 
 export interface IncidentListResponse {

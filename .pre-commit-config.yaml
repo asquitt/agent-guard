@@ -100,6 +100,8 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         args: ['--allow-multiple-documents']
+        # Helm templates contain Go template expressions and are not plain YAML.
+        exclude: ^infrastructure/k8s/[^/]+/templates/.*\.ya?ml$
       - id: check-json
       - id: check-added-large-files
         args: ['--maxkb=1000']

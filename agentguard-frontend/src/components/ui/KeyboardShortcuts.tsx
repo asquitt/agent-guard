@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { hasOpenModal, useModalKeyboardBoundary } from '@/lib/dialog';
 
 const SHORTCUTS = [
   { section: 'Navigation', items: [
@@ -46,19 +47,35 @@ export function KeyboardShortcuts() {
   const router = useRouter();
   const pendingG = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const closeShortcuts = () => setOpen(false);
+  useModalKeyboardBoundary(dialogRef, closeShortcuts, open);
+
+  useEffect(() => {
+    if (open) closeRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
+      if (hasOpenModal(dialogRef.current)) return;
+
+      if (open) {
+        if (e.key === '?' || e.key === 'Escape') {
+          e.preventDefault();
+          setOpen(false);
+        }
+        return;
+      }
+
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         setOpen((p) => !p);
         return;
       }
-      if (e.key === 'Escape') { setOpen(false); return; }
-
       // / to focus search
       if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
         const input = document.querySelector<HTMLInputElement>(
@@ -105,17 +122,33 @@ export function KeyboardShortcuts() {
       document.removeEventListener('keydown', handleKeyDown);
       if (gTimer.current) clearTimeout(gTimer.current);
     };
-  }, [router]);
+  }, [open, router]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
-      <div className="relative w-full max-w-md rounded-xl border border-border bg-popover p-6 shadow-2xl">
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => setOpen(false)}
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="keyboard-shortcuts-title"
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-xl border border-border bg-popover p-6 shadow-2xl"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Keyboard Shortcuts</h2>
+          <h2 id="keyboard-shortcuts-title" className="text-sm font-semibold text-foreground">Keyboard Shortcuts</h2>
           <button
+            ref={closeRef}
+            type="button"
+            aria-label="Close keyboard shortcuts"
             onClick={() => setOpen(false)}
             className="text-xs text-muted-foreground hover:text-foreground"
           >

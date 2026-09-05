@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from agentguard._base_url import normalize_base_url
 from agentguard.exceptions import raise_for_status
 from agentguard.types import Incident, IncidentList, ProxyResponse
 
@@ -21,7 +22,11 @@ class AsyncAgentGuardClient:
 
         from agentguard import AsyncAgentGuardClient
 
-        async with AsyncAgentGuardClient(api_key="ag-...") as client:
+        async with AsyncAgentGuardClient(
+            api_key="ag-...",
+            base_url="http://localhost:8001",
+            access_token="user-access-token",
+        ) as client:
             incidents = await client.list_incidents(severity="critical")
             for inc in incidents.items:
                 print(inc.title, inc.severity)
@@ -30,13 +35,15 @@ class AsyncAgentGuardClient:
     def __init__(
         self,
         api_key: str,
-        base_url: str = "https://api.agentguard.app",
+        base_url: str,
         endpoint_id: str | None = None,
         timeout: float = 120.0,
         max_retries: int = 3,
+        access_token: str | None = None,
     ) -> None:
         self.api_key = api_key
-        self.base_url = base_url.rstrip("/")
+        self.access_token = access_token
+        self.base_url = normalize_base_url(base_url)
         self.endpoint_id = endpoint_id
         self.max_retries = max_retries
         self._http = httpx.AsyncClient(
@@ -46,10 +53,19 @@ class AsyncAgentGuardClient:
         )
 
     def _headers(self) -> dict[str, str]:
+        """Return organization API-key headers for proxy requests."""
         h: dict[str, str] = {"Authorization": f"Bearer {self.api_key}"}
         if self.endpoint_id:
             h["X-AgentGuard-Endpoint-Id"] = self.endpoint_id
         return h
+
+    def _management_headers(self) -> dict[str, str]:
+        """Return user access-token headers for protected management routes."""
+        if not self.access_token:
+            raise ValueError(
+                "access_token is required for AgentGuard management routes"
+            )
+        return {"Authorization": f"Bearer {self.access_token}"}
 
     async def _request_with_retry(
         self, method: str, url: str, **kwargs: Any
@@ -90,13 +106,22 @@ class AsyncAgentGuardClient:
 
     async def list_incidents(self, **filters: Any) -> IncidentList:
         """List incidents for the organization."""
-        resp = await self._request_with_retry("GET", "/api/v1/incidents/", params=filters)
+        resp = await self._request_with_retry(
+            "GET",
+            "/api/v1/incidents/",
+            params=filters,
+            headers=self._management_headers(),
+        )
         raise_for_status(resp)
         return IncidentList.from_dict(resp.json())
 
     async def get_incident(self, incident_id: str) -> Incident:
         """Get a specific incident."""
-        resp = await self._request_with_retry("GET", f"/api/v1/incidents/{incident_id}")
+        resp = await self._request_with_retry(
+            "GET",
+            f"/api/v1/incidents/{incident_id}",
+            headers=self._management_headers(),
+        )
         raise_for_status(resp)
         return Incident.from_dict(resp.json())
 

@@ -1,5 +1,7 @@
 """Tests for agentguard.exceptions."""
 
+from __future__ import annotations
+
 import pytest
 
 from agentguard.exceptions import (
@@ -144,7 +146,8 @@ def test_raise_for_status_non_json_body():
         raise_for_status(resp)
 
 
-def test_raise_for_status_403_blocked_in_message():
+def test_raise_for_status_does_not_infer_enforcement_from_message():
     resp = _FakeResponse(403, {"detail": "Request blocked by policy"})
-    with pytest.raises(DetectionBlockedError):
+    with pytest.raises(AgentGuardError) as exc_info:
         raise_for_status(resp)
+    assert not isinstance(exc_info.value, DetectionBlockedError)

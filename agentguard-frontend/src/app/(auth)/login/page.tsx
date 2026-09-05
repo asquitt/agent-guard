@@ -99,7 +99,6 @@ export default function LoginPage() {
                 id="mfa-code"
                 type="text"
                 required
-                autoFocus
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 maxLength={8}
@@ -214,12 +213,12 @@ export default function LoginPage() {
           </button>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
+            No new accounts are offered while the standalone product is mothballed.{' '}
             <Link
-              href="/register"
+              href="/"
               className="font-medium text-primary hover:text-primary"
             >
-              Create one
+              View archive
             </Link>
           </p>
 

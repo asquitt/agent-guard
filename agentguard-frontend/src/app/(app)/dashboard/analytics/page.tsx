@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
     queryFn: () => getProviderComparison(Math.max(1, Math.ceil(range.days))),
   });
 
-  const buckets = tsData?.buckets ?? [];
+  const buckets = useMemo(() => tsData?.buckets ?? [], [tsData?.buckets]);
   const providers = providerData?.providers ?? [];
   const metricConfig = METRIC_OPTIONS.find((m) => m.key === activeMetric)!;
 

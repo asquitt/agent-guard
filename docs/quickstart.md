@@ -1,65 +1,38 @@
-# Quick Start
+# Archived quick start
 
-Get AgentGuard monitoring your AI agents in under 5 minutes.
+AgentGuard is mothballed as a standalone product. There is no supported quick
+start, hosted service, registration flow, or provider-backed evaluation in the
+preserved application.
 
-## 1. Create an Account
+Do not start the standalone stack, enable registration, connect credentials,
+send provider requests, or incur runtime/provider spend. Those actions require
+an explicit reactivation decision satisfying every gate in
+[`PROJECT_STATUS.json`](../PROJECT_STATUS.json).
 
-Sign up at [agentguard.app](https://agentguard.app). You'll get an organization and a default proxy endpoint automatically.
+## Current archive boundaries
 
-## 2. Get Your API Key
+- The public and authenticated onboarding routes are read-only archive pages.
+- The registration page is intentionally unavailable even if a backend
+  operator changes the dormant registration flags.
+- Backend registration defaults off and requires a separate enrollment gate in
+  any production-like environment.
+- Provider credentials are not accepted in proxy-endpoint configuration.
+- Repository SDKs are unpublished source previews and require an explicit
+  deployment origin.
+- Local tests, builds, fixtures, and containers are repository evidence only;
+  they do not prove a hosted or customer-ready service.
 
-Go to **Settings > API Keys** in the dashboard and create a new key. Copy the key -- it starts with `ag_live_`.
+The registration UI, deployment authorization, provider/spend controls, and a
+full customer journey would all need new implementation and exact-commit review
+after a portfolio reactivation decision. Turning on a backend flag alone is not
+a supported enrollment path.
 
-## 3. Install the SDK
+## Preserved reference
 
-```bash
-pip install agentguard
-```
+- [Archive and asset map](./ARCHIVE_AND_ASSET_MAP.md)
+- [Archived API reference](./api-reference.md)
+- [Archived integration reference](./integration-guide.md)
+- [Historical standalone README](./historical/STANDALONE_PRODUCT_README.md)
 
-## 4. Integrate with OpenAI
-
-```python
-import openai
-import agentguard
-
-client = openai.OpenAI(api_key="sk-...")
-client = agentguard.wrap_openai(client, api_key="ag_live_...")
-
-# Use client as normal -- AgentGuard monitors all requests
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
-
-That's it. Every request now flows through AgentGuard's detection pipeline. Hallucinations, PII leaks, compliance violations, cost anomalies, and agent loops are detected automatically.
-
-## 5. Integrate with Anthropic
-
-```python
-import anthropic
-import agentguard
-
-client = anthropic.Anthropic(api_key="sk-ant-...")
-client = agentguard.wrap_anthropic(client, api_key="ag_live_...")
-
-response = client.messages.create(
-    model="claude-sonnet-4-20250514",
-    max_tokens=1024,
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
-
-## 6. View Incidents
-
-Open the [AgentGuard Dashboard](https://agentguard.app/dashboard). Incidents appear in real time as detectors flag issues. Each incident includes:
-
-- Severity level (critical, high, medium, low, info)
-- Detection category (hallucination, pii_leak, compliance, cost_anomaly, loop)
-- The full request/response that triggered it
-- Recommended action
-
-## Next Steps
-
-- [Integration Guide](./integration-guide.md) -- Python, Node.js, raw HTTP, and curl examples
-- [API Reference](./api-reference.md) -- Full endpoint documentation
+These references describe source artifacts and historical intent. They are not
+instructions or authorization to run the product.

@@ -54,10 +54,11 @@ export default function ProfilePage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
+            <label htmlFor="profile-full-name" className="mb-1 block text-xs font-medium text-foreground">
               Full Name
             </label>
             <input
+              id="profile-full-name"
               value={name}
               onChange={(e) => { setName(e.target.value); setSaved(false); }}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
@@ -67,10 +68,11 @@ export default function ProfilePage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">
+            <label htmlFor="profile-email" className="mb-1 block text-xs font-medium text-foreground">
               Email
             </label>
             <input
+              id="profile-email"
               value={user?.email ?? ''}
               disabled
               className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground"

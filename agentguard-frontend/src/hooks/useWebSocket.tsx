@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { createWebSocketTicket } from '@/lib/api/websocket';
+import { ApiError } from '@/lib/api/client';
 
 export interface WebSocketEvent {
   type: 'incident.new' | 'incident.updated' | 'alert.sent' | 'billing.updated' | 'connected';
@@ -11,9 +13,14 @@ export interface WebSocketEvent {
 
 export type WsStatus = 'connecting' | 'connected' | 'disconnected';
 
-/** Derive WS URL from env or auto-detect from current page location. */
+/** Derive a path-free WS base URL from env or the current page location. */
 function getWsUrl(): string {
-  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  const configuredUrl = process.env.NEXT_PUBLIC_WS_URL?.trim().replace(/\/+$/, '');
+  if (configuredUrl) {
+    if (configuredUrl.endsWith('/ws/events')) return configuredUrl.slice(0, -'/ws/events'.length);
+    if (configuredUrl.endsWith('/ws')) return configuredUrl.slice(0, -'/ws'.length);
+    return configuredUrl;
+  }
   if (typeof window === 'undefined') return 'ws://localhost:8001';
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${window.location.host}`;
@@ -21,6 +28,8 @@ function getWsUrl(): string {
 
 const MAX_BACKOFF_MS = 30_000;
 const AUTH_CLOSE_CODE = 4001;
+const WS_PROTOCOL = 'agentguard.v1';
+const WS_TICKET_PROTOCOL_PREFIX = 'agentguard.ticket.';
 
 export function useWebSocket() {
   const { isAuthenticated } = useAuth();
@@ -31,8 +40,10 @@ export function useWebSocket() {
   const backoffRef = useRef(1000);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const connectionGenerationRef = useRef(0);
 
   const cleanup = useCallback(() => {
+    connectionGenerationRef.current += 1;
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -47,19 +58,36 @@ export function useWebSocket() {
     }
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!mountedRef.current) return;
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
+    cleanup();
+    const generation = connectionGenerationRef.current;
+    setStatus('connecting');
+
+    let ticket: string;
+    try {
+      ({ ticket } = await createWebSocketTicket());
+    } catch (error) {
+      if (!mountedRef.current || generation !== connectionGenerationRef.current) return;
       setStatus('disconnected');
+
+      if (error instanceof ApiError && error.status === 401) return;
+
+      const delay = backoffRef.current;
+      backoffRef.current = Math.min(delay * 2, MAX_BACKOFF_MS);
+      reconnectTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) void connect();
+      }, delay);
       return;
     }
 
-    cleanup();
-    setStatus('connecting');
+    if (!mountedRef.current || generation !== connectionGenerationRef.current) return;
 
-    const ws = new WebSocket(`${getWsUrl()}/ws/events?token=${token}`);
+    const ws = new WebSocket(`${getWsUrl()}/ws/events`, [
+      WS_PROTOCOL,
+      `${WS_TICKET_PROTOCOL_PREFIX}${ticket}`,
+    ]);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -90,7 +118,7 @@ export function useWebSocket() {
       backoffRef.current = Math.min(delay * 2, MAX_BACKOFF_MS);
 
       reconnectTimerRef.current = setTimeout(() => {
-        if (mountedRef.current) connect();
+        if (mountedRef.current) void connect();
       }, delay);
     };
 
@@ -103,7 +131,7 @@ export function useWebSocket() {
     mountedRef.current = true;
 
     if (isAuthenticated) {
-      connect();
+      void connect();
     } else {
       cleanup();
       setStatus('disconnected');

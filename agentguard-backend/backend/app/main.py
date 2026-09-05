@@ -1,6 +1,6 @@
-"""AgentGuard API - AI Agent Incident Response Platform."""
+"""Preserved API surface for the mothballed AgentGuard project."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -17,9 +17,12 @@ configure_logging()
 init_sentry()
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    description="AI Agent Incident Response for Financial Services",
+    title="AgentGuard Archived API",
+    description=(
+        "Preserved source interface for a mothballed standalone project; " "not an active or hosted service contract."
+    ),
     version="0.1.0",
+    openapi_url="/openapi.json" if settings.DEBUG else None,
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
@@ -67,20 +70,26 @@ async def readiness_check():
 
     # Database
     try:
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionLocal() as session:  # pyright: ignore[reportGeneralTypeIssues]
             await session.execute(text("SELECT 1"))
         checks["database"] = "ok"
     except Exception:
         checks["database"] = "error"
 
     # Redis
+    redis_client = None
     try:
-        r = aioredis.from_url(settings.REDIS_URL)
-        await r.ping()
-        await r.aclose()
+        redis_client = aioredis.from_url(settings.REDIS_URL)
+        await redis_client.ping()
         checks["redis"] = "ok"
     except Exception:
         checks["redis"] = "error"
+    finally:
+        if redis_client is not None:
+            try:
+                await redis_client.aclose()
+            except Exception:
+                checks["redis"] = "error"
 
     healthy = all(v == "ok" for v in checks.values())
     from fastapi.responses import JSONResponse
@@ -92,8 +101,10 @@ async def readiness_check():
 
 
 @app.get("/health/detailed")
-async def detailed_health_check():
+@limiter.limit("30/minute")
+async def detailed_health_check(request: Request):
     """Detailed health check with per-component status and response times."""
+    del request  # Used by SlowAPI to derive the caller key.
     from fastapi.responses import JSONResponse
 
     from app.services import health_service
@@ -114,9 +125,9 @@ from app.api import (  # noqa: E402
     compliance,
     conversations,
     dashboard,
+    detectors,
     governance,
     governance_testing,
-    detectors,
     incidents,
     ingest,
     model_registry,

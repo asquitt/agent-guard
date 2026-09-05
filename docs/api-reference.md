@@ -1,269 +1,190 @@
-# API Reference
+# Archived API reference
 
-## Base URL
+> **Mothballed:** This is preserved source reference, not an active service
+> contract or authorization to deploy or call AgentGuard. Do not execute these
+> routes or incur runtime/provider spend unless an explicit reactivation
+> decision satisfies every gate in [`PROJECT_STATUS.json`](../PROJECT_STATUS.json).
 
+This reference describes routes in the archived repository. It is not evidence
+of a public deployment. A reactivation verification would set the origin of the
+authorized environment explicitly:
+
+```bash
+export AGENTGUARD_BASE_URL=http://localhost:8001
 ```
-https://proxy.agentguard.app/api/v1
+
+All paths below are relative to that origin and begin with `/api/v1`.
+Development OpenAPI documentation is available at
+`$AGENTGUARD_BASE_URL/docs` when enabled by the deployment.
+
+## Authentication boundaries
+
+- Management endpoints use a user access token obtained from the authentication
+  flow and enforce role or permission dependencies per route.
+- Proxy and ingest endpoints use an organization API key in
+  `Authorization: Bearer <key>`.
+- `X-AgentGuard-Endpoint-Id` optionally selects an organization-owned proxy
+  endpoint. Omitting it asks the backend to resolve an active endpoint for the
+  route's provider.
+
+API key scopes and environment labels exist in stored configuration, but this
+reference does not claim they authorize individual proxy operations until that
+enforcement is independently verified.
+
+## LLM proxy
+
+| Method | Full path | Provider-compatible operation |
+| --- | --- | --- |
+| `POST` | `/api/v1/proxy/v1/chat/completions` | OpenAI chat completions |
+| `POST` | `/api/v1/proxy/v1/completions` | OpenAI legacy completions |
+| `POST` | `/api/v1/proxy/v1/embeddings` | OpenAI embeddings |
+| `POST` | `/api/v1/proxy/v1/messages` | Anthropic messages |
+
+The request body is forwarded through the configured provider adapter. Common
+outcomes include:
+
+| Status | Meaning at this boundary |
+| --- | --- |
+| `200` | A provider-compatible response was returned |
+| `403` | A synchronous detector returned `block` for a non-streaming response |
+| `422` | Endpoint selection, provider credential, or request validation failed |
+| `429` | A configured rate or usage limit was reached |
+| `502` | The upstream provider request failed |
+| `503` | The provider circuit breaker rejected the attempt |
+| `504` | The upstream provider timed out |
+
+These statuses do not by themselves prove persistence, detector coverage, or
+incident creation.
+
+### OpenAI-compatible example
+
+```bash
+curl --fail-with-body \
+  "$AGENTGUARD_BASE_URL/api/v1/proxy/v1/chat/completions" \
+  -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-For self-hosted deployments, replace with your own host.
+### Anthropic-compatible example
+
+```bash
+curl --fail-with-body \
+  "$AGENTGUARD_BASE_URL/api/v1/proxy/v1/messages" \
+  -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"model":"claude-sonnet-4-20250514","max_tokens":256,"messages":[{"role":"user","content":"Hello"}]}'
+```
+
+Streaming is requested with the provider's `stream` field. Streaming content is
+returned before asynchronous detection finishes, so it is monitor-only in this
+revision.
 
 ## Authentication
 
-All API requests require a Bearer token in the `Authorization` header.
+| Method | Full path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/auth/register` | Create a user and organization when deployment enrollment is enabled |
+| `POST` | `/api/v1/auth/login` | Return tokens or an MFA challenge |
+| `POST` | `/api/v1/auth/refresh` | Rotate a refresh token |
+| `POST` | `/api/v1/auth/change-password` | Change password and rotate tokens |
+| `GET` | `/api/v1/auth/me` | Return current user and organization |
+| `POST` | `/api/v1/auth/logout` | End the current client session contract |
 
-**Dashboard/management endpoints** use a JWT access token obtained from `/api/v1/auth/login`:
-
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-```
-
-**Proxy endpoints** use an AgentGuard API key created in the dashboard:
-
-```
-Authorization: Bearer ag_live_abc123...
-```
-
-## Endpoints
-
-### LLM Proxy
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/proxy/v1/chat/completions` | Proxy OpenAI chat completions |
-| POST | `/proxy/v1/completions` | Proxy OpenAI legacy completions |
-| POST | `/proxy/v1/embeddings` | Proxy OpenAI embeddings |
-| POST | `/proxy/v1/messages` | Proxy Anthropic messages |
-
-All proxy endpoints accept the same request body as the upstream provider. Pass `"stream": true` for streaming responses.
-
-**Optional header:** `X-AgentGuard-Endpoint-Id` -- UUID of a specific proxy endpoint configuration. If omitted, the default endpoint for the provider is used.
-
-**Responses:**
-- `200` -- Upstream response (may be modified if a detector redacted content)
-- `403` -- Response blocked by detection policy
-- `429` -- Monthly request limit exceeded
-- `502` -- Upstream provider error
-- `504` -- Upstream provider timeout
-
-### Authentication
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/auth/register` | Register a new user and organization |
-| POST | `/auth/login` | Authenticate and receive JWT tokens |
-| POST | `/auth/refresh` | Refresh an expired access token |
-| POST | `/auth/change-password` | Change password (invalidates all sessions) |
-| GET | `/auth/me` | Get current user profile and organization |
-| POST | `/auth/logout` | Logout (client discards tokens) |
-
-**POST /auth/register**
+Registration request:
 
 ```json
 {
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "full_name": "Jane Doe",
-  "org_name": "Acme Corp"
+  "email": "user@example.test",
+  "password": "LocalPassword1!",
+  "full_name": "Local User",
+  "org_name": "Local Evaluation",
+  "controlled_evaluation_accepted": true,
+  "access_code": "operator-provided-code"
 }
 ```
 
-Response `201`:
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "bearer"
-}
-```
+Passwords must be 12–128 characters and contain uppercase, lowercase, digit,
+and special characters. Registration is disabled unless the deployment
+operator sets `REGISTRATION_ENABLED`. Outside the explicit development/test
+local bypass, the request also needs the configured access code. A rejected
+enrollment returns a generic `403` without revealing gate configuration. Login
+may return `mfa_required: true` with an MFA token instead of access and refresh
+tokens.
 
-**POST /auth/login**
+## Organization API keys
 
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
+| Method | Full path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/api-keys/` | Create an API key; full key is returned once |
+| `GET` | `/api/v1/api-keys/` | List key metadata without full keys |
+| `PATCH` | `/api/v1/api-keys/{key_id}` | Update key metadata |
+| `DELETE` | `/api/v1/api-keys/{key_id}` | Revoke a key |
 
-Response `200`:
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "bearer"
-}
-```
+These management routes require the route's admin dependency. Never place full
+keys in repository files, screenshots, logs, or command arguments.
 
-Rate limited: 5 requests/minute.
+## Proxy endpoints
 
-### Incidents
+| Method | Full path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/proxy-endpoints/` | Create an endpoint configuration |
+| `GET` | `/api/v1/proxy-endpoints/` | List organization-owned endpoints |
+| `GET` | `/api/v1/proxy-endpoints/{endpoint_id}` | Get one endpoint |
+| `PATCH` | `/api/v1/proxy-endpoints/{endpoint_id}` | Update one endpoint |
+| `DELETE` | `/api/v1/proxy-endpoints/{endpoint_id}` | Delete one endpoint |
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/incidents/` | List incidents (paginated, filterable) |
-| GET | `/incidents/stats` | Get aggregate incident statistics |
-| GET | `/incidents/:id` | Get incident detail with actions |
-| PATCH | `/incidents/:id` | Update incident status |
-| POST | `/incidents/:id/actions` | Add an action to an incident |
-| POST | `/incidents/bulk-update` | Bulk update incident statuses |
+OpenAI uses target origin `https://api.openai.com`; the proxy appends the
+incoming `/v1/...` path. Anthropic similarly receives the tracked
+`/v1/messages` path. Provider credentials are a deployment prerequisite and
+must not be embedded in public examples.
 
-**GET /incidents/**
+## Detectors
 
-Query parameters:
-- `skip` (int, default 0) -- Pagination offset
-- `limit` (int, default 50) -- Page size
-- `status` (string) -- Filter by status
-- `severity` (string) -- Filter by severity level
-- `category` (string) -- Filter by detection category
-- `detectorId` (UUID) -- Filter by detector
-- `q` (string) -- Search text
-- `dateFrom` (datetime) -- Start date filter
-- `dateTo` (datetime) -- End date filter
+| Method | Full path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/v1/detectors/` | Create a detector |
+| `GET` | `/api/v1/detectors/` | List detectors |
+| `GET` | `/api/v1/detectors/{detector_id}` | Get a detector |
+| `PATCH` | `/api/v1/detectors/{detector_id}` | Update a detector |
+| `DELETE` | `/api/v1/detectors/{detector_id}` | Delete a detector |
+| `POST` | `/api/v1/detectors/{detector_id}/rules` | Add a rule |
+| `DELETE` | `/api/v1/detectors/{detector_id}/rules/{rule_id}` | Delete a rule |
 
-Response `200`:
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "title": "PII detected in response",
-      "severity": "high",
-      "category": "pii_leak",
-      "status": "open",
-      "created_at": "2025-01-15T10:30:00Z"
-    }
-  ],
-  "total": 42
-}
-```
+Action modes accepted by the schema are `monitor`, `warn`, `redact`, and
+`block`. Runtime effect depends on detector category, activation, execution
+phase, and outcome. In particular, asynchronous and streaming detection cannot
+retract an already delivered response.
 
-**PATCH /incidents/:id**
+## Incidents
 
-```json
-{
-  "status": "resolved"
-}
-```
+| Method | Full path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/incidents/` | List organization-owned incidents |
+| `GET` | `/api/v1/incidents/stats` | Aggregate incident counts |
+| `GET` | `/api/v1/incidents/{incident_id}` | Get incident detail and actions |
+| `PATCH` | `/api/v1/incidents/{incident_id}` | Update incident status |
+| `POST` | `/api/v1/incidents/{incident_id}/actions` | Add an incident action |
+| `POST` | `/api/v1/incidents/bulk-update` | Update up to 100 incident statuses |
 
-### Detectors
+List filters include `skip`, `limit`, `status`, `severity`, `category`,
+`detectorId`, `q`, `dateFrom`, and `dateTo`.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/detectors/` | List detectors |
-| POST | `/detectors/` | Create a detector (admin) |
-| GET | `/detectors/:id` | Get detector detail |
-| PATCH | `/detectors/:id` | Update a detector (admin) |
-| DELETE | `/detectors/:id` | Delete a detector (admin) |
-| POST | `/detectors/:id/rules` | Add a rule to a detector (admin) |
-| DELETE | `/detectors/:id/rules/:rule_id` | Delete a rule (admin) |
+An incident is evidence that a configured detector recorded a finding. It is
+not proof that the caller's response was blocked, that every request was
+analyzed, or that a compliance requirement was satisfied.
 
-**POST /detectors/**
+## Error shapes
+
+Management errors generally use FastAPI's `detail` field:
 
 ```json
-{
-  "name": "PII Scanner",
-  "category": "pii_leak",
-  "action_mode": "redact",
-  "config": {},
-  "rules": [
-    {
-      "name": "SSN Pattern",
-      "rule_type": "regex",
-      "parameters": {"pattern": "\\d{3}-\\d{2}-\\d{4}"},
-      "is_active": true
-    }
-  ]
-}
+{"detail": "error message"}
 ```
 
-### Dashboard
+The shared non-streaming block response is currently OpenAI-style for both
+provider routes:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/dashboard/metrics` | Get dashboard metrics |
-
-Response `200`:
-```json
-{
-  "total_incidents": 156,
-  "open_incidents": 23,
-  "incidents_by_status": [
-    {"status": "open", "count": 23},
-    {"status": "resolved", "count": 133}
-  ],
-  "incidents_by_severity": [
-    {"severity": "critical", "count": 5},
-    {"severity": "high", "count": 18}
-  ],
-  "recent_incidents": []
-}
-```
-
-### Alerts
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/alerts/` | List alerts |
-| POST | `/alerts/destinations` | Create alert destination (admin) |
-| GET | `/alerts/destinations` | List alert destinations |
-| PATCH | `/alerts/destinations/:id` | Update alert destination (admin) |
-| DELETE | `/alerts/destinations/:id` | Delete alert destination (admin) |
-| POST | `/alerts/destinations/:id/test` | Send test alert (admin) |
-
-### Webhooks
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/webhooks/` | List webhooks |
-| POST | `/webhooks/` | Create webhook (admin) |
-| GET | `/webhooks/:id` | Get webhook detail |
-| PATCH | `/webhooks/:id` | Update webhook (admin) |
-| DELETE | `/webhooks/:id` | Delete webhook (admin) |
-
-**POST /webhooks/**
-
-```json
-{
-  "name": "Slack Alerts",
-  "url": "https://hooks.slack.com/services/...",
-  "secret": "whsec_...",
-  "event_types": ["incident.created", "incident.resolved"],
-  "min_severity": "high"
-}
-```
-
-### Proxy Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/proxy-endpoints/` | List proxy endpoint configs |
-| POST | `/proxy-endpoints/` | Create proxy endpoint (admin) |
-| GET | `/proxy-endpoints/:id` | Get proxy endpoint detail |
-| PATCH | `/proxy-endpoints/:id` | Update proxy endpoint (admin) |
-| DELETE | `/proxy-endpoints/:id` | Delete proxy endpoint (admin) |
-
-### API Keys
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api-keys/` | List API keys |
-| POST | `/api-keys/` | Create API key (admin) |
-| DELETE | `/api-keys/:id` | Revoke API key (admin) |
-
-## Error Format
-
-All errors return JSON:
-
-```json
-{
-  "detail": "error message"
-}
-```
-
-For proxy endpoints, errors match the upstream provider format:
-
-**OpenAI-style:**
 ```json
 {
   "error": {
@@ -273,48 +194,14 @@ For proxy endpoints, errors match the upstream provider format:
 }
 ```
 
-**Anthropic-style:**
-```json
-{
-  "type": "error",
-  "error": {
-    "type": "detection_blocked",
-    "message": "Request blocked by security policy"
-  }
-}
-```
+Consumers should use the HTTP status plus structured fields. Error wording is
+not a stable authorization contract.
 
-## Rate Limiting
+## Evidence and data boundary
 
-| Endpoint | Limit |
-|----------|-------|
-| `/auth/register` | 5/minute |
-| `/auth/login` | 5/minute |
-| `/auth/refresh` | 10/minute |
-| `/proxy-endpoints/` (POST) | 10/minute |
-| Proxy endpoints | Per-plan monthly request limit |
-
-When rate limited, you receive a `429` response.
-
-## Detection Categories
-
-| Category | Key | Description |
-|----------|-----|-------------|
-| Hallucination | `hallucination` | Factual inconsistency in LLM output |
-| PII Leak | `pii_leak` | Personal data exposure in responses |
-| Compliance | `compliance` | Regulatory violations (SOX, PCI-DSS, FFIEC) |
-| Cost Anomaly | `cost_anomaly` | Unusual token consumption patterns |
-| Loop Detection | `loop` | Repeated outputs indicating a stuck agent |
-
-## Severity Levels
-
-From highest to lowest: `critical`, `high`, `medium`, `low`, `info`.
-
-## Action Modes
-
-| Mode | Behavior |
-|------|----------|
-| `monitor` | Log incident, pass response through unchanged |
-| `warn` | Log incident, add warning metadata |
-| `redact` | Remove sensitive content from the response before returning |
-| `block` | Return 403, do not pass the response to the caller |
+The backend can persist request and response content before or alongside
+detection. Use synthetic inputs until retention, redaction, encryption,
+organization isolation, backups, and operator access are verified for the
+specific deployment. Repository routes and tests do not prove hosted operation,
+provider success, durable persistence, regulatory compliance, or customer
+outcomes.

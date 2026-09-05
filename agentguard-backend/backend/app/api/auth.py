@@ -1,5 +1,6 @@
 """Authentication API router."""
 
+import hmac
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -8,6 +9,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.deps import get_client_ip, get_current_user, get_db
 from app.core.exceptions import AuthenticationError, ValidationError
 from app.models.user import Organization, User
@@ -35,6 +37,24 @@ from app.services.audit_service import write_audit
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
+_REGISTRATION_UNAVAILABLE = "Registration is not available"
+
+
+def _registration_is_available(access_code: str | None) -> bool:
+    """Return whether this request passes the deployment enrollment gate."""
+    if not settings.REGISTRATION_ENABLED:
+        return False
+
+    environment = settings.ENVIRONMENT.strip().lower()
+    if environment in {"development", "test"} and settings.LOCAL_REGISTRATION_BYPASS_ENABLED:
+        return True
+
+    configured_code = settings.REGISTRATION_ACCESS_CODE
+    submitted_code = access_code or ""
+    return bool(configured_code) and hmac.compare_digest(
+        submitted_code.encode("utf-8"), configured_code.encode("utf-8")
+    )
+
 
 @router.post(
     "/register",
@@ -48,6 +68,12 @@ async def register(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Register a new user and organization."""
+    if not _registration_is_available(body.access_code):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_REGISTRATION_UNAVAILABLE,
+        )
+
     client_ip = get_client_ip(request)
     try:
         user, _org = await auth_service.register_user(
@@ -56,15 +82,28 @@ async def register(
             password=body.password,
             full_name=body.full_name,
             org_name=body.org_name,
+            controlled_evaluation_accepted=body.controlled_evaluation_accepted,
         )
+        await write_audit(
+            db,
+            UUID(str(_org.id)),
+            UUID(str(user.id)),
+            "auth.register",
+            "user",
+            UUID(str(user.id)),
+            ip_address=client_ip,
+        )
+        await db.commit()
     except ValidationError as e:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         )
+    except Exception:
+        await db.rollback()
+        raise
 
-    await write_audit(db, UUID(str(_org.id)), UUID(str(user.id)), "auth.register", "user", UUID(str(user.id)), ip_address=client_ip)
-    await db.commit()
     token_ver: int = user.token_version or 0  # type: ignore[assignment]
     access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
     return TokenResponse(access_token=access, refresh_token=refresh)
@@ -90,7 +129,15 @@ async def login(
         # Log failed login attempt if user exists
         existing = await auth_service.get_user_by_email(db, body.email)
         if existing is not None:
-            await write_audit(db, UUID(str(existing.org_id)), UUID(str(existing.id)), "auth.login_failed", "user", UUID(str(existing.id)), ip_address=client_ip)
+            await write_audit(
+                db,
+                UUID(str(existing.org_id)),
+                UUID(str(existing.id)),
+                "auth.login_failed",
+                "user",
+                UUID(str(existing.id)),
+                ip_address=client_ip,
+            )
         await db.commit()
 
         detail = "Invalid email or password"
@@ -118,11 +165,21 @@ async def login(
         from app.core.auth import create_mfa_token
 
         mfa_token = create_mfa_token(str(user.id))
-        await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.mfa_challenge", "user", UUID(str(user.id)), ip_address=client_ip)
+        await write_audit(
+            db,
+            UUID(str(user.org_id)),
+            UUID(str(user.id)),
+            "auth.mfa_challenge",
+            "user",
+            UUID(str(user.id)),
+            ip_address=client_ip,
+        )
         await db.commit()
         return LoginResponse(mfa_required=True, mfa_token=mfa_token)
 
-    await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip)
+    await write_audit(
+        db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip
+    )
     await db.commit()
     token_ver: int = user.token_version or 0  # type: ignore[assignment]
     access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
@@ -191,8 +248,12 @@ async def change_password(
 
     await auth_service.change_password(db, current_user, body.new_password)
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "auth.password_changed", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "auth.password_changed",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=client_ip,
     )
     await db.commit()
@@ -232,8 +293,12 @@ async def forgot_password(
             user.id,
         )
         await write_audit(
-            db, UUID(str(user.org_id)), UUID(str(user.id)),
-            "auth.password_reset_requested", "user", UUID(str(user.id)),
+            db,
+            UUID(str(user.org_id)),
+            UUID(str(user.id)),
+            "auth.password_reset_requested",
+            "user",
+            UUID(str(user.id)),
             ip_address=get_client_ip(request),
         )
         await db.commit()
@@ -270,8 +335,12 @@ async def reset_password(
 
     await auth_service.change_password(db, user, body.new_password)
     await write_audit(
-        db, UUID(str(user.org_id)), UUID(str(user.id)),
-        "auth.password_reset_completed", "user", UUID(str(user.id)),
+        db,
+        UUID(str(user.org_id)),
+        UUID(str(user.id)),
+        "auth.password_reset_completed",
+        "user",
+        UUID(str(user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()
@@ -314,8 +383,12 @@ async def update_profile(
         current_user.full_name = body.full_name  # type: ignore[assignment]
     db.add(current_user)
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "user.profile_updated", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "user.profile_updated",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()
@@ -331,7 +404,15 @@ async def logout(
 ) -> None:
     """Logout - client discards tokens."""
     client_ip = get_client_ip(request)
-    await write_audit(db, UUID(str(current_user.org_id)), UUID(str(current_user.id)), "auth.logout", "user", UUID(str(current_user.id)), ip_address=client_ip)
+    await write_audit(
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "auth.logout",
+        "user",
+        UUID(str(current_user.id)),
+        ip_address=client_ip,
+    )
     await db.commit()
     return None
 
@@ -357,8 +438,12 @@ async def update_notification_preferences(
     current_user.notification_preferences = body.model_dump()  # type: ignore[assignment]
     db.add(current_user)
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "user.notification_preferences_updated", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "user.notification_preferences_updated",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()
@@ -406,14 +491,24 @@ async def mfa_verify_login(
     elif mfa_service.verify_backup_code(user, body.code):
         await mfa_service.consume_backup_code(db, user, body.code)
     else:
-        await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.mfa_failed", "user", UUID(str(user.id)), ip_address=client_ip)
+        await write_audit(
+            db,
+            UUID(str(user.org_id)),
+            UUID(str(user.id)),
+            "auth.mfa_failed",
+            "user",
+            UUID(str(user.id)),
+            ip_address=client_ip,
+        )
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid MFA code",
         )
 
-    await write_audit(db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip)
+    await write_audit(
+        db, UUID(str(user.org_id)), UUID(str(user.id)), "auth.login", "user", UUID(str(user.id)), ip_address=client_ip
+    )
     await db.commit()
     token_ver: int = user.token_version or 0  # type: ignore[assignment]
     access, refresh = auth_service.create_token_pair(UUID(str(user.id)), token_version=token_ver)
@@ -438,8 +533,12 @@ async def mfa_setup(
 
     secret, qr_b64, backup_codes = await mfa_service.setup_totp(db, current_user)
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "auth.mfa_setup_started", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "auth.mfa_setup_started",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()
@@ -468,8 +567,12 @@ async def mfa_confirm_setup(
         )
 
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "auth.mfa_enabled", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "auth.mfa_enabled",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()
@@ -504,8 +607,12 @@ async def mfa_disable(
 
     await mfa_service.disable_mfa(db, current_user)
     await write_audit(
-        db, UUID(str(current_user.org_id)), UUID(str(current_user.id)),
-        "auth.mfa_disabled", "user", UUID(str(current_user.id)),
+        db,
+        UUID(str(current_user.org_id)),
+        UUID(str(current_user.id)),
+        "auth.mfa_disabled",
+        "user",
+        UUID(str(current_user.id)),
         ip_address=get_client_ip(request),
     )
     await db.commit()

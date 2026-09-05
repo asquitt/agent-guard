@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { hasOpenModal, useModalKeyboardBoundary } from '@/lib/dialog';
 import {
   LayoutDashboard,
   BarChart3,
@@ -72,8 +73,11 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const closePalette = useCallback(() => setOpen(false), []);
+  useModalKeyboardBoundary(dialogRef, closePalette, open);
 
   // Build action commands dynamically (theme depends on current state)
   const actionCommands: CommandItem[] = useMemo(() => [
@@ -91,7 +95,12 @@ export function CommandPalette() {
       icon: Keyboard,
       section: 'Actions',
       keywords: ['shortcut', 'hotkey', 'keys'],
-      action: () => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })),
+      action: () => {
+        window.setTimeout(
+          () => document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' })),
+          0,
+        );
+      },
     },
   ], [theme, setTheme]);
 
@@ -100,17 +109,19 @@ export function CommandPalette() {
   // Cmd+K / Ctrl+K to open
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (hasOpenModal(dialogRef.current)) return;
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
-      if (e.key === 'Escape') {
+      if (open && e.key === 'Escape') {
         setOpen(false);
       }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [open]);
 
   // Focus input when opened
   useEffect(() => {
@@ -185,18 +196,29 @@ export function CommandPalette() {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => setOpen(false)}
       />
 
       {/* Palette */}
-      <div className="relative w-full max-w-lg rounded-xl border border-border bg-popover shadow-2xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        tabIndex={-1}
+        className="relative w-full max-w-lg rounded-xl border border-border bg-popover shadow-2xl"
+      >
         {/* Search input */}
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             ref={inputRef}
+            aria-label="Search pages"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
             onKeyDown={handleInputKeyDown}

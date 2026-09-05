@@ -14,7 +14,6 @@ def test_incident_from_dict_snake_case():
         "status": "open",
         "description": "SSN found",
         "action_taken": "redacted",
-        "model": "gpt-4",
         "created_at": "2024-01-01T00:00:00Z",
         "updated_at": "2024-01-01T01:00:00Z",
         "proxy_request_id": "req-1",
@@ -51,9 +50,35 @@ def test_incident_from_dict_camel_case():
 def test_incident_from_dict_defaults():
     data = {"id": "inc-3", "severity": "info", "category": "test", "title": "T", "status": "open"}
     inc = Incident.from_dict(data)
-    assert inc.description == ""
-    assert inc.model == ""
-    assert inc.action_taken == ""
+    assert inc.description is None
+    assert inc.action_taken is None
+
+
+def test_incident_from_dict_does_not_stringify_nullable_backend_fields():
+    data = {
+        "id": "inc-4",
+        "severity": "low",
+        "category": "pii_leak",
+        "title": "Nullable evidence",
+        "status": "open",
+        "description": None,
+        "actionTaken": None,
+        "proxyRequestId": None,
+        "detectorId": None,
+        "sandboxExecutionId": None,
+        "resolvedAt": None,
+        "createdAt": "2026-09-05T00:00:00Z",
+        "updatedAt": "2026-09-05T00:00:00Z",
+    }
+
+    incident = Incident.from_dict(data)
+
+    assert incident.description is None
+    assert incident.action_taken is None
+    assert incident.proxy_request_id is None
+    assert incident.detector_id is None
+    assert incident.sandbox_execution_id is None
+    assert incident.resolved_at is None
 
 
 def test_incident_frozen():

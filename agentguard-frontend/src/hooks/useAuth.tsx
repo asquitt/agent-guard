@@ -17,6 +17,7 @@ import {
   getMeApi,
   logoutApi,
 } from '@/lib/api';
+import type { RegisterInput } from '@/lib/api';
 import { ApiError, tryRefreshToken } from '@/lib/api/client';
 
 /** Thrown when login requires MFA verification. */
@@ -39,12 +40,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   verifyMfaLogin: (mfaToken: string, code: string) => Promise<void>;
-  register: (
-    email: string,
-    password: string,
-    fullName: string,
-    orgName: string,
-  ) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   fetchMe: () => Promise<void>;
 }
@@ -148,13 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (
-      email: string,
-      password: string,
-      fullName: string,
-      orgName: string,
-    ) => {
-      const tokens = await registerApi(email, password, fullName, orgName);
+    async (input: RegisterInput) => {
+      const tokens = await registerApi(input);
       storeTokens(tokens.access_token, tokens.refresh_token);
       await fetchMe();
     },

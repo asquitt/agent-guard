@@ -128,12 +128,9 @@ function PolicyCard({
     (policy.maxTransactionAmount ? 1 : 0);
 
   return (
-    <div
-      onClick={onSelect}
-      className="cursor-pointer rounded-xl border border-border bg-card p-6 hover:border-primary/20 hover:shadow-sm shadow-black/10 transition-all"
-    >
+    <div className="rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/20 hover:shadow-sm shadow-black/10">
       <div className="flex items-start justify-between">
-        <div>
+        <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-foreground">{policy.name}</h3>
             <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-600">
@@ -147,44 +144,42 @@ function PolicyCard({
             {ruleCount} rule{ruleCount !== 1 ? 's' : ''} · Created{' '}
             {new Date(policy.createdAt).toLocaleDateString()}
           </p>
-        </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {policy.forbiddenTopics.length > 0 && (
+              <span className="rounded bg-red-50 px-2 py-1 text-xs text-red-600">
+                {policy.forbiddenTopics.length} forbidden topic{policy.forbiddenTopics.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {policy.allowedTopics.length > 0 && (
+              <span className="rounded bg-green-50 px-2 py-1 text-xs text-green-600">
+                {policy.allowedTopics.length} allowed topic{policy.allowedTopics.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {policy.approvedTools.length > 0 && (
+              <span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-600">
+                {policy.approvedTools.length} approved tool{policy.approvedTools.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {policy.maxTransactionAmount && (
+              <span className="rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-700">
+                Max {policy.maxTransactionAmount.currency} {policy.maxTransactionAmount.amount.toLocaleString()}
+              </span>
+            )}
+            {policy.requiredDisclosures.length > 0 && (
+              <span className="rounded bg-purple-50 px-2 py-1 text-xs text-purple-600">
+                {policy.requiredDisclosures.length} disclosure{policy.requiredDisclosures.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        </button>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
+          type="button"
+          onClick={onDelete}
           className="text-xs font-medium text-red-600 hover:text-red-500"
         >
           Delete
         </button>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {policy.forbiddenTopics.length > 0 && (
-          <span className="rounded bg-red-50 px-2 py-1 text-xs text-red-600">
-            {policy.forbiddenTopics.length} forbidden topic{policy.forbiddenTopics.length !== 1 ? 's' : ''}
-          </span>
-        )}
-        {policy.allowedTopics.length > 0 && (
-          <span className="rounded bg-green-50 px-2 py-1 text-xs text-green-600">
-            {policy.allowedTopics.length} allowed topic{policy.allowedTopics.length !== 1 ? 's' : ''}
-          </span>
-        )}
-        {policy.approvedTools.length > 0 && (
-          <span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-600">
-            {policy.approvedTools.length} approved tool{policy.approvedTools.length !== 1 ? 's' : ''}
-          </span>
-        )}
-        {policy.maxTransactionAmount && (
-          <span className="rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-700">
-            Max {policy.maxTransactionAmount.currency} {policy.maxTransactionAmount.amount.toLocaleString()}
-          </span>
-        )}
-        {policy.requiredDisclosures.length > 0 && (
-          <span className="rounded bg-purple-50 px-2 py-1 text-xs text-purple-600">
-            {policy.requiredDisclosures.length} disclosure{policy.requiredDisclosures.length !== 1 ? 's' : ''}
-          </span>
-        )}
       </div>
     </div>
   );
@@ -369,8 +364,9 @@ function CreatePolicyForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Policy Name *</label>
+            <label htmlFor="policy-name" className="mb-1 block text-xs text-muted-foreground">Policy Name *</label>
             <input
+              id="policy-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -378,8 +374,9 @@ function CreatePolicyForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+            <label htmlFor="policy-description" className="mb-1 block text-xs text-muted-foreground">Description</label>
             <input
+              id="policy-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -390,8 +387,9 @@ function CreatePolicyForm({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Allowed Topics (comma-separated)</label>
+            <label htmlFor="policy-allowed-topics" className="mb-1 block text-xs text-muted-foreground">Allowed Topics (comma-separated)</label>
             <input
+              id="policy-allowed-topics"
               value={allowedTopics}
               onChange={(e) => setAllowedTopics(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -399,8 +397,9 @@ function CreatePolicyForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Forbidden Topics (comma-separated)</label>
+            <label htmlFor="policy-forbidden-topics" className="mb-1 block text-xs text-muted-foreground">Forbidden Topics (comma-separated)</label>
             <input
+              id="policy-forbidden-topics"
               value={forbiddenTopics}
               onChange={(e) => setForbiddenTopics(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -411,8 +410,9 @@ function CreatePolicyForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Max Transaction Amount</label>
+            <label htmlFor="policy-max-amount" className="mb-1 block text-xs text-muted-foreground">Max Transaction Amount</label>
             <input
+              id="policy-max-amount"
               value={maxAmount}
               onChange={(e) => setMaxAmount(e.target.value)}
               type="number"
@@ -421,8 +421,9 @@ function CreatePolicyForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Currency</label>
+            <label htmlFor="policy-currency" className="mb-1 block text-xs text-muted-foreground">Currency</label>
             <select
+              id="policy-currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -433,8 +434,9 @@ function CreatePolicyForm({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Approved Tools (comma-separated)</label>
+            <label htmlFor="policy-approved-tools" className="mb-1 block text-xs text-muted-foreground">Approved Tools (comma-separated)</label>
             <input
+              id="policy-approved-tools"
               value={tools}
               onChange={(e) => setTools(e.target.value)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -444,8 +446,9 @@ function CreatePolicyForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Approved Data Sources (comma-separated)</label>
+          <label htmlFor="policy-approved-data-sources" className="mb-1 block text-xs text-muted-foreground">Approved Data Sources (comma-separated)</label>
           <input
+            id="policy-approved-data-sources"
             value={dataSources}
             onChange={(e) => setDataSources(e.target.value)}
             className="w-full rounded-lg border border-border px-3 py-2 text-sm"
@@ -454,8 +457,9 @@ function CreatePolicyForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Required Disclosures (one per line)</label>
+          <label htmlFor="policy-required-disclosures" className="mb-1 block text-xs text-muted-foreground">Required Disclosures (one per line)</label>
           <textarea
+            id="policy-required-disclosures"
             value={disclosures}
             onChange={(e) => setDisclosures(e.target.value)}
             rows={3}
