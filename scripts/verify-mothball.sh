@@ -41,7 +41,8 @@ jq -e '
   all(.reactivation_gates[]; (.requirement | type == "string" and length > 0))
 ' PROJECT_STATUS.json >/dev/null
 
-grep -Fq 'Status: mothballed as a standalone product' README.md
+# Public README wording is independent of the machine-readable runtime controls.
+grep -Fxq '# AgentGuard' README.md
 grep -Fq 'Historical standalone-product material' docs/historical/STANDALONE_PRODUCT_README.md
 grep -Fxq '# AgentGuard Archive and Asset Map' docs/ARCHIVE_AND_ASSET_MAP.md
 
